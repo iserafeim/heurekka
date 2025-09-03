@@ -1,0 +1,97 @@
+Heurekka es un marketplace de rentas largas para casas y apartamentos en Tegucigalpa.
+Los inquilinos exploran propiedades como en Zillow, Zumper o Redfin, y al contactar crean un perfil de búsqueda (presupuesto, zona, fecha de mudanza). Ese perfil se guarda y se reutiliza automáticamente en futuras conversaciones.
+
+Los propietarios e inmobiliarias reciben leads calificados, con presupuesto y contexto clave desde el primer mensaje. Esto reduce conversaciones improductivas y aumenta la tasa de cierre.
+
+⸻
+
+Idea de como funciona en pocas palabras
+	1.	El usuario llega al homepage, ve un buscador (barra de búsqueda) y puede pulsar “Explorar”.
+	2.	Es redirigido a la página de exploración (listado + mapa), donde navega propiedades con tarjetas y pins sincronizados.
+	3.	Al abrir una ficha de propiedad, ve fotos, precio, descripción y CTA “Contactar”.
+	4.	Si no está logueado, aparece un modal de creación de perfil de búsqueda (rápido, en 2 pasos).
+	5.	Al terminar, se genera un mensaje precargado en WhatsApp (o formulario interno) que envía su perfil al agente.
+	6.	Ambos continúan la conversación con menos fricción y mejor encaje.
+
+⸻
+
+Idea de Page Layout
+	1.	Homepage: puerta de entrada con buscador destacado, CTA a “Explorar” y explicación breve del valor.
+	2.	Explorar (Listado + Mapa): grilla de tarjetas y mapa sincronizado (precio, zona, tipo). Filtros visibles.
+	3.	Ficha de Propiedad (modal/página): fotos, precio, descripción, agente/inmobiliaria, CTA “Contactar”.
+	4.	Modal “Crear perfil de búsqueda”: aparece al pulsar “Contactar” (si no está logueado). Pide presupuesto, zona, fecha de mudanza y método de contacto.
+	5.	Área Compradores: historial de conversaciones (estado: nuevo/en conversación/cerrado), favoritos, editar perfil.
+	6.	Publica lo que buscas:
+	•	Listado de publicaciones creadas por compradores.
+	•	Botón “Crear publicación” (si no está logueado, redirige a sign up + onboarding).
+	•	Cada publicación se convierte en un perfil visible con botón “Contactar comprador”.
+	7.	Área Propietarios (MVP básico): publicar propiedad, ver mis propiedades, y ver leads recibidos (con perfil del comprador y propiedad asociada).
+
+⸻
+
+Idea de MVP Flow 
+	1.	Homepage
+	•	Explica la propuesta de valor.
+	•	Barra de búsqueda + filtros → dirige a “Explorar”.
+	2.	Explorar (Listado + Mapa)
+	•	Descubrimiento rápido.
+	•	Filtros visibles, mapa sincronizado con las tarjetas.
+	3.	Ficha de Propiedad (Modal/Página)
+	•	Galería de fotos, precio/mes, dirección aproximada/zona, descripción, amenities básicos, agente/inmobiliaria y CTA “Contactar”.
+	4.	Gating inteligente (Signup + Perfil en el momento justo)
+	•	Solo aparece al intentar contactar.
+	•	Modal de 2 pasos, mobile-first:
+	1.	Crear cuenta (Google/email).
+	2.	Perfil de búsqueda (presupuesto, zona(s), tipo, habitaciones, fecha de mudanza, descripción extra).
+	5.	Inicio de conversación (post-perfil)
+	•	WhatsApp deeplink con mensaje precargado.
+	6.	Mi Perfil (comprador)
+	•	Editar perfil de búsqueda.
+	•	Ver favoritos.
+	•	Revisar conversaciones iniciadas (nuevo / en conversación / cerrado).
+	7.	Publica lo que buscas (outbound lead)
+	•	Cuando el comprador no encuentra lo que quiere, puede crear un anuncio para ser contactado por propietarios.
+	8.	Área Propietarios (mínimo necesario)
+	•	Publicar propiedad (formulario básico + fotos).
+	•	Ver mis propiedades (lista editable).
+	•	Leads: lista de compradores interesados con su perfil resumido.
+
+⸻
+
+Secciones Principales y su propósito
+	•	Explorar: descubrimiento rápido y amigable (tarjetas + mapa).
+	•	Ficha de Propiedad: informar y motivar a contactar con claridad.
+	•	Mi Perfil & Mis Contactos: centralizar perfil reutilizable y control de conversaciones.
+	•	Publica lo que buscas: canal alternativo para captar intención (reverse marketplace).
+	•	Área Propietarios: lo mínimo para que publiquen inventario y vean el valor de los leads calificados.
+
+⸻
+
+Audiencia Objetivo
+	•	Compradores: jóvenes profesionales, familias y estudiantes en Tegucigalpa que buscan renta larga. Valoran evitar repetir formularios y recibir respuestas relevantes.
+	•	Propietarios/Inmobiliarias: dueños individuales y agencias pequeñas/medianas que quieren leads claros (presupuesto, zona, fecha) y contacto ágil (WhatsApp o datos directos).
+
+⸻
+
+Notas sobre el MVP
+
+Alcance y simplificaciones
+	•	Signup solo al contactar → máxima conversión en navegación.
+	•	Contacto vía WhatsApp (no chat interno por ahora).
+	•	Moderación básica de propiedades.
+	•	Leads con estados simples (nuevo/en conversación/cerrado).
+
+Principios de diseño
+	•	Fricción cero hasta que hay interés.
+	•	Un perfil, muchas conversaciones.
+	•	Filtros claros de precio y zona.
+	•	WhatsApp-first, adaptado a hábitos locales.
+
+⸻
+
+Resumen
+
+Heurekka prioriza la liquidez:
+	•	Exploración fluida (tarjetas + mapa).
+	•	Registro solo al contactar (momento exacto).
+	•	Perfil único reutilizable que eleva la calidad del lead sin castigar la experiencia.
