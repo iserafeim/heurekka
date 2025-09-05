@@ -185,22 +185,6 @@ interface LeadData {
 - Drag-and-drop organization
 - Multi-monitor support
 
-## Lead Qualification System
-
-### Quality Scoring
-- **Budget Match**: Property within tenant budget
-- **Timeline Fit**: Move date aligns with availability
-- **Profile Completeness**: All required info provided
-- **Verification Status**: Phone/email verified
-- **Response History**: Previous interaction success
-
-### Visual Indicators
-- **Green Badge**: High quality (80%+ match)
-- **Yellow Badge**: Medium quality (60-79% match)
-- **Gray Badge**: Low quality (<60% match)
-- **Red Flag**: Potential issues detected
-- **Star Icon**: Premium/verified tenants
-
 ## Notification Strategy
 
 ### Real-time Alerts
