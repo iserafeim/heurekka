@@ -43,10 +43,10 @@ Comprehensive accessibility requirements ensuring the landlord dashboard feature
     />
   </div>
   
-  <!-- Quality badge with text alternative -->
-  <span class="quality-badge high" aria-label="High quality lead, 85% match">
-    <span aria-hidden="true">⭐</span>
-    High
+  <!-- Priority indicator with text alternative -->
+  <span class="priority-badge high" aria-label="High priority lead">
+    <span aria-hidden="true">🔥</span>
+    High Priority
   </span>
   
   <!-- Icon buttons with labels -->
@@ -159,12 +159,12 @@ Comprehensive accessibility requirements ensuring the landlord dashboard feature
   color: #4B5563; /* 7.1:1 on white */
 }
 
-.quality-badge.high {
+.priority-badge.high {
   background: #D1FAE5;
   color: #065F46; /* 7.2:1 contrast */
 }
 
-.quality-badge.medium {
+.priority-badge.medium {
   background: #FEF3C7;
   color: #92400E; /* 5.8:1 contrast */
 }
@@ -228,9 +228,9 @@ html {
     </time>
     
     <span 
-      class="quality-badge high"
+      class="priority-badge high"
       role="status"
-      aria-label="High quality lead with 85% match score"
+      aria-label="High priority lead"
     >
       High
     </span>
@@ -265,7 +265,7 @@ html {
   <div class="property-reference">
     <span class="sr-only">Interested in:</span>
     <strong>Downtown Luxury Apartment</strong>
-    <span aria-label="Match score: 85 percent">85% match</span>
+    <span aria-label="Compatibility score: 85 percent">85% compatible</span>
   </div>
   
   <div class="lead-actions" role="toolbar" aria-label="Lead actions">
@@ -600,7 +600,7 @@ class DashboardKeyboardShortcuts {
     background: ButtonFace;
   }
   
-  .quality-badge {
+  .priority-badge {
     border: 2px solid ButtonText;
     background: ButtonFace;
     color: ButtonText;
@@ -651,7 +651,7 @@ class DashboardKeyboardShortcuts {
     border: 1px solid var(--border);
   }
   
-  .quality-badge.high {
+  .priority-badge.high {
     background: #065F46;
     color: #D1FAE5;
   }
@@ -1122,7 +1122,7 @@ describe('Landlord Dashboard Accessibility', () => {
 
 #### Screen Reader Testing
 - [ ] All lead information announced correctly
-- [ ] Quality scores and badges readable
+- [ ] Priority levels and badges readable
 - [ ] Real-time updates announced
 - [ ] Chart data available as text
 - [ ] Form labels and instructions clear

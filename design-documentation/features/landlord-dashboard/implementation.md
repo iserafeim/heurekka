@@ -53,13 +53,13 @@ LandlordDashboard/
 │   ├── LeadDetails/
 │   │   ├── DetailPanel.tsx
 │   │   ├── TenantProfile.tsx
-│   │   ├── PropertyMatch.tsx
+│   │   ├── PropertyInfo.tsx
 │   │   ├── ConversationThread.tsx
 │   │   └── QuickResponse.tsx
 │   ├── Analytics/
 │   │   ├── AnalyticsDashboard.tsx
 │   │   ├── ResponseTimeChart.tsx
-│   │   ├── QualityDistribution.tsx
+│   │   ├── LeadDistribution.tsx
 │   │   ├── ConversionFunnel.tsx
 │   │   └── PropertyPerformance.tsx
 │   ├── Response/
@@ -85,7 +85,7 @@ LandlordDashboard/
 │   ├── notificationService.ts
 │   └── analyticsService.ts
 └── utils/
-    ├── leadScoring.ts
+    ├── leadPriority.ts
     ├── dateHelpers.ts
     ├── formatters.ts
     └── validators.ts
@@ -248,7 +248,7 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
   onQuickAction
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const qualityScore = useLeadQualityScore(lead);
+  const priorityLevel = useLeadPriority(lead);
   const timeAgo = useTimeAgo(lead.receivedAt);
   
   // Swipe handlers for mobile
@@ -266,7 +266,7 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
         {
           'selected': isSelected,
           'unread': !lead.isRead,
-          'high-quality': qualityScore >= 80
+          'high-priority': priorityLevel === 'high'
         }
       )}
       onClick={() => onSelect(lead)}
@@ -292,7 +292,7 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
         
         <Timestamp>{timeAgo}</Timestamp>
         
-        <QualityBadge score={qualityScore} />
+        <PriorityBadge level={priorityLevel} />
       </CardHeader>
       
       <CardDetails>
@@ -314,7 +314,7 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
         <PropertyThumb src={lead.property.image} />
         <div>
           <PropertyTitle>{lead.property.title}</PropertyTitle>
-          <MatchScore score={lead.matchScore} />
+          <CompatibilityScore score={lead.relevanceScore} />
         </div>
       </PropertyReference>
       
@@ -436,9 +436,8 @@ const useLeadManagement = (initialLeads: Lead[], initialFilters: LeadFilters) =>
     return leads.filter(lead => {
       // Quality filter
       if (filters.quality.length > 0) {
-        const score = calculateQualityScore(lead);
-        const quality = getQualityLevel(score);
-        if (!filters.quality.includes(quality)) return false;
+        const priority = calculateLeadPriority(lead);
+        if (!filters.priority.includes(priority.level)) return false;
       }
       
       // Status filter
@@ -484,7 +483,7 @@ const useLeadManagement = (initialLeads: Lead[], initialFilters: LeadFilters) =>
         case 'oldest':
           return new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime();
         case 'quality':
-          return calculateQualityScore(b) - calculateQualityScore(a);
+          return calculateLeadPriority(b).urgency - calculateLeadPriority(a).urgency;
         case 'urgency':
           return getUrgencyScore(a) - getUrgencyScore(b);
         default:
@@ -636,7 +635,7 @@ interface Lead {
   metadata: LeadMetadata;
   status: LeadStatus;
   conversation: ConversationData;
-  scoring: QualityScoring;
+  priority: LeadPriority;
   timestamps: {
     receivedAt: Date;
     firstViewedAt?: Date;
@@ -681,7 +680,7 @@ interface PropertyReference {
   price: number;
   image: string;
   availability: Date;
-  matchScore: number;
+  relevanceScore: number;
 }
 
 interface LeadMetadata {
@@ -706,13 +705,12 @@ interface ConversationData {
   totalMessages: number;
 }
 
-interface QualityScoring {
-  overall: number; // 0-100
+interface LeadPriority {
+  level: 'high' | 'medium' | 'low';
   factors: {
-    budgetMatch: number;
+    urgency: number;
     profileCompleteness: number;
     verification: number;
-    urgency: number;
     responseHistory: number;
   };
   tier: 'high' | 'medium' | 'low';

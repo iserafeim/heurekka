@@ -322,8 +322,8 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
   opacity: 0.6;
 }
 
-/* Lead Quality Badge */
-.quality-badge {
+/* Lead Priority Badge */
+.priority-badge {
   position: absolute;
   top: 20px;
   right: 24px;
@@ -334,17 +334,17 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
   text-transform: uppercase;
 }
 
-.quality-badge.high {
-  background: #D1FAE5;
-  color: #065F46;
+.priority-badge.high {
+  background: #DBEAFE;
+  color: #1E40AF;
 }
 
-.quality-badge.medium {
+.priority-badge.medium {
   background: #FEF3C7;
   color: #92400E;
 }
 
-.quality-badge.low {
+.priority-badge.low {
   background: #F3F4F6;
   color: #6B7280;
 }
@@ -523,7 +523,7 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
   margin-bottom: 8px;
 }
 
-.verification-badges {
+.verification-indicators {
   display: flex;
   gap: 8px;
 }
@@ -567,8 +567,8 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
   color: #1A1A1A;
 }
 
-/* Property Match Section */
-.property-match {
+/* Property Info Section */
+.property-info {
   padding: 24px;
   border-bottom: 1px solid #F3F4F6;
 }
@@ -613,7 +613,7 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
   margin-bottom: 8px;
 }
 
-.match-score {
+.compatibility-score {
   display: inline-flex;
   align-items: center;
   gap: 6px;

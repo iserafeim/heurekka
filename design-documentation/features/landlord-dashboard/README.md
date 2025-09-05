@@ -23,14 +23,14 @@ The Landlord Dashboard is a comprehensive lead management system that enables pr
 
 ### Primary Goals
 - Centralize all tenant inquiries in one manageable interface
-- Display tenant qualifications upfront for quick assessment
+- Display tenant profiles upfront for quick assessment
 - Enable rapid response to high-quality leads
 - Track conversation progress and outcomes
 - Provide analytics on lead quality and response rates
 
 ### Success Metrics
 - **Response Time**: <30 minutes average first response
-- **Lead Quality Score**: >70% of leads marked as qualified
+- **Lead Response Rate**: >70% of leads receive timely responses
 - **Conversion Rate**: >15% lead-to-viewing conversion
 - **Dashboard Adoption**: >80% of landlords use daily
 - **Response Rate**: >60% of qualified leads receive responses
@@ -94,7 +94,7 @@ interface LeadData {
     id: string;
     title: string;
     price: number;
-    matchScore: number;
+    relevanceScore: number;
   };
   metadata: {
     receivedAt: Date;
@@ -122,7 +122,7 @@ interface LeadData {
 
 ### Lead Card Design
 - Tenant avatar and verification badge
-- Budget range with match indicator
+- Budget range with compatibility indicator
 - Move-in date with urgency flag
 - Property reference
 - Quick action buttons
@@ -142,15 +142,15 @@ interface LeadData {
 1. New lead notification received
 2. Dashboard updates in real-time
 3. Lead appears with "NEW" badge
-4. Quality score calculated
+4. Lead priority assigned
 5. Urgency level assigned
 6. Sound/vibration alert (optional)
 
 ### Lead Evaluation
 1. Click lead to expand details
 2. View complete tenant profile
-3. Check qualification criteria
-4. Review match score
+3. Review tenant profile details
+4. Assess property compatibility
 5. See previous interactions
 6. Make response decision
 
@@ -309,7 +309,7 @@ interface LeadData {
 ## Future Enhancements
 
 ### Planned Features
-- AI-powered lead scoring
+- AI-powered lead analytics
 - Automated response suggestions
 - Predictive analytics
 - Voice note support

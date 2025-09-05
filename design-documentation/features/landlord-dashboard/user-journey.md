@@ -41,8 +41,8 @@ Complete user journey for landlords managing tenant inquiries and property leads
 ### Stage 1: Lead Reception
 1. Receive notification of new lead
 2. Open dashboard (mobile/desktop)
-3. View lead in inbox with quality indicator
-4. Quick assessment of tenant qualifications
+3. View lead in inbox with priority indicator
+4. Quick review of tenant profile
 5. Decision point: Respond or pass
 
 ### Stage 2: Lead Evaluation
@@ -51,7 +51,7 @@ Complete user journey for landlords managing tenant inquiries and property leads
 3. Check budget vs. property price
 4. Assess move-in timeline fit
 5. View any previous interactions
-6. Make qualification decision
+6. Make response decision
 
 ### Stage 3: Response Initiation
 1. Choose response method (WhatsApp preferred)
@@ -145,7 +145,7 @@ Complete user journey for landlords managing tenant inquiries and property leads
 ## Pain Points & Solutions
 
 ### Too Many Unqualified Leads
-**Solution**: Quality scoring and smart filters to surface best matches first
+**Solution**: Smart filters and priority indicators to surface best matches first
 
 ### Slow Response Times
 **Solution**: Mobile notifications, quick templates, WhatsApp integration
