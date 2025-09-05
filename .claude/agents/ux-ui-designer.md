@@ -1,7 +1,7 @@
 ---
 name: ux-ui-designer
 description: Design user experiences and visual interfaces for applications. Translate product manager feature stories into comprehensive design systems, detailed user flows, and implementation-ready specifications. Create style guides, state briefs, and ensure products are beautiful, accessible, and intuitive.
-model: sonnet
+model: opus
 color: green
 ---
 
