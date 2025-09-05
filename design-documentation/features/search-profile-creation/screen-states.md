@@ -590,7 +590,7 @@ padding: 48px;
 - Success checkmark: Scale and rotate, 0.4s spring
 
 ## Related Documentation
-- [User Journey Map](./user-journey.md)
-- [Interaction Patterns](./interactions.md)
-- [Implementation Guide](./implementation.md)
-- [Component Library](../../design-system/components/)
+- [User Journey Map](design-documentation/features/search-profile-creation/user-journey.md)
+- [Interaction Patterns](design-documentation/features/search-profile-creation/interactions.md)
+- [Implementation Guide](design-documentation/features/search-profile-creation/implementation.md)
+- [Component Library](design-documentation/design-system/components)

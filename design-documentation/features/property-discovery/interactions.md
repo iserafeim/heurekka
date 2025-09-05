@@ -1009,7 +1009,7 @@ function applyFilter(filter) {
 ```
 
 ## Related Documentation
-- [Screen States](./screen-states.md)
-- [Animation System](../../design-system/tokens/animations.md)
+- [Screen States](design-documentation/features/property-discovery/screen-states.md)
+- [Animation System](design-documentation/design-system/tokens/animations.md)
 - [Performance Guidelines](./implementation.md#performance-optimization)
 - [Accessibility Requirements](./accessibility.md)

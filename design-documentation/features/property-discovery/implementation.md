@@ -1085,8 +1085,8 @@ REACT_APP_SENTRY_DSN=https://sentry.io/dsn
 ```
 
 ## Related Documentation
-- [User Journey](./user-journey.md)
-- [Screen States](./screen-states.md)
-- [Interactions](./interactions.md)
-- [Accessibility](./accessibility.md)
-- [Design System](../../design-system/style-guide.md)
+- [User Journey](design-documentation/features/property-discovery/user-journey.md)
+- [Screen States](design-documentation/features/property-discovery/screen-states.md)
+- [Interactions](design-documentation/features/property-discovery/interactions.md)
+- [Accessibility](design-documentation/features/property-discovery/accessibility.md)
+- [Design System](design-documentation/design-system/style-guide.md)

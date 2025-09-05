@@ -818,7 +818,7 @@ function throttle(func, limit) {
 ```
 
 ## Related Documentation
-- [Screen States](./screen-states.md)
-- [Animation System](../../design-system/tokens/animations.md)
-- [Accessibility Guidelines](./accessibility.md)
-- [Implementation Guide](./implementation.md)
+- [Screen States](design-documentation/features/search-profile-creation/screen-states.md)
+- [Animation System](design-documentation/design-system/tokens/animations.md)
+- [Accessibility Guidelines](design-documentation/features/search-profile-creation/accessibility.md)
+- [Implementation Guide](design-documentation/features/search-profile-creation/implementation.md)

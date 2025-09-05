@@ -387,7 +387,7 @@ This document maps the complete user journey for creating and managing property 
 - Clear error recovery
 
 ## Related Documentation
-- [Screen States Documentation](./screen-states.md)
-- [Interaction Specifications](./interactions.md)
-- [Implementation Guide](./implementation.md)
-- [Accessibility Requirements](./accessibility.md)
+- [Screen States Documentation](design-documentation/features/search-profile-creation/screen-states.md)
+- [Interaction Specifications](design-documentation/features/search-profile-creation/interactions.md)
+- [Implementation Guide](design-documentation/features/search-profile-creation/implementation.md)
+- [Accessibility Requirements](design-documentation/features/search-profile-creation/accessibility.md)

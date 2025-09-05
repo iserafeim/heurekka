@@ -854,8 +854,8 @@ const rolloutSchedule = [
 ```
 
 ## Related Documentation
-- [User Journey](./user-journey.md)
-- [Screen States](./screen-states.md)
-- [Interactions](./interactions.md)
-- [Accessibility](./accessibility.md)
-- [Design System](../../design-system/style-guide.md)
+- [User Journey](design-documentation/features/search-profile-creation/user-journey.md)
+- [Screen States](design-documentation/features/search-profile-creation/screen-states.md)
+- [Interactions](design-documentation/features/search-profile-creation/interactions.md)
+- [Accessibility](design-documentation/features/search-profile-creation/accessibility.md)
+- [Design System](design-documentation/design-system/style-guide.md)

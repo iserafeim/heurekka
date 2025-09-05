@@ -808,7 +808,7 @@ describe('Property Discovery Accessibility', () => {
 - [ ] Double-tap protection
 
 ## Related Documentation
-- [Global Accessibility Guidelines](../../accessibility/guidelines.md)
-- [Testing Procedures](../../accessibility/testing.md)
-- [Component Accessibility](../../design-system/components/)
-- [WCAG Compliance](../../accessibility/compliance.md)
+- [Global Accessibility Guidelines](design-documentation/accessibility/guidelines.md)
+- [Testing Procedures](design-documentation/accessibility/testing.md)
+- [Component Accessibility](design-documentation/design-system/components)
+- [WCAG Compliance](design-documentation/accessibility/compliance.md)
