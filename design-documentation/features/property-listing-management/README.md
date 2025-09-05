@@ -5,11 +5,11 @@ feature: property-listing-management
 last-updated: 2025-01-05
 version: 1.0.0
 related-files: 
-  - ./user-journey.md
-  - ./screen-states.md
-  - ./interactions.md
-  - ./implementation.md
-  - ./accessibility.md
+  - design-documentation/features/property-listing-management/user-journey.md
+  - design-documentation/features/property-listing-management/screen-states.md
+  - design-documentation/features/property-listing-management/interactions.md
+  - design-documentation/features/property-listing-management/implementation.md
+  - design-documentation/features/property-listing-management/accessibility.md
 status: approved
 ---
 

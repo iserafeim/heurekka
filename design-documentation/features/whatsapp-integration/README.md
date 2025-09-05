@@ -5,11 +5,11 @@ feature: whatsapp-integration
 last-updated: 2025-01-05
 version: 1.0.0
 related-files: 
-  - ./user-journey.md
-  - ./screen-states.md
-  - ./interactions.md
-  - ./implementation.md
-  - ./accessibility.md
+  - design-documentation/features/whatsapp-integration/user-journey.md
+  - design-documentation/features/whatsapp-integration/screen-states.md
+  - design-documentation/features/whatsapp-integration/interactions.md
+  - design-documentation/features/whatsapp-integration/implementation.md
+  - design-documentation/features/whatsapp-integration/accessibility.md
 status: approved
 ---
 

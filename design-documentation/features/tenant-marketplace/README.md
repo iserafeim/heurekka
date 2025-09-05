@@ -5,11 +5,11 @@ feature: tenant-marketplace
 last-updated: 2025-01-05
 version: 1.0.0
 related-files: 
-  - ./user-journey.md
-  - ./screen-states.md
-  - ./interactions.md
-  - ./implementation.md
-  - ./accessibility.md
+  - design-documentation/features/tenant-marketplace/user-journey.md
+  - design-documentation/features/tenant-marketplace/screen-states.md
+  - design-documentation/features/tenant-marketplace/interactions.md
+  - design-documentation/features/tenant-marketplace/implementation.md
+  - design-documentation/features/tenant-marketplace/accessibility.md
 status: approved
 ---
 
