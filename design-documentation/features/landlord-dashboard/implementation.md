@@ -338,15 +338,6 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
           >
             <EmailIcon />
           </ActionButton>
-          <ActionButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickAction('schedule', lead);
-            }}
-            aria-label="Schedule viewing"
-          >
-            <CalendarIcon />
-          </ActionButton>
         </QuickActions>
       )}
     </Card>

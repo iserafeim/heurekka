@@ -74,7 +74,6 @@ The Landlord Dashboard is a comprehensive lead management system that enables pr
 - Quick actions toolbar
 - Analytics widgets
 - Response templates manager
-- Calendar integration
 - WhatsApp quick launch
 
 ### Data Requirements
@@ -243,13 +242,6 @@ interface LeadData {
 - Conversation threading
 - Status updates
 - Read receipts
-
-### Calendar Systems
-- Viewing scheduling
-- Availability sync
-- Reminder creation
-- Conflict detection
-- Team calendars
 
 ### Property Management
 - Inventory updates
