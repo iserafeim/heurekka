@@ -9,21 +9,27 @@
 HEUREKKA is designed as a modern, scalable rental marketplace using a decoupled architecture with Next.js frontend, tRPC API layer, Supabase backend, and Redis-powered job processing. The system prioritizes mobile performance, real-time lead qualification, and seamless WhatsApp integration for the Honduras market.
 
 ### Technology Stack Summary
-- **Frontend**: Next.js 14+ (App Router), TypeScript, TailwindCSS, shadcn/ui
-- **API Layer**: tRPC with Next.js API routes
-- **Backend**: Supabase (PostgreSQL + PostGIS), Edge Functions
-- **Job Queue**: Redis + RQ on Railway
-- **Storage**: Supabase Storage with CDN
+- **Frontend**: Next.js 14+ (App Router), TypeScript, TailwindCSS, shadcn/ui, Web Workers
+- **API Layer**: tRPC with Next.js API routes, WebSocket connections
+- **Backend**: Supabase (PostgreSQL + PostGIS), Edge Functions, Elasticsearch
+- **Real-time**: WebSocket server with heartbeat/reconnection logic
+- **Job Queue**: Redis + RQ on Railway with priority queues
+- **Storage**: Supabase Storage with CDN, image transformation pipeline
+- **Maps & Location**: Mapbox GL JS with clustering, Geocoding API
+- **Messaging**: WhatsApp Business API with template system
 - **Deployment**: Vercel (frontend) + Railway (workers) + Supabase Cloud
 
 ### System Component Overview
-1. **Web Application**: Progressive Web App with offline capabilities
-2. **API Gateway**: tRPC for type-safe client-server communication
-3. **Database Layer**: PostgreSQL with PostGIS for geospatial queries
+1. **Web Application**: Progressive Web App with offline capabilities and real-time updates
+2. **API Gateway**: tRPC with WebSocket support for real-time communication
+3. **Database Layer**: PostgreSQL with PostGIS + Elasticsearch for advanced search
 4. **Authentication**: Supabase Auth with Magic Links + Google OAuth
-5. **Job Processing**: Redis queue for async operations
-6. **Storage**: Distributed file storage with image optimization
-7. **External Integrations**: WhatsApp Business API, Google Maps
+5. **Real-time Infrastructure**: WebSocket server with auto-reconnection
+6. **Job Processing**: Multi-priority Redis queues for async operations
+7. **Image Pipeline**: Web Workers for client-side optimization + CDN transformations
+8. **Storage**: Distributed file storage with multi-format support
+9. **External Integrations**: WhatsApp Business API, Mapbox GL JS, Geocoding services
+10. **Marketplace Engine**: Reverse marketplace with bidding system
 
 ### Critical Technical Constraints
 - Mobile-first design (90% mobile traffic)
@@ -31,6 +37,11 @@ HEUREKKA is designed as a modern, scalable rental marketplace using a decoupled 
 - WhatsApp API rate limits (1000 messages/day initially)
 - Honduras internet infrastructure considerations
 - Spanish/English localization requirements
+- Real-time WebSocket connections with fallback mechanisms
+- Image processing performance (bulk uploads up to 50 images)
+- Elasticsearch cluster sizing for property search scale
+- Map clustering performance for 10,000+ properties
+- Message template approval process for WhatsApp Business
 
 ---
 
@@ -218,28 +229,914 @@ services:
     - Redis for queues/cache
     - Port: 6379
   
+  elasticsearch:
+    - Single-node ES cluster
+    - Port: 9200
+  
+  websocket:
+    - WebSocket server (Node.js)
+    - Port: 3001
+  
   worker:
     - Python RQ workers
     - Auto-reload on changes
+  
+  mapbox:
+    - Local tile server (optional)
+    - Port: 8080
 ```
 
 #### Production Deployment
 ```yaml
-# Multi-Service Deployment
+# Multi-Service Infrastructure
 vercel:
   - Next.js frontend
   - Edge functions
   - Global CDN
+  - Web Workers support
 
 railway:
-  - Redis instance
-  - Python workers
+  - Redis cluster (3 nodes)
+  - Python workers (auto-scaling)
+  - WebSocket server
   - Monitoring dashboard
 
 supabase:
-  - Managed PostgreSQL
+  - Managed PostgreSQL with PostGIS
   - Realtime subscriptions
   - Storage with CDN
+  - Edge Functions
+
+elasticsearch_cloud:
+  - 3-node cluster
+  - Auto-scaling
+  - Spanish language analyzer
+
+cloudinary:
+  - Image CDN
+  - On-the-fly transformations
+  - Auto-format delivery
+
+whatsapp_cloud:
+  - Business API
+  - Template management
+  - Webhook endpoints
+
+mapbox:
+  - Vector tiles API
+  - Geocoding service
+  - Static maps API
+```
+
+---
+
+## Advanced Technical Infrastructure
+
+### Real-time Communication System
+
+#### WebSocket Infrastructure
+```typescript
+// WebSocket Server Configuration
+interface WebSocketConfig {
+  server: {
+    port: 3001;
+    path: '/ws';
+    perMessageDeflate: true;
+    maxPayload: 100 * 1024; // 100KB
+  };
+  
+  heartbeat: {
+    interval: 30000; // 30 seconds
+    timeout: 60000; // 60 seconds
+    reconnectDelay: [1000, 2000, 5000, 10000]; // Exponential backoff
+  };
+  
+  channels: {
+    leads: 'leads:*';
+    properties: 'properties:*';
+    messages: 'messages:*';
+    notifications: 'notifications:*';
+  };
+}
+
+// Client-side WebSocket Manager
+class WebSocketManager {
+  private ws: WebSocket | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private messageQueue: Message[] = [];
+  
+  connect(): void {
+    this.ws = new WebSocket('wss://api.heurekka.com/ws');
+    this.setupEventHandlers();
+    this.startHeartbeat();
+  }
+  
+  private handleReconnection(): void {
+    // Exponential backoff with jitter
+    const delay = this.getReconnectDelay();
+    this.reconnectTimer = setTimeout(() => {
+      this.connect();
+    }, delay);
+  }
+}
+```
+
+#### Real-time Features Implementation
+```typescript
+// Auto-save functionality for forms
+interface AutoSaveConfig {
+  debounceMs: 2000; // 2 seconds
+  maxRetries: 3;
+  storageKey: 'form_autosave';
+  
+  fields: {
+    onChange: string[]; // Fields that trigger immediate save
+    onBlur: string[]; // Fields that save on blur
+    periodic: number; // Periodic save interval (ms)
+  };
+}
+
+// Live search updates
+interface LiveSearchConfig {
+  minQueryLength: 3;
+  debounceMs: 500;
+  maxResults: 50;
+  
+  subscriptions: {
+    newListings: boolean;
+    priceChanges: boolean;
+    availability: boolean;
+  };
+}
+```
+
+### Advanced Search Infrastructure
+
+#### Elasticsearch Integration
+```yaml
+# Elasticsearch Configuration
+elasticsearch:
+  cluster:
+    nodes: 3
+    replicas: 2
+    shards: 5
+  
+  indices:
+    properties:
+      mappings:
+        - title: text with spanish analyzer
+        - description: text with spanish analyzer
+        - location: geo_point
+        - amenities: keyword
+        - price: scaled_float
+        - bedrooms: short
+        - bathrooms: half_float
+        - area_sqm: integer
+        - neighborhood: keyword with ngram
+      
+    tenant_profiles:
+      mappings:
+        - search_criteria: nested
+        - budget_range: integer_range
+        - preferred_locations: geo_shape
+        - move_date: date_range
+```
+
+#### Search Service Architecture
+```typescript
+// Elasticsearch Service
+class PropertySearchService {
+  private client: Client;
+  
+  async searchProperties(criteria: SearchCriteria): Promise<SearchResults> {
+    const query = {
+      bool: {
+        must: [
+          // Geospatial query
+          {
+            geo_distance: {
+              distance: `${criteria.radiusKm}km`,
+              location: criteria.centerPoint
+            }
+          },
+          // Price range
+          {
+            range: {
+              price: {
+                gte: criteria.budget.min,
+                lte: criteria.budget.max
+              }
+            }
+          }
+        ],
+        should: [
+          // Boost for matching amenities
+          {
+            terms: {
+              amenities: criteria.desiredAmenities,
+              boost: 2.0
+            }
+          }
+        ],
+        filter: [
+          // Hard filters
+          { term: { available: true } },
+          { range: { bedrooms: { gte: criteria.minBedrooms } } }
+        ]
+      }
+    };
+    
+    return await this.client.search({
+      index: 'properties',
+      body: { query },
+      size: 100,
+      from: criteria.offset || 0
+    });
+  }
+}
+```
+
+### Map and Location Services
+
+#### Mapbox GL JS Integration
+```typescript
+// Map Configuration
+interface MapConfig {
+  style: 'mapbox://styles/heurekka/custom-honduras';
+  center: [-87.2068, 14.0723]; // Tegucigalpa
+  zoom: 12;
+  minZoom: 10;
+  maxZoom: 18;
+  
+  clustering: {
+    enabled: true;
+    radius: 50;
+    maxZoom: 14;
+    properties: {
+      sum: ['properties_count'],
+      avg: ['price']
+    };
+  };
+  
+  controls: {
+    navigation: true;
+    geolocate: true;
+    scale: true;
+    draw: true; // For search area drawing
+  };
+}
+
+// Property Clustering Algorithm
+class PropertyClusterManager {
+  private map: mapboxgl.Map;
+  private supercluster: Supercluster;
+  
+  initializeClustering(properties: Property[]): void {
+    this.supercluster = new Supercluster({
+      radius: 40,
+      maxZoom: 16,
+      map: (props) => ({
+        count: 1,
+        avgPrice: props.price,
+        propertyType: props.type
+      }),
+      reduce: (accumulated, props) => {
+        accumulated.count += 1;
+        accumulated.avgPrice = 
+          (accumulated.avgPrice * (accumulated.count - 1) + props.avgPrice) / 
+          accumulated.count;
+      }
+    });
+    
+    const points = properties.map(p => ({
+      type: 'Feature',
+      properties: p,
+      geometry: {
+        type: 'Point',
+        coordinates: [p.longitude, p.latitude]
+      }
+    }));
+    
+    this.supercluster.load(points);
+  }
+}
+```
+
+#### Geocoding Service
+```typescript
+// Address Validation and Geocoding
+interface GeocodingService {
+  providers: {
+    primary: 'mapbox';
+    fallback: 'nominatim';
+  };
+  
+  cache: {
+    ttl: 86400; // 24 hours
+    maxSize: 10000; // entries
+  };
+  
+  validation: {
+    honduras: {
+      departments: string[];
+      municipalities: string[];
+      postalCodePattern: RegExp;
+    };
+  };
+}
+
+class AddressValidator {
+  async validateAndGeocode(address: AddressInput): Promise<GeocodedAddress> {
+    // Check cache first
+    const cached = await this.cache.get(address.formatted);
+    if (cached) return cached;
+    
+    // Validate Honduras-specific format
+    if (!this.isValidHondurasAddress(address)) {
+      throw new ValidationError('Invalid Honduras address format');
+    }
+    
+    // Geocode with fallback
+    try {
+      const result = await this.mapboxGeocode(address);
+      await this.cache.set(address.formatted, result);
+      return result;
+    } catch (error) {
+      return await this.nominatimGeocode(address);
+    }
+  }
+}
+```
+
+### Image Processing Pipeline
+
+#### Client-side Processing with Web Workers
+```javascript
+// Web Worker for Image Processing
+// /public/workers/imageProcessor.js
+self.addEventListener('message', async (e) => {
+  const { action, payload } = e.data;
+  
+  switch (action) {
+    case 'optimize':
+      const optimized = await optimizeImage(payload);
+      self.postMessage({ action: 'optimized', result: optimized });
+      break;
+      
+    case 'bulk_resize':
+      const resized = await bulkResize(payload);
+      self.postMessage({ action: 'resized', result: resized });
+      break;
+      
+    case 'generate_thumbnails':
+      const thumbnails = await generateThumbnails(payload);
+      self.postMessage({ action: 'thumbnails', result: thumbnails });
+      break;
+  }
+});
+
+async function optimizeImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+  const ctx = canvas.getContext('2d');
+  
+  // Apply optimizations
+  ctx.drawImage(bitmap, 0, 0);
+  
+  // Convert to optimal format
+  const blob = await canvas.convertToBlob({
+    type: 'image/webp',
+    quality: 0.85
+  });
+  
+  return {
+    original: file,
+    optimized: blob,
+    reduction: ((file.size - blob.size) / file.size * 100).toFixed(2)
+  };
+}
+```
+
+#### Server-side CDN Integration
+```typescript
+// CDN Image Transformation Service
+interface CDNImageConfig {
+  provider: 'cloudinary' | 'imagekit';
+  
+  transformations: {
+    listing_hero: {
+      width: 1200;
+      height: 800;
+      quality: 'auto:good';
+      format: 'auto';
+      crop: 'fill';
+    };
+    listing_thumbnail: {
+      width: 400;
+      height: 300;
+      quality: 'auto:eco';
+      format: 'auto';
+      crop: 'fill';
+    };
+    listing_gallery: {
+      width: 800;
+      height: 600;
+      quality: 'auto:good';
+      format: 'auto';
+      watermark: true;
+    };
+  };
+  
+  upload: {
+    maxFileSize: 10 * 1024 * 1024; // 10MB
+    allowedFormats: ['jpg', 'jpeg', 'png', 'webp', 'heic'];
+    bulkLimit: 50; // Max files per upload
+  };
+}
+
+class ImagePipeline {
+  async processBulkUpload(files: File[]): Promise<ProcessedImage[]> {
+    // Client-side validation
+    const validated = await this.validateFiles(files);
+    
+    // Process in Web Worker
+    const optimized = await this.worker.process(validated);
+    
+    // Upload to CDN with progress tracking
+    const uploaded = await this.uploadWithProgress(optimized);
+    
+    // Generate all transformation URLs
+    return uploaded.map(img => ({
+      id: img.public_id,
+      original: img.secure_url,
+      hero: this.getTransformUrl(img, 'listing_hero'),
+      thumbnail: this.getTransformUrl(img, 'listing_thumbnail'),
+      gallery: this.getTransformUrl(img, 'listing_gallery')
+    }));
+  }
+}
+```
+
+### WhatsApp Business API Integration
+
+#### Message Template System
+```typescript
+// WhatsApp Template Management
+interface WhatsAppTemplates {
+  lead_notification: {
+    name: 'lead_notification_v2';
+    language: 'es_MX';
+    components: [
+      {
+        type: 'header';
+        format: 'text';
+        text: 'Nueva consulta de inquilino';
+      },
+      {
+        type: 'body';
+        text: 'Hola {{1}}, tienes una nueva consulta para tu propiedad {{2}}.\n\nInquilino: {{3}}\nPresupuesto: L{{4}}-L{{5}}\nFecha de mudanza: {{6}}\n\nMensaje: {{7}}';
+      },
+      {
+        type: 'footer';
+        text: 'HEUREKKA - Tu marketplace de alquileres';
+      },
+      {
+        type: 'buttons';
+        buttons: [
+          {
+            type: 'quick_reply';
+            text: 'Ver detalles';
+          },
+          {
+            type: 'quick_reply';
+            text: 'Responder';
+          }
+        ];
+      }
+    ];
+  };
+  
+  viewing_reminder: {
+    name: 'viewing_reminder_v1';
+    language: 'es_MX';
+    // ... template structure
+  };
+}
+
+// WhatsApp Service Implementation
+class WhatsAppService {
+  private client: WhatsAppBusinessAPI;
+  private templates: Map<string, Template>;
+  
+  async sendTemplateMessage(params: {
+    to: string;
+    template: keyof WhatsAppTemplates;
+    variables: Record<string, string>;
+  }): Promise<MessageResponse> {
+    // Phone number validation for Honduras
+    const validatedPhone = this.validateHondurasPhone(params.to);
+    
+    // Get approved template
+    const template = this.templates.get(params.template);
+    if (!template || template.status !== 'APPROVED') {
+      throw new Error(`Template ${params.template} not available`);
+    }
+    
+    // Build message with variables
+    const message = this.buildTemplateMessage(template, params.variables);
+    
+    // Send with retry logic
+    return await this.sendWithRetry(validatedPhone, message);
+  }
+  
+  private validateHondurasPhone(phone: string): string {
+    // Honduras phone format: +504 XXXX-XXXX
+    const cleaned = phone.replace(/\D/g, '');
+    if (!cleaned.startsWith('504') || cleaned.length !== 11) {
+      throw new ValidationError('Invalid Honduras phone number');
+    }
+    return `+${cleaned}`;
+  }
+}
+```
+
+#### Deep Linking Integration
+```typescript
+// WhatsApp Deep Link Generator
+class WhatsAppDeepLinkService {
+  generatePropertyInquiryLink(params: {
+    property: Property;
+    tenant: TenantProfile;
+    landlordPhone: string;
+  }): string {
+    const message = this.buildInquiryMessage(params);
+    const encodedMessage = encodeURIComponent(message);
+    const phone = this.formatPhoneForWhatsApp(params.landlordPhone);
+    
+    return `https://wa.me/${phone}?text=${encodedMessage}`;
+  }
+  
+  private buildInquiryMessage(params: any): string {
+    return `¡Hola! Me interesa su propiedad ${params.property.title} publicada en HEUREKKA.
+
+📍 ${params.property.address}
+💰 Precio: L${params.property.price}/mes
+🏠 ${params.property.bedrooms} habitaciones, ${params.property.bathrooms} baños
+
+Mi información:
+👤 Nombre: ${params.tenant.name}
+💼 Ocupación: ${params.tenant.employment}
+👥 Ocupantes: ${params.tenant.occupants}
+📅 Fecha de mudanza: ${params.tenant.moveDate}
+💵 Presupuesto: L${params.tenant.budgetMin}-L${params.tenant.budgetMax}
+
+¿Podríamos coordinar una visita?
+
+Ref: ${params.property.id}`;
+  }
+}
+```
+
+### Advanced Form Management
+
+#### Multi-step Wizard State Management
+```typescript
+// Form Wizard State Machine
+interface WizardStateMachine {
+  states: {
+    initial: 'step1';
+    step1: { next: 'step2'; prev: null; };
+    step2: { next: 'step3'; prev: 'step1'; };
+    step3: { next: 'review'; prev: 'step2'; };
+    review: { next: 'submit'; prev: 'step3'; };
+    submit: { next: 'complete'; prev: 'review'; };
+    complete: { next: null; prev: null; };
+  };
+  
+  persistence: {
+    strategy: 'localStorage' | 'sessionStorage' | 'indexedDB';
+    key: 'wizard_state';
+    ttl: 3600000; // 1 hour
+  };
+}
+
+class FormWizardManager {
+  private state: WizardState;
+  private history: WizardStep[];
+  
+  async saveProgress(): Promise<void> {
+    const data = {
+      currentStep: this.state.current,
+      formData: this.state.data,
+      timestamp: Date.now(),
+      sessionId: this.state.sessionId
+    };
+    
+    // Save to IndexedDB for large forms
+    await this.db.wizardState.put(data);
+    
+    // Sync to server for recovery
+    await this.api.saveFormProgress(data);
+  }
+  
+  async restoreProgress(sessionId: string): Promise<WizardState | null> {
+    // Try local storage first
+    const local = await this.db.wizardState.get(sessionId);
+    if (local && Date.now() - local.timestamp < this.config.persistence.ttl) {
+      return local;
+    }
+    
+    // Fallback to server
+    return await this.api.getFormProgress(sessionId);
+  }
+}
+```
+
+#### Complex Validation Schemas
+```typescript
+// Advanced Form Validation with Zod
+const PropertyListingSchema = z.object({
+  basic: z.object({
+    title: z.string()
+      .min(10, 'El título debe tener al menos 10 caracteres')
+      .max(100, 'El título no puede exceder 100 caracteres')
+      .refine(
+        (val) => !containsProfanity(val),
+        'El título contiene lenguaje inapropiado'
+      ),
+    
+    propertyType: z.enum(['house', 'apartment', 'condo', 'room']),
+    
+    price: z.number()
+      .min(3000, 'El precio mínimo es L3,000')
+      .max(100000, 'El precio máximo es L100,000')
+      .refine(
+        (val) => val % 100 === 0,
+        'El precio debe ser múltiplo de 100'
+      )
+  }),
+  
+  location: z.object({
+    address: z.string()
+      .refine(
+        async (val) => await validateHondurasAddress(val),
+        'Dirección inválida o no encontrada'
+      ),
+    
+    coordinates: z.object({
+      lat: z.number().min(-90).max(90),
+      lng: z.number().min(-180).max(180)
+    }).optional(),
+    
+    neighborhood: z.string(),
+    city: z.string(),
+    department: z.enum(HONDURAS_DEPARTMENTS)
+  }),
+  
+  features: z.object({
+    bedrooms: z.number().int().min(0).max(10),
+    bathrooms: z.number().min(0.5).max(10).multipleOf(0.5),
+    area: z.number().min(20).max(1000),
+    parking: z.number().int().min(0).max(10),
+    
+    amenities: z.array(z.enum(AVAILABLE_AMENITIES))
+      .min(1, 'Selecciona al menos una amenidad')
+      .max(20, 'Máximo 20 amenidades')
+  }),
+  
+  media: z.object({
+    images: z.array(
+      z.object({
+        url: z.string().url(),
+        caption: z.string().max(200).optional(),
+        order: z.number().int().min(0)
+      })
+    )
+    .min(3, 'Mínimo 3 imágenes requeridas')
+    .max(50, 'Máximo 50 imágenes permitidas')
+    .refine(
+      (images) => images.some(img => img.order === 0),
+      'Debe seleccionar una imagen principal'
+    ),
+    
+    virtualTourUrl: z.string().url().optional(),
+    videoUrl: z.string().url().optional()
+  })
+}).refine(
+  async (data) => {
+    // Cross-field validation
+    if (data.features.bedrooms === 0 && data.basic.propertyType !== 'room') {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: 'Configuración de habitaciones inválida para el tipo de propiedad',
+    path: ['features', 'bedrooms']
+  }
+);
+```
+
+### Reverse Marketplace Database Schema
+
+#### Tenant Marketplace Tables
+```sql
+-- Reverse marketplace core tables
+CREATE TABLE public.tenant_posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'fulfilled', 'expired')),
+  
+  -- Budget and preferences
+  budget_min DECIMAL(10,2) NOT NULL CHECK (budget_min >= 3000),
+  budget_max DECIMAL(10,2) NOT NULL CHECK (budget_max <= 100000),
+  move_in_date DATE NOT NULL,
+  date_flexibility VARCHAR(20),
+  lease_duration INTEGER DEFAULT 12,
+  urgency VARCHAR(20),
+  
+  -- Property requirements
+  property_types TEXT[],
+  bedrooms_min INTEGER NOT NULL,
+  bedrooms_max INTEGER,
+  bathrooms_min DECIMAL(2,1) NOT NULL,
+  parking_spaces INTEGER DEFAULT 0,
+  
+  -- Location preferences with PostGIS
+  preferred_locations GEOGRAPHY(MULTIPOLYGON, 4326),
+  search_radius_km INTEGER DEFAULT 5,
+  neighborhoods TEXT[],
+  must_be_near JSONB, -- Schools, work, etc.
+  
+  -- Tenant information
+  occupants INTEGER NOT NULL,
+  pets JSONB,
+  employment_type VARCHAR(50),
+  employer VARCHAR(200),
+  income_proof BOOLEAN DEFAULT FALSE,
+  guarantor_available BOOLEAN DEFAULT FALSE,
+  
+  -- Post details
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  requirements TEXT,
+  
+  -- Matching and visibility
+  match_score_threshold INTEGER DEFAULT 70,
+  auto_match BOOLEAN DEFAULT TRUE,
+  visibility VARCHAR(20) DEFAULT 'all',
+  
+  -- Analytics
+  view_count INTEGER DEFAULT 0,
+  response_count INTEGER DEFAULT 0,
+  last_viewed_at TIMESTAMP,
+  
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  expires_at TIMESTAMP,
+  
+  -- Constraints
+  CONSTRAINT budget_check CHECK (budget_max >= budget_min),
+  CONSTRAINT bedrooms_check CHECK (bedrooms_max IS NULL OR bedrooms_max >= bedrooms_min)
+);
+
+-- Landlord responses/proposals
+CREATE TABLE public.landlord_responses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_post_id UUID REFERENCES public.tenant_posts(id) ON DELETE CASCADE,
+  landlord_id UUID REFERENCES public.landlord_profiles(id) ON DELETE CASCADE,
+  property_id UUID REFERENCES public.properties(id) ON DELETE SET NULL,
+  
+  -- Response type
+  response_type VARCHAR(20) CHECK (response_type IN ('proposal', 'invitation', 'match')),
+  status VARCHAR(20) DEFAULT 'pending',
+  
+  -- Proposal details
+  proposed_rent DECIMAL(10,2),
+  negotiable BOOLEAN DEFAULT FALSE,
+  available_date DATE,
+  lease_terms JSONB,
+  
+  -- Custom message
+  message TEXT,
+  attachments JSONB,
+  
+  -- Interaction tracking
+  viewed_by_tenant BOOLEAN DEFAULT FALSE,
+  viewed_at TIMESTAMP,
+  response_time_hours INTEGER,
+  
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  
+  -- Prevent duplicate responses
+  UNIQUE(tenant_post_id, landlord_id, property_id)
+);
+
+-- Matching scores and algorithms
+CREATE TABLE public.tenant_post_matches (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_post_id UUID REFERENCES public.tenant_posts(id) ON DELETE CASCADE,
+  property_id UUID REFERENCES public.properties(id) ON DELETE CASCADE,
+  
+  -- Matching scores (0-100)
+  overall_score INTEGER NOT NULL,
+  location_score INTEGER,
+  budget_score INTEGER,
+  amenities_score INTEGER,
+  availability_score INTEGER,
+  
+  -- Match metadata
+  match_reasons JSONB,
+  missing_requirements TEXT[],
+  
+  -- Status
+  status VARCHAR(20) DEFAULT 'potential',
+  landlord_notified BOOLEAN DEFAULT FALSE,
+  tenant_interested BOOLEAN,
+  
+  created_at TIMESTAMP DEFAULT NOW(),
+  
+  UNIQUE(tenant_post_id, property_id)
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_tenant_posts_status ON tenant_posts(status) WHERE status = 'active';
+CREATE INDEX idx_tenant_posts_budget ON tenant_posts(budget_min, budget_max);
+CREATE INDEX idx_tenant_posts_move_date ON tenant_posts(move_in_date);
+CREATE INDEX idx_tenant_posts_location ON tenant_posts USING GIST(preferred_locations);
+CREATE INDEX idx_landlord_responses_tenant ON landlord_responses(tenant_post_id);
+CREATE INDEX idx_landlord_responses_landlord ON landlord_responses(landlord_id);
+CREATE INDEX idx_matches_scores ON tenant_post_matches(overall_score DESC);
+```
+
+#### Matching Algorithm Implementation
+```typescript
+// Advanced Matching Algorithm
+class TenantPropertyMatcher {
+  async calculateMatch(
+    tenantPost: TenantPost,
+    property: Property
+  ): Promise<MatchScore> {
+    const scores = {
+      location: this.calculateLocationScore(tenantPost, property),
+      budget: this.calculateBudgetScore(tenantPost, property),
+      features: this.calculateFeaturesScore(tenantPost, property),
+      availability: this.calculateAvailabilityScore(tenantPost, property),
+      amenities: this.calculateAmenitiesScore(tenantPost, property)
+    };
+    
+    // Weighted average with configurable weights
+    const weights = {
+      location: 0.30,
+      budget: 0.25,
+      features: 0.20,
+      availability: 0.15,
+      amenities: 0.10
+    };
+    
+    const overall = Object.entries(scores).reduce(
+      (sum, [key, score]) => sum + score * weights[key],
+      0
+    );
+    
+    return {
+      overall: Math.round(overall),
+      breakdown: scores,
+      reasons: this.generateMatchReasons(scores),
+      missingRequirements: this.findMissingRequirements(tenantPost, property)
+    };
+  }
+  
+  private calculateLocationScore(
+    tenantPost: TenantPost,
+    property: Property
+  ): number {
+    // Check if property is within preferred areas
+    if (tenantPost.preferredLocations) {
+      const isWithinArea = this.isPointInMultiPolygon(
+        property.coordinates,
+        tenantPost.preferredLocations
+      );
+      if (isWithinArea) return 100;
+    }
+    
+    // Calculate distance-based score
+    const distance = this.calculateDistance(
+      tenantPost.searchCenter,
+      property.coordinates
+    );
+    
+    if (distance <= tenantPost.searchRadiusKm) {
+      return 100 - (distance / tenantPost.searchRadiusKm * 50);
+    }
+    
+    return 0;
+  }
+}
 ```
 
 ---
@@ -1597,7 +2494,7 @@ curl -X POST $SLACK_WEBHOOK -d '{"text":"Production rollback completed"}'
 
 ### API Implementation Guide
 
-#### tRPC Router Setup
+#### tRPC Router Setup with WebSocket Support
 ```typescript
 // src/server/api/root.ts
 import { createTRPCRouter } from './trpc';
@@ -1606,6 +2503,8 @@ import { propertyRouter } from './routers/property';
 import { leadRouter } from './routers/lead';
 import { searchRouter } from './routers/search';
 import { messagingRouter } from './routers/messaging';
+import { marketplaceRouter } from './routers/marketplace';
+import { realtimeRouter } from './routers/realtime';
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -1613,9 +2512,23 @@ export const appRouter = createTRPCRouter({
   lead: leadRouter,
   search: searchRouter,
   messaging: messagingRouter,
+  marketplace: marketplaceRouter,
+  realtime: realtimeRouter,
 });
 
 export type AppRouter = typeof appRouter;
+
+// WebSocket subscription setup
+export const websocketRouter = createWSRouter({
+  onConnect: async ({ ctx }) => {
+    console.log('Client connected:', ctx.connectionId);
+  },
+  subscriptions: {
+    leads: leadSubscriptions,
+    properties: propertySubscriptions,
+    messages: messageSubscriptions,
+  },
+});
 ```
 
 #### Service Layer Implementation
@@ -1744,6 +2657,246 @@ class LeadProcessor:
 def process_new_lead(lead_id: str):
     processor = LeadProcessor()
     processor.process_lead(lead_id)
+```
+
+#### Elasticsearch Integration Service
+```typescript
+// src/server/services/search.service.ts
+import { Client } from '@elastic/elasticsearch';
+import { PropertySearchCriteria, TenantPostCriteria } from '@/types';
+
+export class AdvancedSearchService {
+  private client: Client;
+  
+  constructor() {
+    this.client = new Client({
+      node: process.env.ELASTICSEARCH_URL,
+      auth: {
+        apiKey: process.env.ELASTICSEARCH_API_KEY
+      }
+    });
+  }
+  
+  async searchProperties(criteria: PropertySearchCriteria) {
+    const response = await this.client.search({
+      index: 'properties',
+      body: {
+        query: {
+          bool: {
+            must: [
+              // Location-based search with geo_distance
+              {
+                geo_distance: {
+                  distance: `${criteria.radiusKm}km`,
+                  location: {
+                    lat: criteria.centerLat,
+                    lon: criteria.centerLng
+                  }
+                }
+              },
+              // Price range filter
+              {
+                range: {
+                  price: {
+                    gte: criteria.minPrice,
+                    lte: criteria.maxPrice
+                  }
+                }
+              }
+            ],
+            should: [
+              // Boost for amenity matches
+              {
+                terms: {
+                  amenities: criteria.desiredAmenities,
+                  boost: 2.0
+                }
+              },
+              // Boost for neighborhood preference
+              {
+                terms: {
+                  neighborhood: criteria.preferredNeighborhoods,
+                  boost: 1.5
+                }
+              }
+            ],
+            filter: [
+              { term: { status: 'active' } },
+              { range: { bedrooms: { gte: criteria.minBedrooms } } }
+            ]
+          }
+        },
+        aggs: {
+          price_ranges: {
+            histogram: {
+              field: 'price',
+              interval: 1000
+            }
+          },
+          popular_neighborhoods: {
+            terms: {
+              field: 'neighborhood',
+              size: 10
+            }
+          }
+        },
+        highlight: {
+          fields: {
+            title: {},
+            description: {}
+          }
+        },
+        size: 50,
+        from: criteria.offset || 0
+      }
+    });
+    
+    return {
+      results: response.hits.hits,
+      aggregations: response.aggregations,
+      total: response.hits.total
+    };
+  }
+}
+```
+
+#### WhatsApp Business API Service
+```typescript
+// src/server/services/whatsapp.service.ts
+import { WhatsAppBusinessAPI } from '@/lib/whatsapp';
+
+export class WhatsAppService {
+  private client: WhatsAppBusinessAPI;
+  private templates: Map<string, MessageTemplate>;
+  
+  constructor() {
+    this.client = new WhatsAppBusinessAPI({
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN
+    });
+  }
+  
+  async sendLeadNotification(leadData: Lead) {
+    const message = await this.client.sendTemplate({
+      to: this.formatHondurasPhone(leadData.landlordPhone),
+      template: {
+        name: 'lead_notification_v2',
+        language: { code: 'es_MX' },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: leadData.landlordName },
+              { type: 'text', text: leadData.propertyTitle },
+              { type: 'text', text: leadData.tenantName },
+              { type: 'currency', currency: { amount_1000: leadData.budgetMin * 1000 } },
+              { type: 'currency', currency: { amount_1000: leadData.budgetMax * 1000 } },
+              { type: 'text', text: leadData.moveDate },
+              { type: 'text', text: leadData.message }
+            ]
+          }
+        ]
+      }
+    });
+    
+    return message;
+  }
+  
+  private formatHondurasPhone(phone: string): string {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.startsWith('504') ? cleaned : `504${cleaned}`;
+  }
+}
+```
+
+#### Real-time WebSocket Service
+```typescript
+// src/server/services/realtime.service.ts
+import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+
+export class RealtimeService {
+  private io: Server;
+  
+  constructor(httpServer: any) {
+    this.io = new Server(httpServer, {
+      cors: {
+        origin: process.env.NEXT_PUBLIC_APP_URL,
+        credentials: true
+      },
+      adapter: createAdapter(pubClient, subClient)
+    });
+    
+    this.setupEventHandlers();
+  }
+  
+  private setupEventHandlers() {
+    this.io.on('connection', (socket) => {
+      // Handle authentication
+      socket.on('authenticate', async (token) => {
+        const user = await this.verifyToken(token);
+        if (user) {
+          socket.data.userId = user.id;
+          socket.join(`user:${user.id}`);
+        }
+      });
+      
+      // Subscribe to lead updates
+      socket.on('subscribe:leads', (propertyId) => {
+        socket.join(`leads:${propertyId}`);
+      });
+    });
+  }
+  
+  async notifyNewLead(lead: Lead) {
+    this.io.to(`property:${lead.propertyId}`).emit('new_lead', lead);
+  }
+}
+```
+
+#### Reverse Marketplace Service
+```typescript
+// src/server/services/marketplace.service.ts
+export class MarketplaceService {
+  async createTenantPost(data: CreateTenantPostInput) {
+    const post = await this.db
+      .from('tenant_posts')
+      .insert({
+        ...data,
+        status: 'active',
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      })
+      .select()
+      .single();
+    
+    // Trigger matching algorithm
+    await this.findAndNotifyMatches(post.data);
+    
+    return post.data;
+  }
+  
+  async findAndNotifyMatches(tenantPost: TenantPost) {
+    // Find matching properties
+    const matches = await this.searchService.searchProperties({
+      minPrice: tenantPost.budget_min,
+      maxPrice: tenantPost.budget_max,
+      minBedrooms: tenantPost.bedrooms_min,
+      centerLat: tenantPost.search_center_lat,
+      centerLng: tenantPost.search_center_lng,
+      radiusKm: tenantPost.search_radius_km
+    });
+    
+    // Calculate and store match scores
+    const qualifiedMatches = matches.results
+      .map(property => this.calculateMatchScore(tenantPost, property))
+      .filter(match => match.score >= tenantPost.match_score_threshold);
+    
+    // Notify landlords
+    for (const match of qualifiedMatches) {
+      await this.notificationService.notifyLandlordOfMatch(match);
+    }
+  }
+}
 ```
 
 ---
@@ -2282,11 +3435,201 @@ export const securityScans = {
 
 ---
 
+## Performance Optimization Architecture
+
+### Real-time Performance Requirements
+
+#### WebSocket Connection Management
+```typescript
+// Connection pooling and optimization
+interface WebSocketPerformanceConfig {
+  maxConnections: 10000; // Per server instance
+  connectionTimeout: 30000; // 30 seconds
+  heartbeatInterval: 25000; // 25 seconds
+  
+  clustering: {
+    enabled: true;
+    workers: 'auto'; // CPU cores
+    sticky: true; // Session affinity
+  };
+  
+  compression: {
+    threshold: 1024; // Compress messages > 1KB
+    level: 6; // Compression level (1-9)
+  };
+}
+```
+
+#### Search Infrastructure Performance
+```yaml
+# Elasticsearch Performance Configuration
+elasticsearch:
+  indices:
+    properties:
+      settings:
+        number_of_shards: 5
+        number_of_replicas: 2
+        refresh_interval: "1s"
+        
+        analysis:
+          analyzer:
+            spanish_custom:
+              type: custom
+              tokenizer: standard
+              filter:
+                - lowercase
+                - spanish_stop
+                - spanish_stemmer
+                - ascii_folding
+```
+
+#### Map Clustering Performance
+```typescript
+// Optimized clustering for 10,000+ properties
+class OptimizedPropertyClustering {
+  private workerPool: Worker[] = [];
+  private clusterCache: Map<string, any> = new Map();
+  
+  async clusterProperties(properties: Property[], viewport: Viewport) {
+    const cacheKey = this.getCacheKey(viewport);
+    
+    if (this.clusterCache.has(cacheKey)) {
+      return this.clusterCache.get(cacheKey);
+    }
+    
+    const worker = this.getAvailableWorker();
+    const clusters = await this.performClustering(worker, properties, viewport);
+    
+    this.clusterCache.set(cacheKey, clusters);
+    
+    // LRU cache eviction
+    if (this.clusterCache.size > 100) {
+      const firstKey = this.clusterCache.keys().next().value;
+      this.clusterCache.delete(firstKey);
+    }
+    
+    return clusters;
+  }
+}
+```
+
+### Database Performance Optimization
+
+#### Optimized Property Search with PostGIS
+```sql
+CREATE OR REPLACE FUNCTION search_properties_optimized(
+  p_center_lat DOUBLE PRECISION,
+  p_center_lng DOUBLE PRECISION,
+  p_radius_km INTEGER,
+  p_min_price DECIMAL,
+  p_max_price DECIMAL,
+  p_min_bedrooms INTEGER
+)
+RETURNS TABLE (
+  id UUID,
+  title VARCHAR,
+  price DECIMAL,
+  distance_km DOUBLE PRECISION,
+  match_score INTEGER
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH filtered_properties AS (
+    SELECT 
+      p.id,
+      p.title,
+      p.price,
+      p.location,
+      p.bedrooms
+    FROM properties p
+    WHERE 
+      p.status = 'active'
+      AND p.price BETWEEN p_min_price AND p_max_price
+      AND p.bedrooms >= p_min_bedrooms
+      AND ST_DWithin(
+        p.location::geography,
+        ST_MakePoint(p_center_lng, p_center_lat)::geography,
+        p_radius_km * 1000
+      )
+  )
+  SELECT 
+    fp.id,
+    fp.title,
+    fp.price,
+    ST_Distance(
+      fp.location::geography,
+      ST_MakePoint(p_center_lng, p_center_lat)::geography
+    ) / 1000 AS distance_km,
+    calculate_match_score(fp.*, p_min_price, p_max_price) AS match_score
+  FROM filtered_properties fp
+  ORDER BY match_score DESC, distance_km ASC
+  LIMIT 50;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Performance indexes
+CREATE INDEX idx_properties_location_gist ON properties USING GIST(location);
+CREATE INDEX idx_properties_price_bedrooms ON properties(price, bedrooms) WHERE status = 'active';
+CREATE INDEX idx_tenant_posts_location ON tenant_posts USING GIST(preferred_locations);
+```
+
+### Performance Metrics and Monitoring
+
+#### Key Performance Indicators
+```typescript
+interface PerformanceMetrics {
+  // Core Web Vitals
+  webVitals: {
+    LCP: { target: 2500, budget: 4000 }; // Largest Contentful Paint
+    FID: { target: 100, budget: 300 }; // First Input Delay
+    CLS: { target: 0.1, budget: 0.25 }; // Cumulative Layout Shift
+  };
+  
+  // API Performance
+  api: {
+    p50: 200; // 50th percentile response time (ms)
+    p95: 1000; // 95th percentile response time (ms)
+    p99: 2000; // 99th percentile response time (ms)
+  };
+  
+  // Real-time Performance
+  realtime: {
+    connectionTime: 1000; // Max WebSocket connection time
+    messageLatency: 100; // Max message delivery latency
+    reconnectTime: 5000; // Max reconnection time
+  };
+  
+  // Search Performance
+  search: {
+    elasticsearchQuery: 500; // Max query time
+    mapClustering: 200; // Max clustering calculation
+    geocoding: 300; // Max geocoding response
+  };
+  
+  // Image Processing
+  images: {
+    uploadTime: 3000; // Max time per image
+    bulkProcessing: 30000; // Max time for 10 images
+    cdnDelivery: 100; // Max CDN response time
+  };
+}
+```
+
+---
+
 *This technical architecture document serves as the blueprint for HEUREKKA's implementation. All technical decisions should align with the product requirements and be validated through iterative development and testing.*
 
 ## Document Version
-- **Version**: 1.0.0
-- **Date**: September 4, 2025
+- **Version**: 2.0.0
+- **Date**: September 6, 2025
 - **Author**: System Architecture Team
-- **Status**: Ready for Implementation
+- **Status**: Updated with Advanced Technical Infrastructure
 - **Review Cycle**: Sprint boundaries
+- **Major Updates**:
+  - Added real-time WebSocket infrastructure with heartbeat/reconnection
+  - Integrated Elasticsearch for advanced property search
+  - Added Mapbox GL JS with clustering algorithms
+  - Implemented WhatsApp Business API integration
+  - Created reverse marketplace database schema
+  - Added comprehensive image processing pipeline
+  - Defined performance optimization strategies
