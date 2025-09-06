@@ -202,21 +202,6 @@ interface TenantPost {
 - Employment verification
 - Previous rental history
 
-## Gamification Elements
-
-### Quality Incentives
-- Profile completeness badges
-- Response rate achievements
-- Successful match rewards
-- Featured post opportunities
-- Reputation building
-
-### Engagement Mechanics
-- Daily active post bonus
-- Quick response rewards
-- Helpful tenant badges
-- Milestone celebrations
-- Referral incentives
 
 ## Content Moderation
 
@@ -234,28 +219,6 @@ interface TenantPost {
 - Appeal process
 - Quality assurance
 
-## Analytics & Insights
-
-### Tenant Metrics
-- Post views and engagement
-- Response quality scores
-- Time to first response
-- Conversion tracking
-- Satisfaction ratings
-
-### Landlord Metrics
-- Browse patterns
-- Contact rates
-- Response acceptance
-- Successful matches
-- ROI tracking
-
-### Platform Metrics
-- Post creation funnel
-- Marketplace liquidity
-- Match success rate
-- User satisfaction
-- Revenue impact
 
 ## Notification Strategy
 
@@ -312,21 +275,6 @@ interface TenantPost {
 - Multiple options offered
 - Clear next steps
 
-## Future Enhancements
-
-### Planned Features
-- AI-powered matching
-- Video introductions
-- Virtual meetups
-- Group housing posts
-- Auction-style bidding
-
-### Potential Integrations
-- Credit score verification
-- Background check services
-- Digital lease signing
-- Rent payment platform
-- Moving services
 
 ## Related Documentation
 - [User Journey](./user-journey.md)

@@ -450,31 +450,6 @@ https://web.whatsapp.com/send?phone=504XXXXXXXX&text=encoded_message
 - Simplified retry flow
 - Progressive profile completion
 
-## Success Metrics & KPIs
-
-### Engagement Metrics
-- WhatsApp button CTR: >15%
-- Message preview completion: >85%
-- Send completion rate: >90%
-- Profile inclusion rate: 100%
-
-### Quality Metrics
-- Complete profile messages: >95%
-- Landlord response rate: >60%
-- Response time: <30 minutes average
-- Conversation quality score: >4/5
-
-### Technical Metrics
-- WhatsApp launch success: >95%
-- Fallback usage: <5%
-- Message generation time: <500ms
-- Deep link reliability: >98%
-
-### Business Metrics
-- Contact to viewing: >30%
-- Viewing to application: >50%
-- Application to lease: >25%
-- User satisfaction: >4.5/5
 
 ## Accessibility Considerations
 

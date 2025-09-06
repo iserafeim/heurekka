@@ -142,13 +142,6 @@ Complete user journey for landlords creating and managing property listings on t
 
 ## Edge Cases
 
-### Duplicate Listing Detection
-**Trigger**: Same address already listed
-**Handling**:
-- Show existing listing
-- Offer to edit existing
-- Confirm different unit
-- Merge if appropriate
 
 ### Photo Upload Failure
 **Trigger**: Network issue during upload
@@ -182,25 +175,6 @@ Complete user journey for landlords creating and managing property listings on t
 - Flexible viewing times
 - Clear requirements
 
-## Metrics & KPIs
-
-### Creation Metrics
-- Start-to-publish time: <10 minutes
-- Abandonment rate: <20%
-- Draft completion: >70%
-- Photo upload success: >95%
-
-### Quality Metrics
-- Average quality score: >75
-- Photos per listing: >6
-- Description length: >150 words
-- Complete profiles: >80%
-
-### Performance Metrics
-- Views per listing: >100/week
-- Contact rate: >5%
-- Favorite rate: >10%
-- Days to rent: <14
 
 ## Pain Points & Solutions
 
@@ -211,7 +185,7 @@ Complete user journey for landlords creating and managing property listings on t
 **Solution**: Background upload, queue system, compression
 
 ### "Don't know what to write"
-**Solution**: Templates, examples, AI suggestions
+**Solution**: Templates and examples
 
 ### "Pricing uncertainty"
 **Solution**: Market analysis, comparables, pricing tool

@@ -193,12 +193,6 @@ interface LeadData {
 - Email digests (configurable)
 - SMS for urgent leads (optional)
 
-### Notification Grouping
-- Batch similar leads
-- Summarize multiple inquiries
-- Priority inbox for urgent items
-- Quiet hours configuration
-- Vacation mode settings
 
 ## Response Templates
 
@@ -217,22 +211,6 @@ interface LeadData {
 - {{agent_phone}}
 - {{next_steps}}
 
-## Analytics & Reporting
-
-### Key Metrics
-- Average response time
-- Lead-to-viewing conversion
-- Lead quality trends
-- Best performing properties
-- Peak inquiry times
-- Source effectiveness
-
-### Exportable Reports
-- Weekly performance summary
-- Monthly lead report
-- Property-specific analytics
-- Response time analysis
-- Conversion funnel data
 
 ## Integration Points
 
@@ -298,21 +276,6 @@ interface LeadData {
 - Track peak times
 - Monitor conversion rates
 
-## Future Enhancements
-
-### Planned Features
-- AI-powered lead analytics
-- Automated response suggestions
-- Predictive analytics
-- Voice note support
-- Video viewing tours
-
-### Potential Integrations
-- CRM systems
-- Payment platforms
-- Document signing
-- Background checks
-- Insurance providers
 
 ## Related Documentation
 - [User Journey](./user-journey.md)

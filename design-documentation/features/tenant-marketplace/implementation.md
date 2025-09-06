@@ -113,26 +113,6 @@ CREATE TABLE landlord_responses (
   INDEX idx_landlord (landlord_id)
 );
 
--- Post analytics table
-CREATE TABLE post_analytics (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  post_id UUID REFERENCES tenant_posts(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  
-  -- Metrics
-  views INTEGER DEFAULT 0,
-  unique_views INTEGER DEFAULT 0,
-  clicks INTEGER DEFAULT 0,
-  responses INTEGER DEFAULT 0,
-  
-  -- Source tracking
-  view_sources JSONB, -- {'search': 10, 'direct': 5, 'email': 3}
-  
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
-  UNIQUE KEY unique_date (post_id, date),
-  INDEX idx_post_date (post_id, date DESC)
-);
 ```
 
 ### Supporting Tables
@@ -235,18 +215,6 @@ interface ExtendPostRequest {
   days: number; // Additional days to extend
 }
 
-// GET /api/marketplace/posts/:id/analytics
-interface GetAnalyticsResponse {
-  totalViews: number;
-  uniqueViews: number;
-  responses: number;
-  viewsToday: number;
-  viewsThisWeek: number;
-  responseRate: number;
-  averageResponseTime: number;
-  viewsByDay: Array<{ date: string; views: number }>;
-  topViewSources: Array<{ source: string; count: number }>;
-}
 ```
 
 ### Response Management

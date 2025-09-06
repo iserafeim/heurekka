@@ -75,19 +75,16 @@ PropertyListingManagement/
 │       ├── MyListings.tsx
 │       ├── ListingCard.tsx
 │       ├── ListingActions.tsx
-│       └── ListingAnalytics.tsx
 ├── hooks/
 │   ├── useWizardState.ts
 │   ├── usePhotoUpload.ts
 │   ├── useFormValidation.ts
 │   ├── useAutoSave.ts
-│   └── useListingAnalytics.ts
 ├── services/
 │   ├── listingAPI.ts
 │   ├── photoService.ts
 │   ├── geocodingService.ts
 │   ├── validationService.ts
-│   └── analyticsService.ts
 └── utils/
     ├── validators.ts
     ├── formatters.ts
@@ -500,12 +497,6 @@ interface ListingManagementState {
     };
   };
   
-  analytics: {
-    selectedListingId: string | null;
-    metrics: ListingMetrics;
-    dateRange: DateRange;
-    loading: boolean;
-  };
 }
 
 // Actions
@@ -665,27 +656,6 @@ class ListingAPIService {
     });
   }
   
-  // Get listing analytics
-  async getListingAnalytics(
-    id: string,
-    dateRange: DateRange
-  ): Promise<ListingAnalytics> {
-    const params = new URLSearchParams({
-      from: dateRange.from.toISOString(),
-      to: dateRange.to.toISOString()
-    });
-    
-    const response = await fetch(
-      `${this.baseURL}/listings/${id}/analytics?${params}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
-      }
-    );
-    
-    return response.json();
-  }
 }
 ```
 
@@ -887,9 +857,6 @@ interface Listing {
   // Requirements
   tenantRequirements: TenantRequirements;
   
-  // Analytics
-  stats: ListingStats;
-  qualityScore: number;
   
   // Timestamps
   createdAt: Date;
@@ -1489,7 +1456,6 @@ describe('Property Listing Creation E2E', () => {
 - [ ] Upload success rates
 - [ ] Validation error patterns
 - [ ] User drop-off points
-- [ ] Conversion metrics
 
 ### Production Configuration
 ```javascript

@@ -977,19 +977,6 @@ if (typeof window !== 'undefined') {
 }
 ```
 
-### Analytics Events
-```typescript
-// Required analytics events
-const events = {
-  WHATSAPP_BUTTON_CLICK: 'whatsapp_button_click',
-  WHATSAPP_MESSAGE_PREVIEW: 'whatsapp_message_preview',
-  WHATSAPP_MESSAGE_EDIT: 'whatsapp_message_edit',
-  WHATSAPP_MESSAGE_SEND: 'whatsapp_message_send',
-  WHATSAPP_FALLBACK_COPY: 'whatsapp_fallback_copy',
-  WHATSAPP_PROFILE_COMPLETE: 'whatsapp_profile_complete',
-  WHATSAPP_BULK_SEND: 'whatsapp_bulk_send'
-};
-```
 
 ## Related Documentation
 - [Screen States Documentation](./screen-states.md)

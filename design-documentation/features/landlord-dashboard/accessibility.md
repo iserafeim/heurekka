@@ -24,7 +24,6 @@ Comprehensive accessibility requirements ensuring the landlord dashboard feature
 4. [Visual Accessibility](#visual-accessibility)
 5. [Motor Accessibility](#motor-accessibility)
 6. [Cognitive Accessibility](#cognitive-accessibility)
-7. [Analytics Accessibility](#analytics-accessibility)
 8. [Testing Requirements](#testing-requirements)
 
 ## WCAG Compliance
@@ -949,127 +948,6 @@ class LeadStatusIndicators {
 }
 ```
 
-## Analytics Accessibility
-
-### Chart Alternatives
-```html
-<!-- Accessible chart with data table -->
-<div class="chart-container">
-  <h3 id="response-chart-title">Response Time Trend</h3>
-  
-  <!-- Visual chart -->
-  <canvas 
-    id="response-chart"
-    role="img"
-    aria-labelledby="response-chart-title"
-    aria-describedby="response-chart-desc"
-  ></canvas>
-  
-  <!-- Screen reader description -->
-  <p id="response-chart-desc" class="sr-only">
-    Line chart showing average response times over the past 7 days,
-    trending downward from 25 minutes to 12 minutes.
-  </p>
-  
-  <!-- Data table alternative -->
-  <details>
-    <summary>View data table</summary>
-    <table>
-      <caption>Average Response Times by Day</caption>
-      <thead>
-        <tr>
-          <th scope="col">Day</th>
-          <th scope="col">Response Time (minutes)</th>
-          <th scope="col">Change from Previous</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th scope="row">Monday</th>
-          <td>25</td>
-          <td>--</td>
-        </tr>
-        <tr>
-          <th scope="row">Tuesday</th>
-          <td>22</td>
-          <td>-3 (12% improvement)</td>
-        </tr>
-        <!-- More rows -->
-      </tbody>
-    </table>
-  </details>
-</div>
-
-<!-- Accessible metrics -->
-<div class="metrics-grid" role="region" aria-label="Dashboard metrics">
-  <article class="metric-card">
-    <h3>Response Rate</h3>
-    <div class="metric-value" aria-live="polite">
-      <span class="number">78</span>
-      <span class="unit">%</span>
-    </div>
-    <div class="metric-change positive" aria-label="5 percent increase from last week">
-      <span aria-hidden="true">↑</span>
-      +5% from last week
-    </div>
-  </article>
-</div>
-```
-
-### Interactive Chart Controls
-```javascript
-// Keyboard-navigable charts
-class AccessibleChart {
-  constructor(canvas) {
-    this.canvas = canvas;
-    this.currentPoint = 0;
-    this.setupKeyboardNav();
-  }
-  
-  setupKeyboardNav() {
-    this.canvas.setAttribute('tabindex', '0');
-    this.canvas.setAttribute('role', 'application');
-    
-    this.canvas.addEventListener('keydown', (e) => {
-      switch(e.key) {
-        case 'ArrowLeft':
-          this.navigatePoint(-1);
-          break;
-        case 'ArrowRight':
-          this.navigatePoint(1);
-          break;
-        case 'Enter':
-        case ' ':
-          this.announceCurrentPoint();
-          break;
-        case 'Tab':
-          // Let default tab behavior work
-          break;
-        default:
-          e.preventDefault();
-      }
-    });
-  }
-  
-  navigatePoint(direction) {
-    const newPoint = this.currentPoint + direction;
-    if (newPoint >= 0 && newPoint < this.dataPoints.length) {
-      this.currentPoint = newPoint;
-      this.highlightPoint(newPoint);
-      this.announcePoint(newPoint);
-    }
-  }
-  
-  announcePoint(index) {
-    const point = this.dataPoints[index];
-    const announcement = `${point.label}: ${point.value} ${point.unit}`;
-    
-    // Update live region
-    const liveRegion = document.getElementById('chart-announcer');
-    liveRegion.textContent = announcement;
-  }
-}
-```
 
 ## Testing Requirements
 

@@ -526,43 +526,6 @@ class PostControls {
 }
 ```
 
-### Analytics Interaction
-```javascript
-// Interactive metrics
-document.querySelectorAll('.metric-card').forEach(card => {
-  card.addEventListener('click', () => {
-    // Expand for details
-    if (card.classList.contains('expanded')) {
-      collapseMetric(card);
-    } else {
-      expandMetric(card);
-    }
-  });
-});
-
-expandMetric = (card) => {
-  // Get detailed data
-  const metricType = card.dataset.metric;
-  const details = getMetricDetails(metricType);
-  
-  // Create chart
-  const chart = createMiniChart(details);
-  
-  // Animate expansion
-  card.style.height = 'auto';
-  const height = card.offsetHeight;
-  card.style.height = '120px';
-  
-  card.offsetHeight; // Force reflow
-  
-  card.style.transition = 'height 0.3s ease';
-  card.style.height = `${height}px`;
-  
-  // Insert chart
-  card.appendChild(chart);
-  card.classList.add('expanded');
-};
-```
 
 ## Filtering & Sorting
 

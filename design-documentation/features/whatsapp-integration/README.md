@@ -205,37 +205,7 @@ The WhatsApp Integration feature enables seamless communication between tenants 
 - Currency formatting (Lempiras)
 - Local property terminology
 
-## Analytics & Tracking
 
-### Key Metrics
-- Button click rate
-- Message send completion
-- Response rates
-- Time to first response
-- Conversation conversion rate
-
-### Event Tracking
-- Contact initiation
-- Message template selection
-- WhatsApp app launch
-- Fallback method usage
-- Conversation outcomes
-
-## Future Enhancements
-
-### Planned Features
-- WhatsApp Business catalog integration
-- Automated response handling
-- Conversation threading
-- Rich media sharing
-- Voice note support
-
-### Potential Integrations
-- CRM synchronization
-- Lead scoring automation
-- Response time tracking
-- Conversation analytics
-- Multi-agent routing
 
 ## Related Documentation
 - [User Journey](./user-journey.md)

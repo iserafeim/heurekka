@@ -56,12 +56,6 @@ LandlordDashboard/
 │   │   ├── PropertyInfo.tsx
 │   │   ├── ConversationThread.tsx
 │   │   └── QuickResponse.tsx
-│   ├── Analytics/
-│   │   ├── AnalyticsDashboard.tsx
-│   │   ├── ResponseTimeChart.tsx
-│   │   ├── LeadDistribution.tsx
-│   │   ├── ConversionFunnel.tsx
-│   │   └── PropertyPerformance.tsx
 │   ├── Response/
 │   │   ├── ResponseModal.tsx
 │   │   ├── TemplateSelector.tsx
@@ -76,14 +70,12 @@ LandlordDashboard/
 │   ├── useLeadManagement.ts
 │   ├── useRealtimeUpdates.ts
 │   ├── useWhatsApp.ts
-│   ├── useAnalytics.ts
 │   └── useNotifications.ts
 ├── services/
 │   ├── leadAPI.ts
 │   ├── websocketService.ts
 │   ├── whatsappService.ts
 │   ├── notificationService.ts
-│   └── analyticsService.ts
 └── utils/
     ├── leadPriority.ts
     ├── dateHelpers.ts

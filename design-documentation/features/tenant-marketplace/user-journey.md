@@ -594,31 +594,6 @@ Would you like to:
 - Success stories
 - Market updates
 
-## Success Metrics & KPIs
-
-### Creation Metrics
-- Post creation rate: >20% of unmatched users
-- Completion rate: >70% of started posts
-- Time to create: <10 minutes average
-- Profile import usage: >60%
-
-### Engagement Metrics
-- Average views per post: >50 in first week
-- Response rate: >30% of posts
-- Response quality: >60% match criteria
-- Message engagement: >80% read rate
-
-### Resolution Metrics
-- Match success rate: >10% of posts
-- Time to match: <14 days average
-- User satisfaction: >4.2/5
-- Referral rate: >15%
-
-### Quality Metrics
-- Post completeness: >85% average
-- Verification rate: >40%
-- Report rate: <2%
-- Repeat usage: >25%
 
 ## Accessibility Considerations
 

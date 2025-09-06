@@ -257,13 +257,6 @@ interface PropertyListing {
 - Bathrooms (recommended)
 - Amenities (optional)
 
-### AI-Powered Features
-- Auto-enhancement
-- Background blur removal
-- Lighting correction
-- Object detection
-- Quality scoring
-- Duplicate detection
 
 ## Responsive Behavior
 
@@ -335,39 +328,7 @@ interface PropertyListing {
 - Optimistic updates
 - Background saving
 
-## Analytics & Insights
 
-### Listing Performance
-- View trends
-- Contact rate
-- Favorite rate
-- Avg. time on page
-- Bounce rate
-- Conversion funnel
-
-### Optimization Suggestions
-- Photo recommendations
-- Pricing insights
-- Description improvements
-- Feature additions
-- Timing optimization
-
-## Future Enhancements
-
-### Planned Features
-- 360° photo support
-- Video walkthroughs
-- AI description writing
-- Automated translations
-- Dynamic pricing
-- Virtual staging
-
-### Integration Opportunities
-- Professional photography booking
-- Utility setup services
-- Insurance providers
-- Maintenance scheduling
-- Tenant screening services
 
 ## Related Documentation
 - [User Journey](./user-journey.md)
