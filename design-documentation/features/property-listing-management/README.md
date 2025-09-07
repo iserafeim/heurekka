@@ -222,13 +222,12 @@ interface PropertyListing {
 
 ### Managing Existing Listings
 1. View all listings grid/list
-2. Check performance metrics
-3. Quick edit key details
-4. Update availability
-5. Pause/resume listings
-6. Respond to inquiries
-7. Renew expiring listings
-8. Archive rented properties
+2. Quick edit key details
+3. Update availability
+4. Pause/resume listings
+5. Respond to inquiries
+6. Renew expiring listings
+7. Archive rented properties
 
 ### Bulk Operations
 1. Select multiple properties
@@ -256,7 +255,6 @@ interface PropertyListing {
 - Kitchen (recommended)
 - Bathrooms (recommended)
 - Amenities (optional)
-
 
 ## Responsive Behavior
 
