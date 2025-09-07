@@ -326,8 +326,6 @@ interface PropertyListing {
 - Optimistic updates
 - Background saving
 
-
-
 ## Related Documentation
 - [User Journey](./user-journey.md)
 - [Screen States](./screen-states.md)

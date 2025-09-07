@@ -1,1 +1,1 @@
-Backend will go here
+Heurekka Backend API - Production-ready containerization complete. See Dockerfile for deployment configuration.
