@@ -1,6 +1,6 @@
 - ##Memories
 
-###Graph QL
+### Graph QL
 
 Any time the front-end makes a request to the back end, check if there is an existing GraphQL query
 
@@ -15,7 +15,7 @@ Any time you want to make edits, modifications, and updates within supabase use 
 ### App Language
 The frontend (what the user can see) should be written in spanish.
 
-###Linear MCP
+### Linear MCP
 
 Since the features documentation will be in the future passed on to a front end and back end engineer, everytime I ask you to send something to the backlog using the linear MCP, I want you to remove any lines related to the feature sent to the backlog from the read me files and markdown files within the features directory to avoid confusion.
 

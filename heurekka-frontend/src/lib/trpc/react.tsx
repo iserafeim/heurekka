@@ -1,12 +1,11 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { httpBatchLink } from '@trpc/client';
 import { createTRPCReact } from '@trpc/react-query';
 import { useState } from 'react';
 import superjson from 'superjson';
-import type { AppRouter } from '../../../../heurekka-backend/src/server';
+import type { AppRouter } from './client';
 
 /**
  * Create tRPC React hooks
@@ -34,7 +33,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
-            cacheTime: 5 * 60 * 1000, // 5 minutes
+            gcTime: 5 * 60 * 1000, // 5 minutes (renamed from cacheTime)
             retry: (failureCount, error: any) => {
               // Don't retry on client errors (4xx)
               if (error?.status >= 400 && error?.status < 500) {
@@ -58,14 +57,19 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       links: [
         httpBatchLink({
           url: getBaseUrl(),
-          headers() {
+          async headers() {
             const headers: Record<string, string> = {};
 
-            // Add authentication headers if available
+            // Add authentication headers using secure token retrieval
             if (typeof window !== 'undefined') {
-              const token = localStorage.getItem('auth_token');
-              if (token) {
-                headers.Authorization = `Bearer ${token}`;
+              try {
+                const { secureAuth } = await import('@/lib/auth/secure-auth');
+                const token = await secureAuth.getAccessToken();
+                if (token) {
+                  headers.Authorization = `Bearer ${token}`;
+                }
+              } catch (error) {
+                console.warn('Failed to get access token for tRPC request:', error);
               }
             }
 
@@ -80,9 +84,6 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         {children}
-        {process.env.NEXT_PUBLIC_ENABLE_REACT_QUERY_DEVTOOLS === 'true' && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
       </QueryClientProvider>
     </trpc.Provider>
   );

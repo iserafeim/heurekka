@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { User } from '@supabase/supabase-js';
-import { supabase, auth } from '@/lib/supabase';
+import type { User, Session } from '@supabase/supabase-js';
+import { secureAuth } from '@/lib/auth/secure-auth';
 
 interface AuthStore {
   // State
@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: true }, false, 'auth/signIn/start');
           
           try {
-            const { data, error } = await auth.signInWithPassword(email, password);
+            const { user, session, error } = await secureAuth.signInWithPassword(email, password);
             
             if (error) {
               set({ isLoading: false }, false, 'auth/signIn/error');
@@ -56,8 +56,8 @@ export const useAuthStore = create<AuthStore>()(
             }
 
             set({ 
-              user: data.user, 
-              isAuthenticated: true, 
+              user, 
+              isAuthenticated: !!user, 
               isLoading: false 
             }, false, 'auth/signIn/success');
             
@@ -72,7 +72,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: true }, false, 'auth/signUp/start');
           
           try {
-            const { data, error } = await auth.signUp(email, password, metadata);
+            const { user, session, error } = await secureAuth.signUp(email, password, metadata);
             
             if (error) {
               set({ isLoading: false }, false, 'auth/signUp/error');
@@ -81,8 +81,8 @@ export const useAuthStore = create<AuthStore>()(
 
             // Note: User might not be immediately available due to email confirmation
             set({ 
-              user: data.user, 
-              isAuthenticated: !!data.user, 
+              user, 
+              isAuthenticated: !!user, 
               isLoading: false 
             }, false, 'auth/signUp/success');
             
@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: true }, false, 'auth/signInWithGoogle/start');
           
           try {
-            const { error } = await auth.signInWithGoogle();
+            const { error } = await secureAuth.signInWithGoogle();
             
             if (error) {
               set({ isLoading: false }, false, 'auth/signInWithGoogle/error');
@@ -116,7 +116,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: true }, false, 'auth/signInWithMagicLink/start');
           
           try {
-            const { error } = await auth.signInWithMagicLink(email);
+            const { error } = await secureAuth.signInWithMagicLink(email);
             
             set({ isLoading: false }, false, 'auth/signInWithMagicLink/complete');
             
@@ -135,13 +135,17 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: true }, false, 'auth/signOut/start');
           
           try {
-            await auth.signOut();
+            const { error } = await secureAuth.signOut();
             
             set({ 
               user: null, 
               isAuthenticated: false, 
               isLoading: false 
             }, false, 'auth/signOut/success');
+
+            if (error) {
+              console.warn('Sign out warning:', error);
+            }
           } catch (error) {
             console.error('Sign out error:', error);
             // Even if there's an error, clear the local state
@@ -157,7 +161,7 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: true }, false, 'auth/initialize/start');
           
           try {
-            const { session } = await auth.getSession();
+            const { session, error } = await secureAuth.getSession();
             
             set({ 
               user: session?.user ?? null, 
@@ -165,8 +169,8 @@ export const useAuthStore = create<AuthStore>()(
               isLoading: false 
             }, false, 'auth/initialize/complete');
 
-            // Listen for auth changes
-            supabase.auth.onAuthStateChange((event, session) => {
+            // Listen for auth changes with secure manager
+            secureAuth.onAuthStateChange((event, session) => {
               console.log('Auth state changed:', event, session?.user?.id);
               
               set({ 

@@ -4,8 +4,6 @@ const nextConfig: NextConfig = {
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
 
-  // Enable SWC minifier for better performance
-  swcMinify: true,
 
   // Image optimization configuration for property photos
   images: {
@@ -33,8 +31,10 @@ const nextConfig: NextConfig = {
   // PWA and Service Worker support
   experimental: {
     webpackBuildWorker: true,
-    serverComponentsExternalPackages: ['@trpc/server'],
   },
+  
+  // External packages for server components
+  serverExternalPackages: ['@trpc/server'],
 
   // Environment variables validation
   env: {
@@ -43,10 +43,13 @@ const nextConfig: NextConfig = {
 
   // Headers for security and performance
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
+    
     return [
       {
         source: '/(.*)',
         headers: [
+          // Security Headers
           {
             key: 'X-Frame-Options',
             value: 'DENY',
@@ -58,6 +61,39 @@ const nextConfig: NextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
+          },
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'" + (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob:",
+              "media-src 'self' https:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "connect-src 'self' https://*.supabase.co https://api.mapbox.com https://maps.googleapis.com" + (isDev ? " ws://localhost:* http://localhost:*" : ""),
+              "worker-src 'self' blob:",
+              "child-src 'self' blob:",
+              "manifest-src 'self'",
+              "upgrade-insecure-requests"
+            ].join('; '),
           },
         ],
       },
