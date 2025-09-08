@@ -6,7 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "type-check": "tsc --noEmit",
+    "analyze": "ANALYZE=true npm run build",
+    "clean": "rm -rf .next out node_modules/.cache",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up --build",
+    "docker:down": "docker-compose -f docker-compose.dev.yml down",
+    "backend:up": "cd ../heurekka-backend && docker-compose up -d",
+    "backend:down": "cd ../heurekka-backend && docker-compose down",
+    "full-dev": "npm run backend:up && npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
