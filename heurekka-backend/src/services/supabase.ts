@@ -425,4 +425,21 @@ class SupabaseService {
   }
 }
 
-export const supabaseService = new SupabaseService();
+let _supabaseService: SupabaseService | null = null;
+
+export const supabaseService = {
+  get instance(): SupabaseService {
+    if (!_supabaseService) {
+      _supabaseService = new SupabaseService();
+    }
+    return _supabaseService;
+  },
+  
+  // Proxy all methods for backward compatibility
+  searchProperties: (...args: Parameters<SupabaseService['searchProperties']>) => supabaseService.instance.searchProperties(...args),
+  getSearchSuggestions: (...args: Parameters<SupabaseService['getSearchSuggestions']>) => supabaseService.instance.getSearchSuggestions(...args),
+  getFeaturedProperties: (...args: Parameters<SupabaseService['getFeaturedProperties']>) => supabaseService.instance.getFeaturedProperties(...args),
+  getHomepageData: (...args: Parameters<SupabaseService['getHomepageData']>) => supabaseService.instance.getHomepageData(...args),
+  trackAnalyticsEvent: (...args: Parameters<SupabaseService['trackAnalyticsEvent']>) => supabaseService.instance.trackAnalyticsEvent(...args),
+  saveProperty: (...args: Parameters<SupabaseService['saveProperty']>) => supabaseService.instance.saveProperty(...args)
+};

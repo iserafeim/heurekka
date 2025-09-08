@@ -1,3 +1,7 @@
+// Load environment variables FIRST
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,7 +10,6 @@ import compression from 'compression';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import * as trpcExpress from '@trpc/server/adapters/express';
-import dotenv from 'dotenv';
 
 // Import our router and services
 import { appRouter } from './routers';
@@ -14,9 +17,6 @@ import { searchEngine } from './services/searchEngine';
 import { cacheService } from './services/cache';
 // SECURITY: Import security middleware
 import { getCORSOptions, securityHeaders, createRateLimiter } from './middleware/security';
-
-// Load environment variables
-dotenv.config();
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
