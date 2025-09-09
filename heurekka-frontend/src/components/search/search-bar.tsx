@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Search, X, MapPin, Clock, Mic } from 'lucide-react'
+import { Search, X, MapPin, Clock, Mic, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { SearchBarProps, Suggestion } from '@/types/homepage'
 
@@ -21,30 +20,30 @@ function SearchSuggestions({ suggestions, onSelect, isVisible }: SearchSuggestio
       case 'location':
         return <MapPin className="w-4 h-4 text-primary" />
       case 'recent':
-        return <Clock className="w-4 h-4 text-neutral-400" />
+        return <Clock className="w-4 h-4 text-muted-foreground" />
       default:
-        return <Search className="w-4 h-4 text-neutral-400" />
+        return <Search className="w-4 h-4 text-muted-foreground" />
     }
   }
 
   return (
-    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white rounded-lg border border-border shadow-lg max-h-64 overflow-y-auto">
+    <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white rounded-2xl border border-border shadow-lg max-h-64 overflow-y-auto">
       <div className="py-2">
-        {suggestions.map((suggestion, index) => (
+        {suggestions.map((suggestion) => (
           <button
             key={suggestion.id}
             onClick={() => onSelect(suggestion)}
-            className="w-full px-4 py-3 text-left hover:bg-neutral-50 focus:bg-neutral-50 focus:outline-none transition-colors duration-150 flex items-center gap-3"
+            className="w-full px-4 py-3 text-left hover:bg-muted/50 focus:bg-muted/50 focus:outline-none transition-colors duration-150 flex items-center gap-3"
             role="option"
             aria-selected={false}
           >
             {getIconForType(suggestion.type)}
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-neutral-900 truncate">
+              <div className="text-sm font-medium text-foreground truncate">
                 {suggestion.text}
               </div>
               {suggestion.metadata?.propertyCount && (
-                <div className="text-xs text-neutral-500">
+                <div className="text-xs text-muted-foreground">
                   {suggestion.metadata.propertyCount} propiedades
                 </div>
               )}
@@ -68,6 +67,7 @@ export function SearchBar({
   const [internalValue, setInternalValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isVoiceSupported, setIsVoiceSupported] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -82,26 +82,32 @@ export function SearchBar({
     setIsVoiceSupported(hasVoiceSupport)
   }, [])
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!value.trim()) return
+    if (!value.trim() || isSubmitting) return
 
-    const query = {
-      text: value.trim(),
-      timestamp: Date.now()
-    }
-
-    onSearch(query)
-    setShowSuggestions(false)
+    setIsSubmitting(true)
     
-    // Track search event
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'search', {
-        search_term: query.text
-      })
+    try {
+      const query = {
+        text: value.trim(),
+        timestamp: Date.now()
+      }
+
+      await onSearch(query)
+      setShowSuggestions(false)
+      
+      // Track search event
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'search', {
+          search_term: query.text
+        })
+      }
+    } finally {
+      setIsSubmitting(false)
     }
-  }, [value, onSearch])
+  }, [value, onSearch, isSubmitting])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
@@ -163,38 +169,38 @@ export function SearchBar({
         role="search"
         aria-label="Búsqueda de propiedades"
       >
-        <div className="relative flex items-center">
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-            <Search className="w-5 h-5 text-neutral-400" />
+        {/* Simple, Clean Search Bar - Updated */}
+        <div className="relative flex items-center h-14 bg-background rounded-xl border border-gray-300 shadow-sm overflow-hidden">
+          {/* Search Icon */}
+          <div className="flex items-center pl-4">
+            <Search className="w-5 h-5 text-muted-foreground" />
           </div>
           
-          <Input
+          {/* Input */}
+          <input
             ref={inputRef}
-            type="search"
+            type="text"
             value={value}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             placeholder={placeholder}
-            className={cn(
-              "pl-12 pr-20 h-14 rounded-full border-2 border-primary shadow-lg",
-              "focus:shadow-xl transition-shadow duration-200",
-              "text-base placeholder:text-neutral-400"
-            )}
+            className="flex-1 px-3 py-0 bg-transparent border-0 outline-none text-base placeholder:text-muted-foreground text-foreground"
             aria-autocomplete="list"
             aria-controls="search-suggestions"
             aria-expanded={showSuggestions}
             autoComplete="off"
           />
-
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+          
+          {/* Right Side Buttons */}
+          <div className="flex items-center pr-2 gap-1">
             {value && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleClearSearch}
-                className="h-8 w-8 p-0 hover:bg-neutral-100 rounded-full"
+                className="h-8 w-8 p-0 hover:bg-muted/80 rounded-full shrink-0"
                 aria-label="Limpiar búsqueda"
               >
                 <X className="w-4 h-4" />
@@ -207,22 +213,35 @@ export function SearchBar({
                 variant="ghost"
                 size="sm"
                 onClick={handleVoiceSearch}
-                className="h-8 w-8 p-0 hover:bg-neutral-100 rounded-full"
+                className="h-8 w-8 p-0 hover:bg-muted/80 rounded-full shrink-0"
                 aria-label="Búsqueda por voz"
               >
                 <Mic className="w-4 h-4" />
               </Button>
             )}
 
-            <Button
+            <button
               type="submit"
-              size="sm"
-              className="h-10 px-4 rounded-full"
-              disabled={loading || !value.trim()}
-              loading={loading}
+              className="h-10 px-4 rounded-lg shrink-0 text-white font-semibold shadow-lg transition-colors duration-200 disabled:cursor-not-allowed flex items-center justify-center"
+              style={{
+                backgroundColor: '#2563eb',
+                border: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#1d4ed8'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.backgroundColor = '#2563eb'
+                }
+              }}
+              disabled={isSubmitting || !value.trim()}
             >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <span className="sr-only sm:not-sr-only">Buscar</span>
-            </Button>
+            </button>
           </div>
         </div>
 
