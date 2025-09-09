@@ -73,30 +73,31 @@
 
 ### Type Scale
 
-#### Desktop Typography
-- **H1**: `32px/40px, 700, -0.02em` - Page titles, hero text
-- **H2**: `24px/32px, 600, -0.01em` - Section headers
-- **H3**: `20px/28px, 600, 0` - Subsection headers
-- **H4**: `18px/24px, 600, 0` - Card titles
-- **H5**: `16px/20px, 600, 0` - Minor headers
+#### Cluely-Inspired Typography Scale (Updated 2025)
+
+**Hero Typography (Homepage headlines)**
+- **Hero**: `48px/56px → 64px/72px → 80px/88px, 800, -0.025em` - Dramatic homepage titles
+- **Display**: `36px/44px → 48px/56px → 64px/72px, 700, -0.02em` - Section headlines  
+- **Headline**: `28px/36px → 36px/44px → 48px/56px, 700, -0.015em` - Major headers
+
+**Standard Typography**
+- **Title**: `20px/28px → 24px/32px, 600, -0.01em` - Card titles, minor headers
+- **Subtitle**: `16px/24px → 18px/28px → 20px/32px, 400, 0` - Supporting text, large descriptions
 - **Body Large**: `18px/28px, 400, 0` - Lead paragraphs
 - **Body**: `16px/24px, 400, 0` - Standard text
 - **Body Small**: `14px/20px, 400, 0` - Secondary info
 - **Caption**: `12px/16px, 400, 0` - Metadata, timestamps
-- **Label**: `12px/16px, 500, 0.025em, uppercase` - Form labels
-- **Button**: `14px/20px, 600, 0.01em` - Button text
-- **Code**: `14px/20px, 400, 0` - Code blocks
 
-#### Mobile Typography
-- **H1**: `28px/36px, 700, -0.02em`
-- **H2**: `22px/28px, 600, -0.01em`
-- **H3**: `18px/24px, 600, 0`
-- **H4**: `16px/20px, 600, 0`
-- **H5**: `14px/18px, 600, 0`
-- **Body Large**: `16px/24px, 400, 0`
-- **Body**: `14px/20px, 400, 0`
-- **Body Small**: `12px/16px, 400, 0`
-- **Caption**: `11px/14px, 400, 0`
+**Enhanced Spacing System**
+- **Section Spacing**: `64px → 96px → 128px` - Between major sections
+- **Content Spacing**: `32px → 48px → 64px` - Between content blocks
+- **Element Spacing**: `16px → 24px → 32px` - Between related elements
+
+**Key Changes from Cluely Analysis:**
+- Increased headline sizes by 50-100% for dramatic impact
+- Enhanced line-height ratios for better readability  
+- Tighter letter-spacing on large text for modern feel
+- Generous section spacing for clean, uncluttered look
 
 ### Text Colors by Context
 - **Primary Text**: `#111827` on light backgrounds

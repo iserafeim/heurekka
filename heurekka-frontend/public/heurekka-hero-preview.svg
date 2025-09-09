@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2880" height="1842" viewBox="0 0 2880 1842" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="2880" height="1842" fill="#F8FAFC"/>
+  
+  <!-- Browser Chrome -->
+  <rect width="2880" height="80" fill="#E2E8F0"/>
+  <circle cx="60" cy="40" r="12" fill="#EF4444"/>
+  <circle cx="100" cy="40" r="12" fill="#F59E0B"/>
+  <circle cx="140" cy="40" r="12" fill="#10B981"/>
+  
+  <!-- URL Bar -->
+  <rect x="200" y="20" width="400" height="40" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="220" y="42" font-family="Inter" font-size="14" fill="#64748B">heurekka.com</text>
+  
+  <!-- Header -->
+  <rect y="80" width="2880" height="100" fill="#FFFFFF"/>
+  <text x="60" y="140" font-family="Inter" font-size="28" font-weight="bold" fill="#1E293B">Heurekka</text>
+  
+  <!-- Navigation -->
+  <text x="2500" y="140" font-family="Inter" font-size="16" fill="#64748B">Propiedades</text>
+  <text x="2620" y="140" font-family="Inter" font-size="16" fill="#64748B">Publicar</text>
+  <text x="2720" y="140" font-family="Inter" font-size="16" fill="#64748B">Ayuda</text>
+  
+  <!-- Main Content Area -->
+  <rect y="180" width="2880" height="1662" fill="#FEFEFE"/>
+  
+  <!-- Hero Section -->
+  <text x="1440" y="400" text-anchor="middle" font-family="Inter" font-size="48" font-weight="bold" fill="#1E293B">Encuentra tu nuevo hogar</text>
+  <text x="1440" y="450" text-anchor="middle" font-family="Inter" font-size="20" fill="#64748B">Descubre miles de propiedades en alquiler en Honduras</text>
+  
+  <!-- Search Bar -->
+  <rect x="840" y="500" width="1200" height="60" rx="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="860" y="535" font-family="Inter" font-size="16" fill="#9CA3AF">🔍 Buscar por ubicación o nombre de propiedad</text>
+  
+  <!-- Property Cards Preview -->
+  <g transform="translate(200, 700)">
+    <!-- Card 1 -->
+    <rect width="400" height="300" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="20" y="20" width="360" height="200" rx="8" fill="#F1F5F9"/>
+    <text x="30" y="250" font-family="Inter" font-size="18" font-weight="600" fill="#1E293B">Casa en Tegucigalpa</text>
+    <text x="30" y="275" font-family="Inter" font-size="14" fill="#64748B">L. 25,000/mes • 3 hab • 2 baños</text>
+  </g>
+  
+  <g transform="translate(700, 700)">
+    <!-- Card 2 -->
+    <rect width="400" height="300" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="20" y="20" width="360" height="200" rx="8" fill="#F1F5F9"/>
+    <text x="30" y="250" font-family="Inter" font-size="18" font-weight="600" fill="#1E293B">Apartamento Moderno</text>
+    <text x="30" y="275" font-family="Inter" font-size="14" fill="#64748B">L. 18,000/mes • 2 hab • 1 baño</text>
+  </g>
+  
+  <g transform="translate(1200, 700)">
+    <!-- Card 3 -->
+    <rect width="400" height="300" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="20" y="20" width="360" height="200" rx="8" fill="#F1F5F9"/>
+    <text x="30" y="250" font-family="Inter" font-size="18" font-weight="600" fill="#1E293B">Casa Familiar</text>
+    <text x="30" y="275" font-family="Inter" font-size="14" fill="#64748B">L. 35,000/mes • 4 hab • 3 baños</text>
+  </g>
+  
+  <g transform="translate(1700, 700)">
+    <!-- Card 4 -->
+    <rect width="400" height="300" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
+    <rect x="20" y="20" width="360" height="200" rx="8" fill="#F1F5F9"/>
+    <text x="30" y="250" font-family="Inter" font-size="18" font-weight="600" fill="#1E293B">Estudio Ejecutivo</text>
+    <text x="30" y="275" font-family="Inter" font-size="14" fill="#64748B">L. 12,000/mes • 1 hab • 1 baño</text>
+  </g>
+  
+  <!-- Accent Elements -->
+  <circle cx="2700" cy="300" r="4" fill="#2563EB" opacity="0.6"/>
+  <circle cx="150" cy="400" r="6" fill="#2563EB" opacity="0.4"/>
+  <circle cx="2600" cy="800" r="3" fill="#2563EB" opacity="0.8"/>
+  
+  <!-- Footer indicator -->
+  <rect y="1762" width="2880" height="80" fill="#F1F5F9"/>
+  <text x="1440" y="1810" text-anchor="middle" font-family="Inter" font-size="14" fill="#64748B">Plataforma Heurekka - Encuentra tu hogar ideal</text>
+</svg>

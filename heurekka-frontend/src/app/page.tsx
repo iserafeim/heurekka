@@ -12,11 +12,11 @@ function SectionSkeleton() {
   return (
     <div className="animate-pulse py-16">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="h-8 bg-neutral-200 rounded w-1/3 mx-auto mb-4"></div>
-        <div className="h-4 bg-neutral-200 rounded w-2/3 mx-auto mb-8"></div>
+        <div className="h-8 bg-muted rounded w-1/3 mx-auto mb-4"></div>
+        <div className="h-4 bg-muted rounded w-2/3 mx-auto mb-8"></div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-neutral-100 rounded-xl p-6 h-64"></div>
+            <div key={i} className="bg-muted/50 rounded-xl p-6 h-64"></div>
           ))}
         </div>
       </div>

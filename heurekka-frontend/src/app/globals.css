@@ -144,4 +144,77 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Cluely-inspired Typography System */
+  .text-hero {
+    @apply text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight;
+  }
+  
+  .text-display {
+    @apply text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight;
+  }
+  
+  .text-headline {
+    @apply text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight;
+  }
+  
+  .text-title {
+    @apply text-2xl sm:text-3xl font-semibold leading-snug;
+  }
+  
+  .text-subtitle {
+    @apply text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed;
+  }
+  
+  .text-body-large {
+    @apply text-lg leading-relaxed;
+  }
+  
+  .text-body {
+    @apply text-base leading-relaxed;
+  }
+  
+  /* Improved Spacing System */
+  .section-spacing {
+    @apply py-16 lg:py-24;
+  }
+  
+  .section-spacing-sm {
+    @apply py-12 lg:py-16;
+  }
+  
+  .section-spacing-lg {
+    @apply py-20 lg:py-32;
+  }
+  
+  .content-spacing {
+    @apply space-y-8 lg:space-y-12;
+  }
+  
+  .content-spacing-sm {
+    @apply space-y-6 lg:space-y-8;
+  }
+  
+  .content-spacing-lg {
+    @apply space-y-12 lg:space-y-16;
+  }
+  
+  /* Cluely-style containers */
+  .container-narrow {
+    @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .container-wide {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Clean card styles */
+  .card-clean {
+    @apply bg-card rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .card-minimal {
+    @apply bg-card/50 backdrop-blur-sm rounded-lg border-0 p-6 lg:p-8;
+  }
+  
 }

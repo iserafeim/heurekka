@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Heart, MapPin, Bed, Bath, Square, MessageCircle, Star, Clock, Eye } from 'lucide-react'
+import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { PropertyCardProps } from '@/types/homepage'
@@ -22,23 +22,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
   )
 }
 
-// Verification badge component
-function VerificationBadge({ status, className }: { status: 'verified' | 'pending' | 'unverified', className?: string }) {
-  if (status === 'unverified') return null
-
-  return (
-    <div className={cn(
-      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-      status === 'verified' 
-        ? "bg-green-100 text-green-700 border border-green-200" 
-        : "bg-yellow-100 text-yellow-700 border border-yellow-200",
-      className
-    )}>
-      <Star className="w-3 h-3" />
-      {status === 'verified' ? 'Verificado' : 'En revisión'}
-    </div>
-  )
-}
 
 export function PropertyCard({ 
   property, 
@@ -58,19 +41,7 @@ export function PropertyCard({
       maximumFractionDigits: 0,
     })
     
-    const periodMap = {
-      month: '/mes',
-      week: '/semana',
-      day: '/día'
-    }
-    
-    return `${formatter.format(price.amount)}${periodMap[price.period as keyof typeof periodMap] || ''}`
-  }
-
-  const formatResponseTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes} min`
-    const hours = Math.floor(minutes / 60)
-    return `${hours}h`
+    return `${formatter.format(price.amount)}/mes`
   }
 
   const handleWhatsAppContact = () => {
@@ -92,15 +63,14 @@ export function PropertyCard({
   return (
     <article 
       className={cn(
-        "group bg-white border border-border rounded-xl overflow-hidden shadow-sm",
-        "hover:shadow-lg hover:-translate-y-1 transition-all duration-200",
-        "focus-within:ring-2 focus-within:ring-primary focus-within:ring-opacity-50",
+        "group bg-white border border-border rounded-lg overflow-hidden shadow-sm",
+        "hover:shadow-md transition-all duration-200",
         className
       )}
       aria-label={`Propiedad: ${property.title}`}
     >
-      {/* Image Gallery */}
-      <div className="relative aspect-video bg-neutral-100">
+      {/* Image like reference - rectangular, not square */}
+      <div className="relative aspect-[4/3] bg-neutral-100">
         {primaryImage && !imageError ? (
           <Image
             src={primaryImage.url}
@@ -120,33 +90,18 @@ export function PropertyCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-neutral-100">
-            <div className="text-center text-neutral-400">
-              <Image 
-                src="/placeholder-property.svg" 
-                alt="Sin imagen disponible" 
-                width={64} 
-                height={64}
-                className="mx-auto mb-2 opacity-50"
-              />
-              <span className="text-sm">Sin imagen</span>
-            </div>
+            <span className="text-neutral-400">Sin imagen</span>
           </div>
         )}
         
-        {/* Image overlay elements */}
-        <div className="absolute top-2 left-2">
-          <VerificationBadge status={property.verificationStatus} />
-        </div>
-        
-        <div className="absolute top-2 right-2 flex gap-2">
-          {/* Favorite button */}
+        {/* Favorite button top-right like reference */}
+        <div className="absolute top-2 right-2">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/90 hover:bg-white/95 backdrop-blur-sm"
+            className="h-8 w-8 bg-white/90 hover:bg-white/95 backdrop-blur-sm rounded-full"
             onClick={onFavorite}
             aria-label={isFavorited ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-            aria-pressed={isFavorited}
           >
             <Heart 
               className={cn(
@@ -157,110 +112,49 @@ export function PropertyCard({
           </Button>
         </div>
 
-        {/* Image count indicator */}
-        {property.images && property.images.length > 1 && (
-          <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-xs">
-            1/{property.images.length}
-          </div>
-        )}
+        {/* Price tag bottom-left like reference */}
+        <div className="absolute bottom-3 left-3 bg-red-600 text-white px-2 py-1 rounded text-sm font-semibold">
+          {formatPrice(property.price)}
+        </div>
+
+        {/* Brand/Badge like MARIS in reference */}
+        <div className="absolute bottom-3 right-3 bg-white px-2 py-1 rounded text-xs font-medium text-primary">
+          HEUREKKA
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        {/* Price & Property Type */}
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xl font-bold text-primary">
-              {formatPrice(property.price)}
-            </p>
-            <p className="text-sm text-neutral-600 capitalize">
-              {property.type === 'apartment' ? 'Apartamento' : 
-               property.type === 'house' ? 'Casa' : 
-               property.type === 'room' ? 'Habitación' : 'Comercial'}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-1 text-xs text-neutral-500">
-            <Eye className="w-3 h-3" />
-            {property.viewCount}
-          </div>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-semibold text-neutral-900 line-clamp-2 leading-tight">
-          {property.title}
-        </h3>
-
-        {/* Location */}
-        <div className="flex items-center gap-1 text-neutral-600 text-sm">
-          <MapPin className="h-4 w-4 flex-shrink-0" />
-          <span className="truncate">
-            {property.address.neighborhood}, {property.address.city}
-          </span>
-        </div>
-
-        {/* Property Details */}
-        <div className="flex items-center gap-4 text-neutral-500 text-sm">
+      {/* Content section like reference */}
+      <div className="p-4 space-y-2">
+        {/* Property details like reference */}
+        <div className="flex items-center gap-3 text-sm text-neutral-600">
           <span className="flex items-center gap-1">
             <Bed className="h-4 w-4" />
-            {property.bedrooms}
+            {property.bedrooms} hab
           </span>
           <span className="flex items-center gap-1">
             <Bath className="h-4 w-4" />
-            {property.bathrooms}
+            {property.bathrooms} baños
           </span>
           <span className="flex items-center gap-1">
             <Square className="h-4 w-4" />
             {property.size.value}m²
           </span>
+          <span className="text-green-600 font-medium">Activo</span>
         </div>
 
-        {/* Landlord Info */}
-        <div className="flex items-center justify-between py-2 border-t border-neutral-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center">
-              {property.landlord.photo ? (
-                <Image
-                  src={property.landlord.photo}
-                  alt={property.landlord.name}
-                  width={32}
-                  height={32}
-                  className="rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-xs font-semibold text-neutral-600">
-                  {property.landlord.name.charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-900 truncate">
-                {property.landlord.name}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-neutral-500">
-                <div className="flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  {property.landlord.rating.toFixed(1)}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatResponseTime(property.responseTime)}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Address like reference */}
+        <div className="text-sm text-neutral-800 font-medium">
+          {property.address.street}
+        </div>
+        
+        <div className="text-sm text-neutral-600">
+          {property.address.neighborhood}, {property.address.city}
         </div>
 
-        {/* WhatsApp CTA */}
-        <Button 
-          variant="whatsapp"
-          className="w-full"
-          onClick={handleWhatsAppContact}
-          disabled={!property.landlord.whatsappEnabled}
-        >
-          <WhatsAppIcon className="mr-2 h-4 w-4" />
-          Contactar por WhatsApp
-        </Button>
+        {/* Real estate info like reference */}
+        <div className="text-xs text-neutral-500 pt-1">
+          MLS #{property.id} - {property.landlord.name}
+        </div>
       </div>
     </article>
   )
