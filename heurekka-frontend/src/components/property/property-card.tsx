@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react'
+import { Heart, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { PropertyCardProps } from '@/types/homepage'
@@ -63,8 +63,9 @@ export function PropertyCard({
   return (
     <article 
       className={cn(
-        "group bg-white border border-border rounded-lg overflow-hidden shadow-sm",
+        "group bg-gray-100/70 border border-gray-200/60 rounded-lg overflow-hidden shadow-sm",
         "hover:shadow-md transition-all duration-200",
+        "h-[360px] md:h-[380px] flex flex-col",
         className
       )}
       aria-label={`Propiedad: ${property.title}`}
@@ -112,48 +113,45 @@ export function PropertyCard({
           </Button>
         </div>
 
-        {/* Price tag bottom-left like reference */}
-        <div className="absolute bottom-3 left-3 bg-red-600 text-white px-2 py-1 rounded text-sm font-semibold">
+        {/* Price tag bottom-left - blue theme */}
+        <div className="absolute bottom-3 left-3 bg-blue-600 text-white px-3 py-1.5 rounded text-base font-bold shadow-md">
           {formatPrice(property.price)}
         </div>
 
+        {/* Special badges for amenities - blue/modern theme */}
+        {property.amenities && property.amenities.length > 0 && (
+          <div className="absolute top-3 left-3 bg-slate-600 text-white px-2 py-1 rounded text-xs font-medium capitalize">
+            {property.amenities[0]}
+          </div>
+        )}
+
         {/* Brand/Badge like MARIS in reference */}
-        <div className="absolute bottom-3 right-3 bg-white px-2 py-1 rounded text-xs font-medium text-primary">
+        <div className="absolute bottom-3 right-3 bg-white px-2 py-1 rounded text-xs font-bold text-primary">
           HEUREKKA
         </div>
       </div>
 
-      {/* Content section like reference */}
-      <div className="p-4 space-y-2">
-        {/* Property details like reference */}
-        <div className="flex items-center gap-3 text-sm text-neutral-600">
-          <span className="flex items-center gap-1">
-            <Bed className="h-4 w-4" />
-            {property.bedrooms} hab
-          </span>
-          <span className="flex items-center gap-1">
-            <Bath className="h-4 w-4" />
-            {property.bathrooms} baños
-          </span>
-          <span className="flex items-center gap-1">
-            <Square className="h-4 w-4" />
-            {property.size.value}m²
-          </span>
-          <span className="text-green-600 font-medium">Activo</span>
+      {/* Content section - compact for carousel */}
+      <div className="p-3 flex-1 flex flex-col justify-between">
+        {/* Property details - inline format */}
+        <div className="text-xs text-neutral-700 font-medium mb-2">
+          {property.bedrooms} hab | {property.bathrooms} baños | {property.size.value}m² | <span className="text-green-600">Activo</span>
         </div>
 
-        {/* Address like reference */}
-        <div className="text-sm text-neutral-800 font-medium">
-          {property.address.street}
-        </div>
-        
-        <div className="text-sm text-neutral-600">
-          {property.address.neighborhood}, {property.address.city}
+        {/* Address - truncated */}
+        <div className="flex-1">
+          <div className="text-sm text-neutral-800 font-semibold truncate">
+            {property.address.street}
+          </div>
+          
+          <div className="text-xs text-neutral-600 truncate">
+            {property.address.neighborhood}, {property.address.city}
+          </div>
         </div>
 
-        {/* Real estate info like reference */}
-        <div className="text-xs text-neutral-500 pt-1">
-          MLS #{property.id} - {property.landlord.name}
+        {/* Real estate info - expanded like Zillow */}
+        <div className="text-xs text-neutral-500 mt-2">
+          <div className="truncate">MLS ID #{property.id}, HEUREKKA REALTY, {property.landlord.name}</div>
         </div>
       </div>
     </article>

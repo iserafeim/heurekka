@@ -75,7 +75,7 @@ export function HeroSection({
                   </div>
                   <span className="font-medium text-foreground">Presentamos Búsqueda Inteligente</span>
                 </Link>
-                <h1 className="mx-auto mt-8 max-w-4xl text-balance text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-gray-900">Encuentra tu Nuevo Hogar</h1>
+                <h1 className="mx-auto mt-8 max-w-4xl text-balance text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-gray-900">Encuentra Tu Nuevo Hogar</h1>
                 <p className="text-gray-600 mx-auto my-6 max-w-2xl text-balance text-lg leading-relaxed">Descubre miles de propiedades en alquiler en Honduras con nuestra plataforma inteligente.</p>
 
 

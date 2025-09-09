@@ -2,9 +2,8 @@
 
 import { Suspense } from 'react'
 import { HeroSection } from '@/components/sections/hero-section'
-import { ValueProposition } from '@/components/sections/value-proposition'
-import { HowItWorks } from '@/components/sections/how-it-works'
 import { FeaturedProperties } from '@/components/sections/featured-properties'
+import FeaturesSection from '@/components/sections/features-section'
 import type { SearchQuery } from '@/types/homepage'
 
 // Loading components
@@ -74,14 +73,9 @@ export default function HomePage() {
         ]}
       />
 
-      {/* Value Proposition Section */}
+      {/* Features Section */}
       <Suspense fallback={<SectionSkeleton />}>
-        <ValueProposition />
-      </Suspense>
-
-      {/* How It Works Section */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <HowItWorks />
+        <FeaturesSection />
       </Suspense>
 
       {/* Featured Properties Section */}
