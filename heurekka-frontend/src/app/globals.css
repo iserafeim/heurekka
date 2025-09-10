@@ -41,24 +41,36 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --animate-shine: shine var(--duration) infinite linear;
+  @keyframes shine {
+  0% {
+    background-position: 0% 0%;
+    }
+  50% {
+    background-position: 100% 100%;
+    }
+  to {
+    background-position: 0% 0%;
+    }
+  }
 }
 
 :root {
   --radius: 0.5rem;
-  
+
   /* Heurekka Brand Colors from Design System */
   --primary: 37 99 235; /* #2563EB */
   --primary-dark: 29 78 216; /* #1D4ED8 */
   --primary-darker: 30 64 175; /* #1E40AF */
   --primary-light: 219 234 254; /* #DBEAFE */
   --primary-pale: 239 246 255; /* #EFF6FF */
-  
+
   /* WhatsApp Brand Colors */
   --whatsapp: 37 211 102; /* #25D366 */
   --whatsapp-dark: 18 140 126; /* #128C7E */
   --whatsapp-darker: 7 94 84; /* #075E54 */
   --whatsapp-light: 220 248 198; /* #DCF8C6 */
-  
+
   /* Semantic Colors */
   --success: 16 185 129; /* #10B981 */
   --success-light: 209 250 229; /* #D1FAE5 */
@@ -68,7 +80,7 @@
   --error-light: 254 226 226; /* #FEE2E2 */
   --info: 59 130 246; /* #3B82F6 */
   --info-light: 219 234 254; /* #DBEAFE */
-  
+
   /* Neutral Colors */
   --neutral-50: 249 250 251; /* #F9FAFB */
   --neutral-100: 243 244 246; /* #F3F4F6 */
@@ -81,7 +93,7 @@
   --neutral-800: 31 41 55; /* #1F2937 */
   --neutral-900: 17 24 39; /* #111827 */
   --neutral-950: 3 7 18; /* #030712 */
-  
+
   /* Theme Application */
   --background: 255 255 255; /* White */
   --foreground: var(--neutral-900);
@@ -144,77 +156,114 @@
   body {
     @apply bg-background text-foreground;
   }
-  
+
   /* Cluely-inspired Typography System */
   .text-hero {
     @apply text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight;
   }
-  
+
   .text-display {
     @apply text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight;
   }
-  
+
   .text-headline {
     @apply text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight;
   }
-  
+
   .text-title {
     @apply text-2xl sm:text-3xl font-semibold leading-snug;
   }
-  
+
   .text-subtitle {
     @apply text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed;
   }
-  
+
   .text-body-large {
     @apply text-lg leading-relaxed;
   }
-  
+
   .text-body {
     @apply text-base leading-relaxed;
   }
-  
+
   /* Improved Spacing System */
   .section-spacing {
     @apply py-16 lg:py-24;
   }
-  
+
   .section-spacing-sm {
     @apply py-12 lg:py-16;
   }
-  
+
   .section-spacing-lg {
     @apply py-20 lg:py-32;
   }
-  
+
   .content-spacing {
     @apply space-y-8 lg:space-y-12;
   }
-  
+
   .content-spacing-sm {
     @apply space-y-6 lg:space-y-8;
   }
-  
+
   .content-spacing-lg {
     @apply space-y-12 lg:space-y-16;
   }
-  
+
   /* Cluely-style containers */
   .container-narrow {
     @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   .container-wide {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  
+
   /* Clean card styles */
   .card-clean {
     @apply bg-card rounded-xl border-0 shadow-sm hover:shadow-md transition-shadow duration-200;
   }
-  
+
   .card-minimal {
     @apply bg-card/50 backdrop-blur-sm rounded-lg border-0 p-6 lg:p-8;
   }
-  
+
+  /* Accordion animations */
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes border-beam {
+    100% {
+      offset-distance: 100%;
+    }
+  }
+
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+
+  .animate-border-beam {
+    animation: border-beam linear infinite;
+  }
+
 }

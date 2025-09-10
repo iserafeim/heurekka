@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { HeroHeader } from "@/components/header"
 import { Sparkle } from 'lucide-react'
 import { SearchBar } from '@/components/search/search-bar'
+import { ShineBorder } from '@/registry/magicui/shine-border'
 import type { HeroSectionProps, Suggestion } from '@/types/homepage'
 
 export function HeroSection({ 
@@ -96,17 +97,34 @@ export function HeroSection({
             <div className="relative">
               <div className="relative z-10 mx-auto max-w-5xl px-6">
                 <div className="mt-12 md:mt-16">
-                  <div className="bg-background rounded-lg relative mx-auto overflow-hidden border border-transparent shadow-lg shadow-black/10 ring-1 ring-black/10">
-                    <Image
-                      src="/heurekka-hero-preview.svg"
-                      alt="Vista previa de la plataforma Heurekka mostrando búsqueda de propiedades"
-                      width="2880"
-                      height="1842"
-                      priority
-                      className="w-full h-auto"
-                    />
+                  <div className="relative w-full">
+                    {/* Image container with shine border */}
+                    <div className="relative overflow-hidden rounded-lg">
+                      <ShineBorder 
+                        shineColor={["#3B82F6", "#06B6D4", "#8B5CF6"]} 
+                        duration={8}
+                        borderWidth={2}
+                        className="absolute inset-0"
+                      />
+                      <div className="relative bg-background border border-transparent shadow-lg shadow-black/10 ring-1 ring-black/10 rounded-lg overflow-hidden">
+                        <Image
+                          src="/heurekka-hero-preview.svg"
+                          alt="Vista previa de la plataforma Heurekka mostrando búsqueda de propiedades"
+                          width="2880"
+                          height="1842"
+                          priority
+                          className="w-full h-auto"
+                        />
+                      </div>
+                    </div>
+                    
                   </div>
                 </div>
+              </div>
+              
+              {/* Fade overlay positioned outside overflow containers */}
+              <div className="relative mt-[-12rem] md:mt-[-16rem] pointer-events-none z-10">
+                <div className="h-48 md:h-64 bg-gradient-to-t from-gray-50 via-gray-50/80 via-gray-50/40 to-transparent" />
               </div>
             </div>
           </div>

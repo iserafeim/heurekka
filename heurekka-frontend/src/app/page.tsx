@@ -3,7 +3,6 @@
 import { Suspense } from 'react'
 import { HeroSection } from '@/components/sections/hero-section'
 import { FeaturedProperties } from '@/components/sections/featured-properties'
-import FeaturesSection from '@/components/sections/features-section'
 import type { SearchQuery } from '@/types/homepage'
 
 // Loading components
@@ -72,11 +71,6 @@ export default function HomePage() {
           '2 habitaciones'
         ]}
       />
-
-      {/* Features Section */}
-      <Suspense fallback={<SectionSkeleton />}>
-        <FeaturesSection />
-      </Suspense>
 
       {/* Featured Properties Section */}
       <Suspense fallback={<SectionSkeleton />}>

@@ -254,8 +254,10 @@ export function FeaturedProperties({
   }
 
   return (
-    <section className="section-spacing bg-neutral-50/30">
-      <div className="container-wide">
+    <section className="relative pb-16 lg:pb-24 bg-gray-50">
+      {/* Background extension to cover white space */}
+      <div className="absolute -top-48 left-0 right-0 h-48 bg-gray-50" />
+      <div className="container-wide relative">
         {/* Header with controls like Zillow */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex-1 pr-8">
