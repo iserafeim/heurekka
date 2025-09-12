@@ -131,7 +131,7 @@ export const createRateLimiter = (
         }
       }
       // Use the official IPv6-safe IP key generator
-      return ipKeyGenerator(req);
+      return req.ip || req.socket.remoteAddress || 'unknown';
     },
     handler: (req, res) => {
       throw new TRPCError({
