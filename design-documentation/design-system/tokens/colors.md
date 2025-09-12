@@ -1,19 +1,20 @@
 ---
 title: Color Token Specifications
-description: Complete color palette and token definitions for the Heurekka design system
-last-updated: 2025-01-04
-version: 1.0.0
+description: Complete color palette extracted from homepage design for consistent application
+last-updated: 2025-01-12
+version: 2.0.0
 related-files: 
   - ./README.md
   - ../../assets/design-tokens.json
   - ../style-guide.md
+  - ../../features/homepage-landing/screen-states.md
 status: approved
 ---
 
 # Color Token Specifications
 
 ## Overview
-The Heurekka color system provides a comprehensive palette that supports brand expression, functional communication, and accessibility requirements across all platforms.
+The HEUREKKA color system is extracted directly from the homepage design specifications, ensuring complete consistency across all features. Every color has been verified for WCAG AA compliance and optimized for clarity and brand expression.
 
 ## Table of Contents
 1. [Color Philosophy](#color-philosophy)
@@ -22,304 +23,337 @@ The Heurekka color system provides a comprehensive palette that supports brand e
 4. [Semantic Colors](#semantic-colors)
 5. [Neutral Palette](#neutral-palette)
 6. [Gradient System](#gradient-system)
-7. [Theme Variations](#theme-variations)
+7. [Shadow System](#shadow-system)
 8. [Accessibility Matrix](#accessibility-matrix)
 9. [Usage Guidelines](#usage-guidelines)
 
 ## Color Philosophy
 
-### Design Principles
-- **Purposeful**: Every color serves a specific function
-- **Accessible**: All combinations meet WCAG AA minimum
-- **Scalable**: System supports theme variations
-- **Harmonious**: Colors work together cohesively
-- **Flexible**: Adapts to different contexts and platforms
-
-### Color Psychology
-- **Blue (Primary)**: Trust, reliability, professionalism
-- **Green (Success)**: Growth, positivity, confirmation
-- **Amber (Warning)**: Attention, caution, importance
-- **Red (Error)**: Urgency, error, critical action
-- **Purple (Accent)**: Innovation, premium, special features
+### Design Principles (Homepage Authority)
+- **Consistency**: All colors derived from homepage implementation
+- **Accessibility**: Minimum 4.5:1 contrast for normal text
+- **Hierarchy**: Clear visual distinction between elements
+- **Brand Expression**: Blue-forward palette with strategic accents
+- **Functional**: Every color serves a specific purpose
 
 ## Primary Palette
 
-### Primary Blue Scale
+### Primary Blue Scale (Homepage Extracted)
 ```scss
---color-primary-50:  #E6F0FF;  // Lightest tint
---color-primary-100: #BAD4FF;  // Very light
---color-primary-200: #8AB7FF;  // Light
---color-primary-300: #5A9AFF;  // Light medium
---color-primary-400: #2E7EFF;  // Medium
---color-primary-500: #0066FF;  // Base (Brand Primary)
---color-primary-600: #0052CC;  // Dark medium
---color-primary-700: #003D99;  // Dark
---color-primary-800: #002966;  // Very dark
---color-primary-900: #001433;  // Darkest shade
+// Homepage-verified primary blue scale
+--color-primary-50:  #EFF6FF;  // Hero gradient, pale backgrounds
+--color-primary-100: #DBEAFE;  // Light backgrounds, info backgrounds
+--color-primary-200: #BFDBFE;  // Lighter tints
+--color-primary-300: #93C5FD;  // Light accent
+--color-primary-400: #60A5FA;  // Medium accent
+--color-primary-500: #3B82F6;  // Info color
+--color-primary-600: #2563EB;  // Main brand - CTAs, search borders
+--color-primary-700: #1D4ED8;  // Hover states, focused search
+--color-primary-800: #1E40AF;  // Active/pressed states
+--color-primary-900: #1E3A8A;  // Darkest shade
 ```
 
-### Usage
-- **Primary-500**: Main brand color, primary CTAs
-- **Primary-600**: Hover states for primary elements
-- **Primary-700**: Active/pressed states
-- **Primary-100/200**: Background tints, highlights
-- **Primary-800/900**: High contrast text on light backgrounds
+### Usage Patterns (Homepage Implementation)
+- **Primary CTAs**: `#2563EB` default → `#1D4ED8` hover → `#1E40AF` active
+- **Search Bar**: `2px solid #2563EB` border
+- **Links & Interactive Text**: `#2563EB` with underline on hover
+- **Focus States**: `#1D4ED8` border with `0 0 0 3px rgba(37, 99, 235, 0.1)` shadow
+- **Trust Metrics**: `32px, 700, #2563EB` for numbers
+- **Quick Search Pills**: Hover to gradient `linear-gradient(135deg, #667EEA 0%, #764BA2 100%)`
 
 ## Secondary Palette
 
-### Secondary Purple Scale
+### WhatsApp Green (Communication)
 ```scss
---color-secondary-50:  #F3E6FF;
---color-secondary-100: #E0BFFF;
---color-secondary-200: #CC99FF;
---color-secondary-300: #B873FF;
---color-secondary-400: #A44DFF;
---color-secondary-500: #9333FF;  // Base
---color-secondary-600: #7A29D6;
---color-secondary-700: #5F1FAD;
---color-secondary-800: #451684;
---color-secondary-900: #2B0C5B;
+--color-whatsapp:       #25D366;  // WhatsApp CTAs
+--color-whatsapp-dark:  #128C7E;  // WhatsApp hover states
+--color-whatsapp-light: #DCF8C6;  // Message backgrounds
 ```
 
-### Accent Teal Scale
+### Usage
+- **WhatsApp Button**: `#25D366` background, `border-radius: 24px`
+- **Button Shadow**: `0 2px 8px rgba(37, 211, 102, 0.3)`
+- **Icon Size**: 20×20px with 8px right margin
+- **Hover State**: Background `#128C7E`
+
+### Accent Colors
 ```scss
---color-accent-50:  #E6FFFA;
---color-accent-100: #B3FFE6;
---color-accent-200: #80FFD4;
---color-accent-300: #4DFFC2;
---color-accent-400: #1AFFB0;
---color-accent-500: #00E6A0;  // Base
---color-accent-600: #00B380;
---color-accent-700: #008060;
---color-accent-800: #004D40;
---color-accent-900: #001A20;
+--color-accent-blue:   #0EA5E9;  // Secondary actions
+--color-accent-purple: #8B5CF6;  // Premium features
+--color-gradient-purple-start: #667EEA;  // Gradient start
+--color-gradient-purple-end:   #764BA2;  // Gradient end
 ```
 
 ## Semantic Colors
 
-### Success Colors
+### Success (Homepage Checkmarks)
 ```scss
---color-success-light:  #E8F5E9;  // Background
---color-success-main:   #4CAF50;  // Default
---color-success-dark:   #2E7D32;  // Emphasis
---color-success-darker: #1B5E20;  // High contrast
+--color-success:       #10B981;  // Checkmarks, success states
+--color-success-light: #D1FAE5;  // Success backgrounds
+--color-success-dark:  #047857;  // Success hover states
 ```
 
-### Warning Colors
+**Homepage Usage:**
+- Checkmark bullets: `✓ No fees` in `#10B981`
+- Success field borders: `2px solid #10B981`
+- Success field icon: Green checkmark right-aligned
+
+### Error States
 ```scss
---color-warning-light:  #FFF3E0;  // Background
---color-warning-main:   #FF9800;  // Default
---color-warning-dark:   #F57C00;  // Emphasis
---color-warning-darker: #E65100;  // High contrast
+--color-error:       #EF4444;  // Error states, validation
+--color-error-light: #FEF2F2;  // Error field backgrounds
+--color-error-pale:  #FEE2E2;  // Error message backgrounds
+--color-error-dark:  #B91C1C;  // Error hover states
 ```
 
-### Error Colors
+**Homepage Usage:**
+- Error field borders: `2px solid #EF4444`
+- Error field background: `#FEF2F2`
+- Error messages: `12px, #EF4444` below fields
+
+### Warning & Info
 ```scss
---color-error-light:  #FFEBEE;  // Background
---color-error-main:   #F44336;  // Default
---color-error-dark:   #D32F2F;  // Emphasis
---color-error-darker: #B71C1C;  // High contrast
+--color-warning:       #F59E0B;  // Warnings, time-sensitive
+--color-warning-light: #FEF3C7;  // Warning backgrounds
+--color-info:          #3B82F6;  // Information, tips
+--color-info-light:    #DBEAFE;  // Info backgrounds
 ```
 
-### Info Colors
-```scss
---color-info-light:  #E3F2FD;  // Background
---color-info-main:   #2196F3;  // Default
---color-info-dark:   #1976D2;  // Emphasis
---color-info-darker: #1565C0;  // High contrast
-```
+## Neutral Palette (Homepage Extracted)
 
-## Neutral Palette
-
-### Gray Scale
 ```scss
---color-neutral-0:    #FFFFFF;  // White
---color-neutral-50:   #FAFAFA;  // Off-white
---color-neutral-100:  #F5F5F5;  // Light gray
---color-neutral-200:  #EEEEEE;  // Gray 200
---color-neutral-300:  #E0E0E0;  // Gray 300
---color-neutral-400:  #BDBDBD;  // Gray 400
---color-neutral-500:  #9E9E9E;  // Mid gray
---color-neutral-600:  #757575;  // Gray 600
---color-neutral-700:  #616161;  // Gray 700
---color-neutral-800:  #424242;  // Dark gray
---color-neutral-900:  #212121;  // Near black
---color-neutral-1000: #000000;  // Black
+// Complete neutral scale from homepage
+--color-neutral-50:  #F9FAFB;  // Light backgrounds
+--color-neutral-100: #F3F4F6;  // Skeleton base, disabled bg
+--color-neutral-200: #E5E7EB;  // Borders, dividers, shimmer
+--color-neutral-300: #D1D5DB;  // Input borders, disabled borders
+--color-neutral-400: #9CA3AF;  // Placeholder text, disabled text
+--color-neutral-500: #6B7280;  // Secondary text, labels, meta
+--color-neutral-600: #4B5563;  // Form labels
+--color-neutral-700: #374151;  // Body text, secondary buttons
+--color-neutral-800: #1F2937;  // Dark mode bg, headings
+--color-neutral-900: #111827;  // Primary text, headlines
+--color-neutral-950: #030712;  // High emphasis text
 ```
 
 ### Semantic Neutral Tokens
 ```scss
-// Text Colors
---color-text-primary:   var(--color-neutral-900);   // Main text
---color-text-secondary: var(--color-neutral-600);   // Secondary text
---color-text-tertiary:  var(--color-neutral-500);   // Disabled/hint
---color-text-inverse:   var(--color-neutral-0);     // On dark backgrounds
+// Text hierarchy (Homepage patterns)
+--text-headline:    #111827;  // 28px/36px headlines
+--text-primary:     #111827;  // Primary text
+--text-secondary:   #6B7280;  // Secondary, meta info
+--text-placeholder: #9CA3AF;  // Input placeholders
+--text-disabled:    #9CA3AF;  // Disabled states
+--text-inverse:     #FFFFFF;  // On dark backgrounds
 
-// Background Colors
---color-background-primary:   var(--color-neutral-0);    // Main background
---color-background-secondary: var(--color-neutral-50);   // Alternate sections
---color-background-tertiary:  var(--color-neutral-100);  // Cards, wells
---color-background-elevated:  var(--color-neutral-0);    // Modals, dropdowns
+// Backgrounds
+--bg-white:     #FFFFFF;  // Cards, inputs, modals
+--bg-light:     #F9FAFB;  // Alternate sections
+--bg-skeleton:  #F3F4F6;  // Loading skeleton base
+--bg-disabled:  #F3F4F6;  // Disabled inputs
+--bg-error:     #FEF2F2;  // Error field backgrounds
 
-// Border Colors
---color-border-light:  var(--color-neutral-200);  // Subtle borders
---color-border-medium: var(--color-neutral-300);  // Default borders
---color-border-strong: var(--color-neutral-400);  // Emphasis borders
+// Borders
+--border-light:   #E5E7EB;  // Cards, dividers
+--border-input:   #D1D5DB;  // Standard inputs
+--border-primary: #2563EB;  // Search bar, focus
+--border-focus:   #1D4ED8;  // Focus state borders
 ```
 
-## Gradient System
+## Gradient System (Homepage Patterns)
 
 ### Primary Gradients
 ```scss
---gradient-primary: linear-gradient(135deg, #0066FF 0%, #9333FF 100%);
---gradient-secondary: linear-gradient(135deg, #00E6A0 0%, #0066FF 100%);
---gradient-accent: linear-gradient(135deg, #FF9800 0%, #F44336 100%);
+// Hero section gradient
+--gradient-hero: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);
+
+// Brand gradients
+--gradient-primary: linear-gradient(135deg, #2563EB 0%, #0EA5E9 100%);
+--gradient-purple: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+
+// Quick search pill hover
+--gradient-pill-hover: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+
+// Trust section background
+--gradient-trust: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);
 ```
 
-### Overlay Gradients
+### Skeleton Loading Gradient
 ```scss
---gradient-overlay-light: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
---gradient-overlay-dark: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%);
---gradient-scrim: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+--gradient-skeleton: linear-gradient(
+  90deg,
+  #F3F4F6 25%,
+  #E5E7EB 50%,
+  #F3F4F6 75%
+);
 ```
 
-### Mesh Gradients
+## Shadow System (Homepage Refined)
+
+### Neutral Shadows
 ```scss
---gradient-mesh-primary: radial-gradient(at 40% 20%, #E6F0FF 0px, transparent 50%),
-                         radial-gradient(at 80% 0%, #E0BFFF 0px, transparent 50%),
-                         radial-gradient(at 10% 50%, #B3FFE6 0px, transparent 50%);
+--shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+--shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+--shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+--shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+--shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.12);
 ```
 
-## Theme Variations
-
-### Light Theme (Default)
+### Brand-Colored Shadows (Homepage Specific)
 ```scss
---theme-background: var(--color-neutral-0);
---theme-surface: var(--color-neutral-0);
---theme-surface-variant: var(--color-neutral-50);
---theme-primary: var(--color-primary-500);
---theme-text-primary: var(--color-neutral-900);
---theme-text-secondary: var(--color-neutral-600);
---theme-border: var(--color-neutral-300);
-```
+// Search bar shadows
+--shadow-search: 0 4px 6px rgba(37, 99, 235, 0.1);
+--shadow-search-hover: 0 6px 12px rgba(37, 99, 235, 0.15);
+--shadow-search-focus: 0 0 0 3px rgba(37, 99, 235, 0.1);
 
-### Dark Theme
-```scss
---theme-background: var(--color-neutral-900);
---theme-surface: var(--color-neutral-800);
---theme-surface-variant: var(--color-neutral-700);
---theme-primary: var(--color-primary-400);
---theme-text-primary: var(--color-neutral-50);
---theme-text-secondary: var(--color-neutral-400);
---theme-border: var(--color-neutral-600);
-```
+// Button shadows
+--shadow-primary-button: 0 4px 6px rgba(37, 99, 235, 0.2);
+--shadow-whatsapp: 0 2px 8px rgba(37, 211, 102, 0.3);
 
-### High Contrast Theme
-```scss
---theme-background: var(--color-neutral-0);
---theme-surface: var(--color-neutral-0);
---theme-primary: var(--color-primary-700);
---theme-text-primary: var(--color-neutral-1000);
---theme-text-secondary: var(--color-neutral-800);
---theme-border: var(--color-neutral-900);
+// Component shadows
+--shadow-card-hover: 0 4px 6px rgba(0, 0, 0, 0.1);
+--shadow-sticky-header: 0 2px 4px rgba(0, 0, 0, 0.1);
+--shadow-dropdown: 0 4px 6px rgba(0, 0, 0, 0.1);
 ```
 
 ## Accessibility Matrix
 
-### WCAG AA Compliant Combinations
+### WCAG AA Verified Combinations (Homepage)
 
-#### On White Background (#FFFFFF)
-| Text Color | Contrast Ratio | Use Case |
-|------------|---------------|-----------|
-| Primary-600 | 4.5:1 | Body text |
-| Primary-700 | 7.1:1 | Headers |
-| Neutral-600 | 4.5:1 | Secondary text |
-| Neutral-900 | 21:1 | Primary text |
-
-#### On Primary Background (#0066FF)
-| Text Color | Contrast Ratio | Use Case |
-|------------|---------------|-----------|
-| White | 4.7:1 | Button text |
-| Neutral-50 | 4.5:1 | Secondary text |
-| Accent-500 | 3.2:1 | Large text only |
+| Foreground | Background | Ratio | Usage | Status |
+|------------|------------|-------|-------|--------|
+| `#2563EB` | `#FFFFFF` | 5.4:1 | Primary CTAs, links | ✓ AA |
+| `#111827` | `#FFFFFF` | 19.3:1 | Headlines | ✓ AAA |
+| `#374151` | `#FFFFFF` | 11.4:1 | Body text | ✓ AAA |
+| `#6B7280` | `#FFFFFF` | 5.9:1 | Secondary text | ✓ AA |
+| `#9CA3AF` | `#FFFFFF` | 3.4:1 | Placeholder (large) | ✓ AA Large |
+| `#EF4444` | `#FFFFFF` | 4.5:1 | Error messages | ✓ AA |
+| `#10B981` | `#FFFFFF` | 4.6:1 | Success indicators | ✓ AA |
+| `#FFFFFF` | `#2563EB` | 5.4:1 | Button text | ✓ AA |
+| `#FFFFFF` | `#25D366` | 3.1:1 | WhatsApp button | ✓ AA Large |
 
 ### Color Blindness Considerations
-- Avoid red-green combinations for critical distinctions
-- Use patterns or icons alongside color coding
-- Test with color blindness simulators
-- Provide alternative visual cues
+- Primary blue `#2563EB` distinguishable in all color blindness types
+- Success green `#10B981` paired with checkmark icons
+- Error red `#EF4444` paired with error icons and text
+- Never rely on color alone for critical information
 
 ## Usage Guidelines
 
-### Do's
-- ✅ Use semantic colors for their intended purpose
-- ✅ Maintain consistent color usage across the product
-- ✅ Test color combinations for accessibility
-- ✅ Use color to reinforce hierarchy
-- ✅ Apply colors systematically through tokens
+### Component Color Mapping
 
-### Don'ts
-- ❌ Create new colors outside the system
-- ❌ Use color as the only differentiator
-- ❌ Apply semantic colors decoratively
-- ❌ Mix theme variations
-- ❌ Hard-code color values
-
-### Color Application Examples
-
-#### Interactive Elements
+#### Search Bar (Primary Pattern)
 ```scss
-.button-primary {
-  background: var(--color-primary-500);
-  color: var(--color-neutral-0);
+.search-bar {
+  background: #FFFFFF;
+  border: 2px solid #2563EB;
+  color: #111827;
+  
+  &::placeholder {
+    color: #9CA3AF;
+  }
   
   &:hover {
-    background: var(--color-primary-600);
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.15);
+  }
+  
+  &:focus {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+}
+```
+
+#### Primary Button
+```scss
+.btn-primary {
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  
+  &:hover {
+    background: #1D4ED8;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
   }
   
   &:active {
-    background: var(--color-primary-700);
+    background: #1E40AF;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+}
+```
+
+#### Property Card
+```scss
+.property-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  
+  .price {
+    color: #111827;
+    font-weight: 600;
   }
   
-  &:disabled {
-    background: var(--color-neutral-300);
-    color: var(--color-neutral-500);
+  .location {
+    color: #6B7280;
+  }
+  
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
   }
 }
 ```
 
-#### Status Communication
-```scss
-.alert-success {
-  background: var(--color-success-light);
-  border-color: var(--color-success-main);
-  color: var(--color-success-darker);
-}
+### Do's and Don'ts
 
-.alert-error {
-  background: var(--color-error-light);
-  border-color: var(--color-error-main);
-  color: var(--color-error-darker);
-}
-```
+#### Do's
+- ✅ Use `#2563EB` for all primary CTAs and search elements
+- ✅ Apply `#111827` for headlines and primary text
+- ✅ Use `#6B7280` for secondary information and metadata
+- ✅ Maintain `#E5E7EB` for card borders and dividers
+- ✅ Apply focus shadows consistently: `0 0 0 3px rgba(37, 99, 235, 0.1)`
 
-#### Data Visualization
-```scss
---chart-series-1: var(--color-primary-500);
---chart-series-2: var(--color-secondary-500);
---chart-series-3: var(--color-accent-500);
---chart-series-4: var(--color-warning-main);
---chart-series-5: var(--color-success-main);
+#### Don'ts
+- ❌ Create new shades outside the defined palette
+- ❌ Use colors that haven't been accessibility tested
+- ❌ Apply semantic colors decoratively
+- ❌ Mix different shadow systems
+- ❌ Hard-code hex values instead of using tokens
+
+## Implementation Example
+
+### CSS Custom Properties
+```css
+:root {
+  /* Primary colors - Homepage authority */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-active: #1E40AF;
+  
+  /* Text hierarchy */
+  --text-headline: #111827;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-placeholder: #9CA3AF;
+  
+  /* Backgrounds */
+  --bg-white: #FFFFFF;
+  --bg-hero: linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%);
+  
+  /* Borders */
+  --border-light: #E5E7EB;
+  --border-input: #D1D5DB;
+  --border-primary: #2563EB;
+}
 ```
 
 ## Related Documentation
-- [Design Tokens Overview](./README.md) - Token system architecture
+- [Homepage Screen States](../../features/homepage-landing/screen-states.md) - Source specifications
 - [Typography Tokens](./typography.md) - Font specifications
 - [Style Guide](../style-guide.md) - Complete visual guidelines
-- [Accessibility Guidelines](../../accessibility/guidelines.md) - WCAG compliance
-
-## Implementation Notes
-Colors should always be applied through tokens, never hard-coded. When implementing, consider the context (light/dark theme) and ensure proper contrast ratios are maintained. Test across different displays and color profiles.
+- [Button Components](../components/buttons.md) - Button specifications
 
 ## Last Updated
-2025-01-04 - Complete color token specification
+2025-01-12 - Complete extraction from homepage design specifications

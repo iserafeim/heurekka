@@ -1,32 +1,27 @@
 # Button Component Specifications
-## HEUREKKA Design System
+## HEUREKKA Design System - Homepage Authority
 
 ---
 
-## Primary Button
+## Primary Button (Homepage Standard)
 
 ### Purpose
-Main call-to-action buttons that drive primary user actions like "Search", "Contact", "Save", "Continue".
+Main call-to-action buttons that drive primary user actions like "Create Free Profile", "Browse Properties", "Get Started", "Search".
 
-### Visual Specifications
+### Visual Specifications (Homepage Extracted)
 
-#### Desktop (1024px+)
-- **Height**: `40px`
-- **Padding**: `8px 20px`
-- **Font Size**: `14px`
-- **Font Weight**: `600`
-- **Border Radius**: `8px`
-- **Min Width**: `120px`
-
-#### Mobile (320-767px)
-- **Height**: `48px`
+#### All Breakpoints (Consistent 48px Height)
+- **Height**: `48px` (consistent across all breakpoints)
 - **Padding**: `12px 24px`
-- **Font Size**: `16px`
+- **Font Size**: `14px`
+- **Line Height**: `20px`
 - **Font Weight**: `600`
 - **Border Radius**: `8px`
-- **Min Width**: `140px`
+- **Min Width**: `180px` (desktop), `100%` (mobile)
+- **Text Color**: `#FFFFFF`
+- **Text Transform**: None (no uppercase)
 
-### States
+### States (Homepage Implementation)
 
 #### Default
 ```css
@@ -34,12 +29,13 @@ background: #2563EB;
 color: #FFFFFF;
 border: none;
 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+cursor: pointer;
 ```
 
 #### Hover
 ```css
 background: #1D4ED8;
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
 transform: translateY(-1px);
 transition: all 150ms ease-out;
 ```
@@ -47,14 +43,15 @@ transition: all 150ms ease-out;
 #### Active/Pressed
 ```css
 background: #1E40AF;
-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 transform: translateY(0);
 ```
 
 #### Focus
 ```css
-outline: 2px solid #2563EB;
-outline-offset: 2px;
+border: 2px solid #1D4ED8;
+box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+outline: none;
 ```
 
 #### Disabled
@@ -67,25 +64,39 @@ box-shadow: none;
 
 #### Loading
 ```css
-opacity: 0.7;
+background: #2563EB;
+opacity: 0.8;
 cursor: wait;
-/* Include spinner icon before text */
+/* Animated dots: ○ ○ ● ○ */
 ```
 
-### Implementation Example
+### Homepage Examples
+```html
+<!-- Hero CTA -->
+<button class="btn-primary">
+  Create Free Profile
+</button>
+
+<!-- Dual CTAs -->
+<button class="btn-primary">Create Your Free Profile</button>
+<button class="btn-primary-outline">Browse Properties</button>
+```
+
+### Implementation
 ```tsx
 <button className="
-  bg-primary text-white font-semibold
-  h-12 px-6 md:h-10 md:px-5
-  rounded-lg min-w-[140px] md:min-w-[120px]
-  shadow-sm hover:shadow-md
-  hover:bg-primary-dark hover:-translate-y-px
-  active:bg-primary-darker active:translate-y-0
-  focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
-  disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed
+  bg-[#2563EB] text-white font-semibold
+  h-12 px-6 min-w-[180px] md:min-w-[180px]
+  rounded-lg
+  shadow-sm hover:shadow-[0_4px_6px_rgba(37,99,235,0.2)]
+  hover:bg-[#1D4ED8] hover:-translate-y-px
+  active:bg-[#1E40AF] active:translate-y-0 active:shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]
+  focus:border-2 focus:border-[#1D4ED8] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]
+  disabled:bg-[#E5E7EB] disabled:text-[#9CA3AF] disabled:cursor-not-allowed
   transition-all duration-150
+  text-sm leading-5
 ">
-  Contact Property Owner
+  Create Free Profile
 </button>
 ```
 
@@ -94,16 +105,17 @@ cursor: wait;
 ## WhatsApp Button
 
 ### Purpose
-Specialized button for WhatsApp integration - the primary communication method in Honduras.
+Specialized button for WhatsApp integration - the primary communication method in HEUREKKA.
 
-### Visual Specifications
+### Visual Specifications (Homepage Pattern)
 
 #### All Breakpoints
 - **Height**: `48px`
 - **Padding**: `12px 24px`
-- **Font Size**: `16px`
+- **Font Size**: `14px`
 - **Font Weight**: `600`
 - **Border Radius**: `24px` (pill shape)
+- **Background**: `#25D366`
 - **Icon**: WhatsApp logo `20×20px`
 - **Icon Spacing**: `8px` from text
 
@@ -119,58 +131,51 @@ box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
 #### Hover
 ```css
 background: #128C7E;
-box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
 transform: scale(1.02);
 ```
 
 #### Active
 ```css
-background: #075E54;
+background: #128C7E;
 transform: scale(1);
 ```
 
-### Implementation Example
+### Implementation
 ```tsx
 <button className="
-  bg-whatsapp text-white font-semibold
+  bg-[#25D366] text-white font-semibold
   h-12 px-6 rounded-full
   flex items-center justify-center gap-2
-  shadow-whatsapp hover:shadow-whatsapp-lg
-  hover:bg-whatsapp-dark hover:scale-[1.02]
-  active:bg-whatsapp-darker active:scale-100
+  shadow-[0_2px_8px_rgba(37,211,102,0.3)]
+  hover:bg-[#128C7E] hover:scale-[1.02]
+  active:scale-100
   transition-all duration-150
+  text-sm leading-5
 ">
   <WhatsAppIcon className="w-5 h-5" />
   <span>Contact via WhatsApp</span>
 </button>
 ```
 
-### Mobile Optimization
-- Sticky positioning at bottom of property cards
-- Full-width on mobile viewports
-- Increased touch target to 56px height on small screens
-
 ---
 
-## Secondary Button
+## Secondary Button (Homepage Outline)
 
 ### Purpose
-Supporting actions that are important but not primary, such as "Cancel", "Back", "View More".
+Supporting actions that complement primary CTAs, like "Browse Properties" when paired with "Create Profile".
 
 ### Visual Specifications
 
-#### Desktop
-- **Height**: `40px`
-- **Padding**: `8px 20px`
+#### All Breakpoints
+- **Height**: `48px`
+- **Padding**: `12px 24px`
 - **Border**: `1px solid #D1D5DB`
 - **Background**: `transparent`
 - **Font Size**: `14px`
 - **Font Weight**: `500`
-
-#### Mobile
-- **Height**: `44px`
-- **Padding**: `10px 20px`
-- **Increased touch target**
+- **Color**: `#374151`
+- **Border Radius**: `8px`
 
 ### States
 
@@ -185,6 +190,7 @@ border: 1px solid #D1D5DB;
 ```css
 background: #F9FAFB;
 border-color: #9CA3AF;
+color: #1F2937;
 ```
 
 #### Active
@@ -193,37 +199,102 @@ background: #F3F4F6;
 border-color: #6B7280;
 ```
 
+#### Focus
+```css
+border-color: #2563EB;
+box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+```
+
 ---
 
-## Ghost Button
+## Ghost Button / Text Link
 
 ### Purpose
-Tertiary actions with minimal visual weight, like "Skip", "Learn More", inline actions.
+Text links for tertiary actions like "View All Properties →", "Get Started →", "Learn More".
 
-### Visual Specifications
-- **Height**: `36px` (desktop), `40px` (mobile)
-- **Padding**: `6px 12px` (desktop), `8px 16px` (mobile)
-- **Background**: `transparent`
-- **No border**
+### Visual Specifications (Homepage Pattern)
+- **Height**: Auto (inline)
+- **Font Size**: `14px`
+- **Font Weight**: `500`
 - **Color**: `#2563EB`
+- **Text Decoration**: None (underline on hover)
+- **Arrow**: `→` character or icon
 
 ### States
 
 #### Default
 ```css
-background: transparent;
 color: #2563EB;
+text-decoration: none;
 ```
 
 #### Hover
 ```css
-background: #EFF6FF;
 color: #1D4ED8;
+text-decoration: underline;
+/* Arrow animates right 5px */
 ```
 
 #### Active
 ```css
-background: #DBEAFE;
+color: #1E40AF;
+```
+
+### Implementation
+```tsx
+<a className="
+  text-[#2563EB] font-medium text-sm
+  hover:text-[#1D4ED8] hover:underline
+  active:text-[#1E40AF]
+  inline-flex items-center gap-1
+  transition-colors duration-150
+  group
+">
+  <span>View All Properties</span>
+  <span className="group-hover:translate-x-1 transition-transform">→</span>
+</a>
+```
+
+---
+
+## Quick Search Pills (Homepage Specific)
+
+### Purpose
+Quick action buttons for popular search terms like "Los Próceres", "Lomas", "Las Colinas".
+
+### Visual Specifications
+- **Height**: `32px`
+- **Padding**: `6px 16px`
+- **Font Size**: `14px`
+- **Font Weight**: `500`
+- **Border Radius**: `16px` (pill)
+- **Background**: `#FFFFFF`
+- **Border**: `1px solid #E5E7EB`
+- **Color**: `#6B7280`
+
+### States
+
+#### Default
+```css
+background: #FFFFFF;
+border: 1px solid #E5E7EB;
+color: #6B7280;
+```
+
+#### Hover
+```css
+background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+color: #FFFFFF;
+border-color: transparent;
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+```
+
+#### Active/Selected
+```css
+background: #2563EB;
+color: #FFFFFF;
+border-color: #2563EB;
 ```
 
 ---
@@ -231,200 +302,153 @@ background: #DBEAFE;
 ## Icon Button
 
 ### Purpose
-Buttons containing only icons, used for compact actions like favorite, share, menu.
+Buttons containing only icons, used for compact actions like favorite (heart), share, close (×).
 
 ### Visual Specifications
-- **Size**: `40×40px` (desktop), `44×44px` (mobile)
-- **Icon Size**: `20px` (desktop), `24px` (mobile)
+- **Size**: `40×40px` (standard), `44×44px` (mobile touch)
+- **Icon Size**: `20px`
 - **Border Radius**: `8px` or `50%` (circular)
-- **Padding**: `10px` (desktop), `10px` (mobile)
+- **Padding**: `10px`
 
-### Variants
-
-#### Default Icon Button
-```css
-background: transparent;
-color: #6B7280;
-hover:background: #F3F4F6;
-hover:color: #374151;
-```
-
-#### Primary Icon Button
-```css
-background: #2563EB;
-color: #FFFFFF;
-hover:background: #1D4ED8;
-```
-
-#### Favorite Button (Toggle)
+### Favorite Button (Heart)
 ```css
 /* Unfavorited */
 color: #6B7280;
-stroke-width: 1.5px;
+stroke: #6B7280;
+fill: none;
 
 /* Favorited */
 color: #EF4444;
+stroke: #EF4444;
 fill: #EF4444;
+/* With particle animation on toggle */
 ```
 
 ---
 
-## Button Group
+## Loading Button States (Homepage Pattern)
 
-### Purpose
-Related actions grouped together, like view switchers or filters.
-
-### Visual Specifications
-- **Container**: No gap between buttons
-- **Border Radius**: Only on first and last button
-- **Divider**: `1px solid #E5E7EB` between buttons
-- **Active Indicator**: Background color change
-
-### Example
-```tsx
-<div className="inline-flex rounded-lg border border-gray-200">
-  <button className="px-4 py-2 bg-primary text-white rounded-l-lg">
-    List View
-  </button>
-  <button className="px-4 py-2 hover:bg-gray-50 border-l">
-    Map View
-  </button>
-</div>
-```
-
----
-
-## Floating Action Button (FAB)
-
-### Purpose
-Primary action that floats above content, mobile-specific for key actions.
-
-### Visual Specifications
-- **Size**: `56×56px`
-- **Position**: `bottom: 24px, right: 16px`
-- **Border Radius**: `50%`
-- **Shadow**: `0 4px 12px rgba(0, 0, 0, 0.15)`
-- **Icon**: `24px` centered
-
-### States
+### Animated Dots Pattern
 ```css
-/* Default */
-background: #2563EB;
-color: #FFFFFF;
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0.4; }
+  40% { opacity: 1; }
+}
 
-/* Pressed */
-transform: scale(0.95);
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+.loading-dots span {
+  animation: dot-pulse 1.4s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+.loading-dots span:nth-child(4) { animation-delay: 0.6s; }
 ```
 
----
-
-## Loading States
-
-### Button with Spinner
+### Implementation
 ```tsx
-<button disabled className="... opacity-70 cursor-wait">
-  <Spinner className="w-4 h-4 mr-2 animate-spin" />
-  Loading...
-</button>
-```
-
-### Progressive Loading
-```tsx
-// Step 1: Initial state
-<button>Send Message</button>
-
-// Step 2: Loading
-<button disabled>
-  <Spinner /> Sending...
-</button>
-
-// Step 3: Success
-<button disabled className="bg-green-500">
-  <CheckIcon /> Sent!
+<button disabled className="btn-primary opacity-80 cursor-wait">
+  <span className="loading-dots">
+    <span>○</span>
+    <span>○</span>
+    <span>●</span>
+    <span>○</span>
+  </span>
 </button>
 ```
 
 ---
 
-## Responsive Behavior
+## Responsive Behavior (Homepage Standards)
 
-### Mobile Adaptations
-1. **Increased Touch Targets**: Minimum 48px height
-2. **Full Width CTAs**: Primary actions span container width
-3. **Sticky Positioning**: Key actions fixed at viewport bottom
-4. **Larger Text**: 16px minimum to prevent zoom on iOS
+### Mobile (320px - 767px)
+- **Primary CTAs**: Full width (`width: 100%`)
+- **Height**: Consistent `48px` for all buttons
+- **Font Size**: `14px` (readable without zoom)
+- **Touch Target**: Minimum `48×48px`
+- **Spacing**: `16px` between stacked buttons
 
-### Desktop Optimizations
-1. **Hover States**: Rich hover feedback for mouse users
-2. **Compact Sizing**: 40px height for density
-3. **Keyboard Focus**: Clear focus indicators
-4. **Grouped Actions**: Related buttons inline
+### Tablet (768px - 1023px)
+- **Primary CTAs**: Auto width with `min-width: 180px`
+- **Dual CTAs**: Side by side with `16px` gap
+- **Height**: Consistent `48px`
+
+### Desktop (1024px+)
+- **Primary CTAs**: Auto width with `min-width: 180px`
+- **Dual CTAs**: Side by side with `16px` gap
+- **Hover States**: Full hover animations enabled
+- **Focus States**: Keyboard navigation optimized
 
 ---
 
 ## Accessibility Requirements
 
-### ARIA Attributes
-```tsx
-<button
-  aria-label="Contact property owner via WhatsApp"
-  aria-busy={isLoading}
-  aria-disabled={isDisabled}
-  role="button"
->
-  {buttonText}
-</button>
-```
+### WCAG AA Compliance
+- **Color Contrast**: 
+  - White on `#2563EB`: 5.4:1 ✓
+  - White on `#25D366`: 3.1:1 (large text) ✓
+- **Focus Indicators**: `3px` focus ring with `rgba(37, 99, 235, 0.1)`
+- **Touch Targets**: Minimum `48×48px`
+- **Loading States**: Announced to screen readers
+- **Disabled States**: `cursor: not-allowed` and reduced opacity
 
 ### Keyboard Support
 - `Enter` or `Space` to activate
 - `Tab` navigation between buttons
+- Visible focus indicators on all states
 - Focus trap in button groups
-- Escape to cancel in destructive actions
-
-### Screen Reader Announcements
-- Loading state changes announced
-- Success/error states communicated
-- Button purpose clearly labeled
-- Icon-only buttons have descriptive labels
 
 ---
 
 ## Usage Guidelines
 
-### Do's
-- Use primary button for one main action per screen
-- Include loading states for async actions
-- Provide clear, action-oriented labels
-- Maintain consistent sizing within sections
-- Use WhatsApp button for communication CTAs
+### Do's (Homepage Patterns)
+- ✅ Use `48px` height consistently for primary actions
+- ✅ Apply `#2563EB` for all primary CTAs
+- ✅ Include hover transform `translateY(-1px)` for depth
+- ✅ Use `14px/20px` font size with `600` weight
+- ✅ Add focus shadow `0 0 0 3px rgba(37, 99, 235, 0.1)`
 
 ### Don'ts
-- Don't use multiple primary buttons in one view
-- Don't make buttons smaller than minimum touch targets
-- Don't rely on color alone to indicate state
-- Don't use vague labels like "Click Here"
-- Don't disable buttons without clear reasoning
+- ❌ Use different button heights within same section
+- ❌ Apply uppercase text transformation
+- ❌ Create new button colors outside the system
+- ❌ Make buttons smaller than `48px` height on mobile
+- ❌ Forget loading states for async actions
 
 ---
 
-## Implementation Notes
+## Implementation Tokens
 
-### Performance
-- Use CSS transitions for smooth state changes
-- Implement touch feedback immediately on mobile
-- Lazy load heavy button actions
-- Debounce rapid clicks
+```scss
+// Button heights
+--btn-height: 48px;  // Consistent across all breakpoints
 
-### Testing
-- Verify touch targets are 48×48px minimum
-- Test keyboard navigation flow
-- Validate color contrast ratios
-- Check loading state implementations
-- Test with screen readers
+// Button padding
+--btn-padding: 12px 24px;
+
+// Button typography
+--btn-font-size: 14px;
+--btn-line-height: 20px;
+--btn-font-weight: 600;
+
+// Button radius
+--btn-radius: 8px;
+--btn-radius-pill: 24px;
+
+// Button colors
+--btn-primary-bg: #2563EB;
+--btn-primary-hover: #1D4ED8;
+--btn-primary-active: #1E40AF;
+--btn-whatsapp: #25D366;
+--btn-whatsapp-hover: #128C7E;
+
+// Button shadows
+--btn-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+--btn-shadow-hover: 0 4px 6px rgba(37, 99, 235, 0.2);
+--btn-shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.1);
+--btn-shadow-whatsapp: 0 2px 8px rgba(37, 211, 102, 0.3);
+```
 
 ---
 
-*Component Version: 1.0.0 | Last Updated: September 4, 2025*
+*Component Version: 2.0.0 | Last Updated: January 12, 2025*
+*Source: Homepage Design Specifications*

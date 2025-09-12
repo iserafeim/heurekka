@@ -320,6 +320,46 @@ body {
 
 ## Keyboard Navigation
 
+### Property Detail Modal Focus Management
+```javascript
+// Modal focus trap implementation
+function initializeModalAccessibility(modal) {
+  const focusableElements = modal.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  
+  const firstFocusable = focusableElements[0];
+  const lastFocusable = focusableElements[focusableElements.length - 1];
+  
+  // Store previous focus
+  const previousFocus = document.activeElement;
+  
+  // Set initial focus
+  firstFocusable.focus();
+  
+  // Trap focus within modal
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      if (e.shiftKey && document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+    
+    if (e.key === 'Escape') {
+      closeModal();
+      previousFocus.focus();
+    }
+  });
+  
+  // Announce modal to screen readers
+  announceToScreenReader('Property details modal opened. Press Escape to close.');
+}
+```
+
 ### Tab Order Management
 ```javascript
 // Logical tab order for property grid

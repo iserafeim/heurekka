@@ -1,19 +1,20 @@
 ---
 title: Typography Token Specifications
-description: Complete typography system and token definitions for the Heurekka design system
-last-updated: 2025-01-04
-version: 1.0.0
+description: Complete typography system extracted from homepage design for consistent application
+last-updated: 2025-01-12
+version: 2.0.0
 related-files: 
   - ./README.md
   - ./colors.md
   - ../../assets/design-tokens.json
+  - ../../features/homepage-landing/screen-states.md
 status: approved
 ---
 
 # Typography Token Specifications
 
 ## Overview
-The Heurekka typography system establishes a clear hierarchy and reading experience through carefully selected typefaces, scales, and spacing that work harmoniously across all platforms and screen sizes.
+The HEUREKKA typography system is extracted directly from the homepage design specifications, establishing a clear hierarchy and optimal reading experience that scales consistently across all features and platforms.
 
 ## Table of Contents
 1. [Typography Philosophy](#typography-philosophy)
@@ -21,428 +22,428 @@ The Heurekka typography system establishes a clear hierarchy and reading experie
 3. [Type Scale](#type-scale)
 4. [Font Weights](#font-weights)
 5. [Line Heights](#line-heights)
-6. [Letter Spacing](#letter-spacing)
-7. [Responsive Typography](#responsive-typography)
-8. [Typography Combinations](#typography-combinations)
-9. [Platform Specifications](#platform-specifications)
-10. [Usage Guidelines](#usage-guidelines)
+6. [Responsive Typography](#responsive-typography)
+7. [Component Typography](#component-typography)
+8. [Usage Guidelines](#usage-guidelines)
 
 ## Typography Philosophy
 
-### Design Principles
-- **Clarity First**: Optimal readability across all contexts
-- **Hierarchical**: Clear distinction between content levels
-- **Responsive**: Scales appropriately across devices
-- **Accessible**: Meets WCAG guidelines for readability
-- **Performant**: Optimized font loading strategies
-
-### Typography Goals
-- Support extended reading without fatigue
-- Provide clear visual hierarchy for scanning
-- Maintain consistency across platforms
-- Enable brand expression through type
-- Ensure international character support
+### Design Principles (Homepage Authority)
+- **Consistency**: All typography derived from homepage implementation
+- **Hierarchy**: Clear distinction from 28px headlines to 12px captions
+- **Readability**: 16px base font prevents iOS zoom, optimal line heights
+- **Responsive**: Mobile-first scaling from 320px to 1440px+
+- **Performance**: System font stack with Inter as primary
 
 ## Font Families
 
-### Primary Font Stack
+### Primary Font Stack (Homepage Standard)
 ```scss
 --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 
-                       'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
-                       'Droid Sans', 'Helvetica Neue', sans-serif;
-```
-
-#### Inter Font Features
-- **Variable Font**: Weight axis from 100-900
-- **OpenType Features**: Tabular numbers, fractions, alternates
-- **Character Set**: Extended Latin, Cyrillic, Greek
-- **Optimized Metrics**: Designed for UI
-
-### Secondary Font Stack (Display)
-```scss
---font-family-display: 'Plus Jakarta Sans', 'Inter', -apple-system, 
-                       BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                       Roboto, 'Helvetica Neue', Arial, sans-serif;
 ```
 
 ### Monospace Font Stack
 ```scss
---font-family-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata',
+--font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, 
                     'Courier New', monospace;
 ```
 
 ### System Font Fallbacks
+- **iOS**: `-apple-system, 'SF Pro Text'`
+- **Android**: `Roboto, 'Noto Sans'`
+- **Windows**: `'Segoe UI', 'Segoe UI Variable'`
+
+## Type Scale (Homepage Extracted)
+
+### Hero Section Typography
+Mobile → Tablet → Desktop scaling:
+
 ```scss
-// iOS
---font-family-ios: -apple-system, 'SF Pro Text', 'SF Pro Display';
+// Hero Headlines (Homepage Authority)
+--font-size-hero-h1-mobile:  28px;  // Mobile hero
+--font-size-hero-h1-tablet:  32px;  // Tablet hero
+--font-size-hero-h1-desktop: 40px;  // Desktop hero
 
-// Android
---font-family-android: 'Roboto', 'Noto Sans';
+// Hero Subheadlines
+--font-size-hero-sub-mobile:  16px;  // Mobile subheadline
+--font-size-hero-sub-tablet:  18px;  // Tablet subheadline
+--font-size-hero-sub-desktop: 20px;  // Desktop subheadline
 
-// Windows
---font-family-windows: 'Segoe UI', 'Segoe UI Variable';
+// Section Titles
+--font-size-section-mobile:  22px;  // Mobile sections
+--font-size-section-tablet:  24px;  // Tablet sections
+--font-size-section-desktop: 28px;  // Desktop sections
+
+// Trust Metrics Display
+--font-size-display: 32px;  // Large numbers
 ```
 
-## Type Scale
-
-### Modular Scale (1.25 Ratio)
+### Component Typography (Homepage Standard)
 ```scss
-// Display Sizes
---font-size-display-large:  3.815rem;  // 61px
---font-size-display-medium: 3.052rem;  // 49px
---font-size-display-small:  2.441rem;  // 39px
+// Property Cards
+--font-size-card-price:    16px;  // Price display
+--font-size-card-title:    16px;  // Card titles
+--font-size-card-detail:   14px;  // Type, location
+--font-size-card-meta:     12px;  // Timestamps
 
-// Heading Sizes
---font-size-h1: 1.953rem;  // 31px
---font-size-h2: 1.563rem;  // 25px
---font-size-h3: 1.25rem;   // 20px
---font-size-h4: 1rem;      // 16px
---font-size-h5: 0.8rem;    // 13px
---font-size-h6: 0.64rem;   // 10px
+// Buttons & CTAs
+--font-size-button:        14px;  // All buttons
+--font-size-link:          14px;  // Text links
 
-// Body Sizes
---font-size-body-large: 1.125rem;  // 18px
---font-size-body:       1rem;      // 16px (base)
---font-size-body-small: 0.875rem;  // 14px
---font-size-caption:    0.75rem;   // 12px
---font-size-overline:   0.625rem;  // 10px
+// Forms & Inputs
+--font-size-input:         16px;  // Prevents iOS zoom
+--font-size-placeholder:   16px;  // Placeholder text
+--font-size-label:         14px;  // Form labels
+--font-size-error:         12px;  // Error messages
 
-// Component Sizes
---font-size-button:       0.875rem;  // 14px
---font-size-input:        1rem;      // 16px
---font-size-label:        0.75rem;   // 12px
---font-size-helper:       0.75rem;   // 12px
---font-size-tooltip:      0.75rem;   // 12px
---font-size-badge:        0.625rem;  // 10px
+// Body Text
+--font-size-body-large:    18px;  // Lead paragraphs
+--font-size-body:          16px;  // Standard text
+--font-size-body-small:    14px;  // Secondary info
+--font-size-caption:       12px;  // Metadata, hints
 ```
 
-### Fluid Type Scale
+## Font Weights (Homepage Implementation)
+
 ```scss
-// Responsive sizing with clamp()
---font-size-display-fluid: clamp(2.441rem, 5vw, 3.815rem);
---font-size-h1-fluid: clamp(1.563rem, 3vw, 1.953rem);
---font-size-h2-fluid: clamp(1.25rem, 2.5vw, 1.563rem);
---font-size-body-fluid: clamp(0.875rem, 1.5vw, 1rem);
+// Weight Scale
+--font-weight-regular:   400;  // Body text, descriptions
+--font-weight-medium:    500;  // Labels, links
+--font-weight-semibold:  600;  // Section titles, prices
+--font-weight-bold:      700;  // Headlines, CTAs
+
+// Semantic Weights (Homepage Patterns)
+--font-weight-hero:      700;  // Hero headlines
+--font-weight-section:   600;  // Section titles
+--font-weight-button:    600;  // CTA buttons
+--font-weight-card:      600;  // Card titles, prices
+--font-weight-body:      400;  // Body text
+--font-weight-meta:      400;  // Secondary text
 ```
 
-## Font Weights
+## Line Heights (Homepage Optimized)
 
-### Weight Scale
 ```scss
---font-weight-thin:       100;
---font-weight-extralight: 200;
---font-weight-light:      300;
---font-weight-regular:    400;  // Default
---font-weight-medium:     500;
---font-weight-semibold:   600;
---font-weight-bold:       700;
---font-weight-extrabold:  800;
---font-weight-black:      900;
+// Homepage-Verified Line Heights
+--line-height-hero-h1:     36px;  // 28px font → 36px line
+--line-height-hero-h1-d:   48px;  // 40px font → 48px line
+--line-height-hero-sub:    24px;  // 16px font → 24px line
+--line-height-hero-sub-d:  32px;  // 20px font → 32px line
+
+--line-height-section:     28px;  // 22px font → 28px line
+--line-height-section-d:   36px;  // 28px font → 36px line
+
+--line-height-display:     40px;  // 32px font → 40px line
+
+--line-height-body:        24px;  // 16px font → 24px line
+--line-height-body-large:  28px;  // 18px font → 28px line
+--line-height-body-small:  20px;  // 14px font → 20px line
+--line-height-caption:     16px;  // 12px font → 16px line
+
+--line-height-button:      20px;  // 14px font → 20px line
+--line-height-input:       24px;  // 16px font → 24px line
 ```
 
-### Semantic Weight Tokens
-```scss
---font-weight-body:     var(--font-weight-regular);
---font-weight-emphasis: var(--font-weight-medium);
---font-weight-heading:  var(--font-weight-semibold);
---font-weight-display:  var(--font-weight-bold);
---font-weight-button:   var(--font-weight-medium);
---font-weight-label:    var(--font-weight-medium);
-```
-
-## Line Heights
-
-### Line Height Scale
-```scss
---line-height-none:    1;
---line-height-tight:   1.25;
---line-height-snug:    1.375;
---line-height-normal:  1.5;   // Default
---line-height-relaxed: 1.625;
---line-height-loose:   1.75;
---line-height-double:  2;
-```
-
-### Contextual Line Heights
-```scss
-// Headings (tighter)
---line-height-display: var(--line-height-none);
---line-height-h1:      var(--line-height-tight);
---line-height-h2:      var(--line-height-tight);
---line-height-h3:      var(--line-height-snug);
---line-height-h4:      var(--line-height-snug);
---line-height-h5:      var(--line-height-normal);
---line-height-h6:      var(--line-height-normal);
-
-// Body (optimal reading)
---line-height-body-large: var(--line-height-loose);
---line-height-body:       var(--line-height-relaxed);
---line-height-body-small: var(--line-height-normal);
-
-// Components
---line-height-button: var(--line-height-normal);
---line-height-input:  var(--line-height-normal);
---line-height-label:  var(--line-height-tight);
-```
-
-## Letter Spacing
-
-### Letter Spacing Scale
-```scss
---letter-spacing-tighter: -0.05em;
---letter-spacing-tight:   -0.025em;
---letter-spacing-normal:   0;        // Default
---letter-spacing-wide:     0.025em;
---letter-spacing-wider:    0.05em;
---letter-spacing-widest:   0.1em;
-```
-
-### Contextual Letter Spacing
-```scss
-// Headings (tighter for larger sizes)
---letter-spacing-display: var(--letter-spacing-tighter);
---letter-spacing-h1:      var(--letter-spacing-tight);
---letter-spacing-h2:      var(--letter-spacing-tight);
---letter-spacing-h3:      var(--letter-spacing-normal);
-
-// Body (normal)
---letter-spacing-body: var(--letter-spacing-normal);
-
-// Special
---letter-spacing-button:   var(--letter-spacing-wide);
---letter-spacing-label:    var(--letter-spacing-wider);
---letter-spacing-overline: var(--letter-spacing-widest);
---letter-spacing-mono:     var(--letter-spacing-normal);
-```
+### Line Height Ratios
+- Headlines: 1.2-1.3× (tighter for impact)
+- Body text: 1.5× (optimal readability)
+- Captions: 1.33× (compact but readable)
 
 ## Responsive Typography
 
 ### Mobile (320px - 767px)
 ```scss
-@media (max-width: 767px) {
-  :root {
-    --font-size-base: 14px;  // Smaller base
-    --font-size-h1: 1.602rem;
-    --font-size-h2: 1.424rem;
-    --font-size-h3: 1.125rem;
-    --font-size-body: 1rem;
-    --line-height-body: 1.5;
-  }
+.hero-headline {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 700;
+}
+
+.hero-subheadline {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.section-title {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+.body-text {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
 }
 ```
 
 ### Tablet (768px - 1023px)
 ```scss
-@media (min-width: 768px) and (max-width: 1023px) {
-  :root {
-    --font-size-base: 15px;
-    --font-size-h1: 1.802rem;
-    --font-size-h2: 1.5rem;
-    --font-size-h3: 1.25rem;
-    --font-size-body: 1rem;
-    --line-height-body: 1.6;
-  }
+.hero-headline {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+.hero-subheadline {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 400;
+}
+
+.section-title {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
 }
 ```
 
 ### Desktop (1024px+)
 ```scss
-@media (min-width: 1024px) {
-  :root {
-    --font-size-base: 16px;  // Optimal reading
-    --font-size-h1: 1.953rem;
-    --font-size-h2: 1.563rem;
-    --font-size-h3: 1.25rem;
-    --font-size-body: 1rem;
-    --line-height-body: 1.625;
+.hero-headline {
+  font-size: 40px;
+  line-height: 48px;
+  font-weight: 700;
+}
+
+.hero-subheadline {
+  font-size: 20px;
+  line-height: 32px;
+  font-weight: 400;
+}
+
+.section-title {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+}
+```
+
+### Wide Desktop (1440px+)
+```scss
+.hero-headline {
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 700;
+}
+
+.container {
+  max-width: 1280px;  // Content width limit
+}
+
+.body-text {
+  max-width: 65ch;  // Optimal line length
+}
+```
+
+## Component Typography
+
+### Search Bar (Homepage Pattern)
+```scss
+.search-input {
+  font-family: var(--font-family-primary);
+  font-size: 16px;    // Prevents iOS zoom
+  line-height: 24px;
+  font-weight: 400;
+  color: #111827;
+  
+  &::placeholder {
+    color: #9CA3AF;
+    font-weight: 400;
   }
 }
 ```
 
-### Wide Screens (1440px+)
+### Primary Button
 ```scss
-@media (min-width: 1440px) {
-  :root {
-    --font-size-base: 16px;
-    --max-content-width: 65ch;  // Optimal line length
+.btn-primary {
+  font-family: var(--font-family-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;  // No uppercase
+  color: #FFFFFF;
+}
+```
+
+### Property Card
+```scss
+.property-card {
+  .price {
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .type {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #111827;
+  }
+  
+  .location {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+    color: #6B7280;
+  }
+  
+  .meta {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    color: #6B7280;
   }
 }
 ```
 
-## Typography Combinations
-
-### Display Title
+### Navigation
 ```scss
-.text-display {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-display-large);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-display);
-  letter-spacing: var(--letter-spacing-display);
+.nav-item {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #374151;
+  
+  &.active {
+    color: #2563EB;
+    font-weight: 600;
+  }
 }
 ```
 
-### Page Heading
+### Form Elements
 ```scss
-.text-h1 {
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-h1);
-  font-weight: var(--font-weight-heading);
-  line-height: var(--line-height-h1);
-  letter-spacing: var(--letter-spacing-h1);
+.form-label {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.form-input {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: #111827;
+}
+
+.form-error {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: #EF4444;
+  margin-top: 4px;
 }
 ```
 
-### Body Text
+### Value Propositions
 ```scss
-.text-body {
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-body);
-  line-height: var(--line-height-body);
-  letter-spacing: var(--letter-spacing-body);
-}
-```
-
-### UI Elements
-```scss
-.text-button {
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-button);
-  font-weight: var(--font-weight-button);
-  line-height: var(--line-height-button);
-  letter-spacing: var(--letter-spacing-button);
-  text-transform: none;
+.value-prop-title {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  color: #111827;
 }
 
-.text-label {
-  font-family: var(--font-family-primary);
-  font-size: var(--font-size-label);
-  font-weight: var(--font-weight-label);
-  line-height: var(--line-height-label);
-  letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
-}
-```
-
-### Code Blocks
-```scss
-.text-code {
-  font-family: var(--font-family-mono);
-  font-size: var(--font-size-body-small);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-relaxed);
-  letter-spacing: var(--letter-spacing-mono);
-}
-```
-
-## Platform Specifications
-
-### iOS (SF Pro)
-```swift
-// System font with dynamic type
-let headline = UIFont.preferredFont(forTextStyle: .headline)
-let body = UIFont.preferredFont(forTextStyle: .body)
-let caption = UIFont.preferredFont(forTextStyle: .caption1)
-
-// Custom sizes
-let displayFont = UIFont.systemFont(ofSize: 34, weight: .bold)
-let titleFont = UIFont.systemFont(ofSize: 28, weight: .semibold)
-```
-
-### Android (Roboto)
-```xml
-<!-- Text appearances -->
-<style name="TextAppearance.Heurekka.Headline1">
-    <item name="android:textSize">32sp</item>
-    <item name="android:fontFamily">@font/roboto_medium</item>
-    <item name="android:letterSpacing">-0.025</item>
-</style>
-
-<style name="TextAppearance.Heurekka.Body1">
-    <item name="android:textSize">16sp</item>
-    <item name="android:fontFamily">@font/roboto_regular</item>
-    <item name="android:lineSpacingMultiplier">1.5</item>
-</style>
-```
-
-### Web Font Loading Strategy
-```scss
-// Progressive font loading
-@font-face {
-  font-family: 'Inter';
-  src: url('/fonts/inter-var.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;  // Avoid FOIT
-}
-
-// Critical font subset
-@font-face {
-  font-family: 'Inter';
-  src: url('/fonts/inter-subset.woff2') format('woff2');
-  unicode-range: U+0020-007F;  // Basic Latin
-  font-display: swap;
+.value-prop-text {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #6B7280;
 }
 ```
 
 ## Usage Guidelines
 
-### Best Practices
-- ✅ Use semantic HTML tags (h1-h6, p, etc.)
-- ✅ Maintain consistent hierarchy throughout
-- ✅ Limit to 2-3 font weights per page
-- ✅ Keep line length between 45-75 characters
-- ✅ Use system fonts for better performance
+### Typography Hierarchy (Homepage Authority)
 
-### Accessibility Considerations
-- Minimum font size: 14px for body text
-- Line height minimum: 1.5 for body text
-- Sufficient contrast with backgrounds
-- Support for user font size preferences
-- Clear focus indicators for interactive text
+1. **Hero Headline**: 28px → 40px, 700 weight, #111827
+2. **Section Title**: 22px → 28px, 600 weight, #111827
+3. **Card Title**: 16px, 600 weight, #111827
+4. **Body Text**: 16px, 400 weight, #111827
+5. **Secondary Text**: 14px, 400 weight, #6B7280
+6. **Caption/Meta**: 12px, 400 weight, #6B7280
 
-### Common Patterns
+### Do's and Don'ts
 
-#### Card Title with Description
-```scss
-.card-header {
-  .title {
-    font: var(--font-weight-semibold) var(--font-size-h3)/var(--line-height-h3) var(--font-family-primary);
-    color: var(--color-text-primary);
-    margin-bottom: var(--spacing-xs);
+#### Do's
+- ✅ Use 16px minimum for input fields (prevents iOS zoom)
+- ✅ Apply 700 weight for hero headlines
+- ✅ Use 600 weight for CTAs and section titles
+- ✅ Maintain 1.5× line height for body text
+- ✅ Keep consistent font sizes across similar components
+
+#### Don'ts
+- ❌ Use font sizes smaller than 12px
+- ❌ Apply more than 3 font weights per page
+- ❌ Use uppercase text transformation on buttons
+- ❌ Mix different font families within components
+- ❌ Exceed 65 characters per line for body text
+
+### Accessibility Requirements
+
+- **Minimum Sizes**: 14px for body, 12px for captions
+- **Line Height**: Minimum 1.5× for body text
+- **Weight Contrast**: 300+ weight difference for emphasis
+- **Focus Indicators**: Visible outline on all interactive text
+- **Scalability**: Support browser font size preferences
+
+### Implementation Example
+
+```css
+:root {
+  /* Font families */
+  --font-primary: 'Inter', -apple-system, sans-serif;
+  
+  /* Hero typography */
+  --text-hero: 700 28px/36px var(--font-primary);
+  --text-hero-sub: 400 16px/24px var(--font-primary);
+  
+  /* Component typography */
+  --text-button: 600 14px/20px var(--font-primary);
+  --text-body: 400 16px/24px var(--font-primary);
+  --text-caption: 400 12px/16px var(--font-primary);
+  
+  /* Responsive scales */
+  @media (min-width: 768px) {
+    --text-hero: 700 32px/40px var(--font-primary);
   }
   
-  .description {
-    font: var(--font-weight-regular) var(--font-size-body-small)/var(--line-height-body) var(--font-family-primary);
-    color: var(--color-text-secondary);
+  @media (min-width: 1024px) {
+    --text-hero: 700 40px/48px var(--font-primary);
   }
 }
 ```
 
-#### Form Field with Label
-```scss
-.form-field {
-  .label {
-    font: var(--font-weight-medium) var(--font-size-label)/var(--line-height-label) var(--font-family-primary);
-    color: var(--color-text-primary);
-    text-transform: uppercase;
-    letter-spacing: var(--letter-spacing-label);
-  }
-  
-  .input {
-    font: var(--font-weight-regular) var(--font-size-input)/var(--line-height-input) var(--font-family-primary);
-    color: var(--color-text-primary);
-  }
+## Web Font Loading Strategy
+
+```html
+<!-- Preload critical font -->
+<link rel="preload" href="/fonts/Inter-var.woff2" as="font" crossorigin>
+
+<!-- Font face declaration -->
+<style>
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-var.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: swap;  /* Avoid invisible text */
 }
+</style>
 ```
 
 ## Related Documentation
-- [Design Tokens Overview](./README.md) - Token system architecture
-- [Color Tokens](./colors.md) - Color specifications
-- [Spacing Tokens](./spacing.md) - Spacing system
+- [Homepage Screen States](../../features/homepage-landing/screen-states.md) - Source specifications
+- [Color Tokens](./colors.md) - Text color specifications
 - [Style Guide](../style-guide.md) - Complete visual guidelines
-
-## Implementation Notes
-Typography tokens should be applied systematically through utility classes or component styles. Always test across different devices and ensure proper font loading strategies are in place. Consider performance implications of web fonts and provide appropriate fallbacks.
+- [Button Components](../components/buttons.md) - Button typography
 
 ## Last Updated
-2025-01-04 - Complete typography token specification
+2025-01-12 - Complete extraction from homepage design specifications

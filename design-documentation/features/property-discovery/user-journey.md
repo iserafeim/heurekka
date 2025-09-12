@@ -28,36 +28,36 @@ This document maps the complete user journey for discovering and exploring prope
 
 ## User Personas
 
-### Primary Persona: First-Time Buyer
-- **Goals**: Find affordable starter home, understand market options
-- **Pain Points**: Overwhelming choices, complex search filters, information overload
+### Primary Persona: Young Professional Renter
+- **Goals**: Find affordable apartment near work, quick WhatsApp contact
+- **Pain Points**: Limited time to search, need visual property comparison, Spanish-language preference
+- **Technical Proficiency**: High on mobile, medium on desktop
+- **Time Availability**: Lunch breaks and evenings
+- **Key Motivations**: Location convenience, price within budget, quick move-in
+
+### Secondary Persona: Family Seeking Rental
+- **Goals**: Find house with multiple bedrooms, safe neighborhood, schools nearby
+- **Pain Points**: Need to see properties on map, compare neighborhoods, coordinate viewing times
 - **Technical Proficiency**: Medium
-- **Time Availability**: Evenings and weekends
-- **Key Motivations**: Find perfect home, stay within budget, move-in ready properties
+- **Time Availability**: Weekends primarily
+- **Key Motivations**: Safety, space, amenities, school proximity
 
-### Secondary Persona: Relocating Professional
-- **Goals**: Quick property search, virtual tours, remote decision making
-- **Pain Points**: Limited local knowledge, time constraints, remote viewing challenges
-- **Technical Proficiency**: High
-- **Time Availability**: Limited, urgent timeline
-- **Key Motivations**: Efficiency, comprehensive information, trusted data
-
-### Tertiary Persona: Property Investor
-- **Goals**: Identify investment opportunities, analyze ROI, track multiple markets
-- **Pain Points**: Need for detailed analytics, market comparisons, portfolio management
-- **Technical Proficiency**: High
-- **Time Availability**: Regular monitoring
-- **Key Motivations**: Investment returns, market trends, opportunity identification
+### Tertiary Persona: Property Owner/Landlord
+- **Goals**: List properties, find qualified tenants, manage inquiries
+- **Pain Points**: Need to showcase properties effectively, qualify leads, manage multiple listings
+- **Technical Proficiency**: Medium to High
+- **Time Availability**: Business hours
+- **Key Motivations**: Quick tenant placement, qualified leads, property visibility
 
 ## Journey Stages
 
 ### Stage 1: Initial Discovery
 **User State**: Browsing without specific criteria
 **Touchpoints**: 
-- Homepage featured properties
-- Trending searches
-- Neighborhood guides
-- Quick search bar
+- Integrated navbar search
+- Split-view property display (70/30)
+- Interactive map exploration
+- Quick filter dropdowns
 
 **Emotional State**: Curious, exploratory
 **Success Metrics**: 
@@ -68,10 +68,11 @@ This document maps the complete user journey for discovering and exploring prope
 ### Stage 2: Search Refinement
 **User State**: Actively filtering and refining results
 **Touchpoints**:
-- Search filters panel
-- Map view toggle
-- Sort options
-- Saved searches prompt
+- Horizontal filter bar dropdowns
+- Split-view real-time updates
+- Map-based area selection
+- Advanced filters modal
+- View toggle (List/Split/Map)
 
 **Emotional State**: Focused, analytical
 **Success Metrics**:
@@ -82,57 +83,63 @@ This document maps the complete user journey for discovering and exploring prope
 ### Stage 3: Property Evaluation
 **User State**: Comparing specific properties
 **Touchpoints**:
-- Property cards
-- Quick view modal
+- Property cards (clickable for details)
+- Property detail modal
+- Photo gallery in modal
 - Comparison tool
 - Favorite button
 
 **Emotional State**: Evaluative, decisive
 **Success Metrics**:
-- Property view depth
+- Modal open rate
+- Gallery interaction rate
+- Time spent in modal
 - Comparison tool usage
 - Favorite rate
 
 ### Stage 4: Deep Dive
-**User State**: Examining property details
+**User State**: Examining property details in modal
 **Touchpoints**:
-- Photo gallery
-- Virtual tour
+- Full photo gallery in modal
+- Virtual tour (if available)
+- Complete property description
+- Amenities list
+- Location mini-map
 - Neighborhood info
-- School data
-- Transit scores
 
 **Emotional State**: Interested, scrutinizing
 **Success Metrics**:
-- Time on property page
-- Media engagement rate
-- Information completeness score
+- Modal dwell time
+- Gallery navigation depth
+- Description expansion rate
+- Map interaction in modal
 
 ### Stage 5: Action Taking
-**User State**: Ready to engage
+**User State**: Ready to engage after viewing full details
 **Touchpoints**:
-- Contact agent button
+- WhatsApp contact button (in modal only)
+- Save property from modal
+- Share modal link
 - Schedule viewing
-- Save property
-- Share options
-- Mortgage calculator
+- Close modal to continue browsing
 
-**Emotional State**: Committed, action-oriented
+**Emotional State**: Informed, action-oriented
 **Success Metrics**:
-- Contact initiation rate
-- Viewing schedule rate
+- Contact rate from modal
+- Modal-to-contact conversion
+- Properties viewed before contact
 - Lead quality score
 
 ## Entry Points
 
-### Primary Entry: Homepage Search
-**Trigger**: Direct site visit
+### Primary Entry: Direct Search Page
+**Trigger**: Direct site visit or navigation
 **Flow**:
-1. Land on homepage
-2. See hero search interface
-3. Enter location or criteria
-4. View initial results
-5. Begin refinement process
+1. Land on property search page
+2. See split-view with properties and map
+3. Use navbar search or filters
+4. View real-time filtered results
+5. Explore properties visually on map
 
 ### Secondary Entry: Saved Search Alert
 **Trigger**: Email/push notification
@@ -174,20 +181,23 @@ This document maps the complete user journey for discovering and exploring prope
 - Use saved search
 
 ### Step 2: Results Exploration
-**Screen**: Search Results Grid/Map
+**Screen**: Split-View Search Results (70/30)
 **User Actions**:
-- Toggle between grid and map views
-- Apply filters:
-  - Price range adjustment
-  - Bedrooms/bathrooms
-  - Property features
-  - Listing date
-  - More filters expansion
+- Toggle between List/Split/Map views
+- Apply filters via horizontal bar:
+  - Precio (dropdown with slider)
+  - Habitaciones (multi-select)
+  - Tipo de propiedad (checkboxes)
+  - Más filtros (modal)
 - Sort results:
-  - Price (low to high/high to low)
-  - Newest listings
-  - Most popular
-  - Best match
+  - Más recientes
+  - Precio (menor a mayor/mayor a menor)
+  - Más relevantes
+- Interact with map:
+  - Pan to explore areas
+  - Zoom for detail
+  - Click clusters
+  - Hover for property preview
 
 **System Response**:
 - Real-time result updates
@@ -202,76 +212,67 @@ This document maps the complete user journey for discovering and exploring prope
 - Custom search areas on map
 - Agent-listed properties filter
 
-### Step 3: Property Preview
-**Screen**: Quick View Modal/Card Expansion
+### Step 3: Property Card Interaction
+**Screen**: Property Cards in Split View
 **User Actions**:
-- Hover for quick info
-- Click for quick view
-- Navigate photos
-- View key details
-- Save to favorites
-- Compare checkbox
+- Hover for visual feedback
+- Click anywhere on card to open modal
+- View basic info on card (price, location, specs)
+- No contact button on cards
+
+**System Response**:
+- Card hover animation
+- Click triggers modal opening
+- Preload property details
+- Track interaction for analytics
+
+### Step 4: Property Details Modal
+**Screen**: Full-Screen Property Modal
+**User Actions**:
+- Browse complete photo gallery
+- Navigate thumbnails
+- Read full description
+- Check all specifications
+- View amenities list
+- Interact with location map
+- Scroll for more details
+- Click WhatsApp contact button
+- Close modal to continue browsing
 
 **System Response**:
 - Smooth modal animation
-- Preload adjacent properties
-- Update recently viewed
-- Sync favorite status
+- Gallery image preloading
+- Responsive layout adjustment
+- WhatsApp deep link preparation
+- Maintain scroll position on close
 
-### Step 4: Property Details
-**Screen**: Full Property Page
+### Step 5: Contact Initiation
+**Screen**: WhatsApp Contact from Modal
 **User Actions**:
-- Browse photo gallery
-- View virtual tour
-- Read description
-- Check specifications
-- Explore neighborhood:
-  - Schools ratings
-  - Transit options
-  - Local amenities
-  - Crime statistics
-- Calculate mortgage
-- Check price history
+- Click WhatsApp button in modal
+- Auto-generated Spanish message
+- Direct to WhatsApp with property details
+- Return to modal or browse
 
 **System Response**:
-- Lazy load images
-- Progressive data loading
-- Interactive maps
-- Dynamic calculations
-- Related properties suggestion
-
-### Step 5: Engagement Actions
-**Screen**: Contact/Action Panel
-**User Actions**:
-- Contact agent:
-  - Send message
-  - Request info
-  - Schedule showing
-- Save property
-- Share property:
-  - Email
-  - Social media
-  - Copy link
-- Print details
-- Report issue
-
-**System Response**:
-- Confirmation messages
-- Calendar integration
-- Email notifications
-- Share tracking
-- Lead routing
+- Generate contextual message
+- Include property address and price
+- Open WhatsApp in new tab
+- Track conversion event
+- Maintain modal state
 
 ## Alternative Paths
 
-### Map-First Search
-**For**: Location-focused users
+### Split-View Exploration
+**For**: Visual comparison users
 **Flow**:
-1. Start with map view
-2. Draw search area
-3. See results in area
-4. Refine with filters
-5. Drill into properties
+1. Default split-view (70/30)
+2. Browse cards while seeing locations
+3. Hover card → map pin highlights
+4. Click card → open detail modal
+5. View full details in modal
+6. Contact via WhatsApp from modal
+7. Close modal to continue browsing
 
 ### Commute-Based Search
 **For**: Working professionals
@@ -305,11 +306,11 @@ This document maps the complete user journey for discovering and exploring prope
 ### No Results Found
 **Situation**: Search criteria too restrictive
 **Handling**:
-- Show "No results" message
-- Suggest relaxing filters
-- Recommend similar areas
-- Offer to save search for alerts
-- Show nearest matches
+- Show "No se encontraron propiedades" message
+- Suggest relaxing filters in Spanish
+- Expand map search radius automatically
+- Show properties just outside criteria
+- Clear filters button prominent
 
 ### Single Result
 **Situation**: Highly specific search
@@ -395,9 +396,11 @@ This document maps the complete user journey for discovering and exploring prope
 
 ### Engagement Metrics
 - Search-to-results rate: >90%
-- Filter usage rate: >60%
-- Map view adoption: >40%
-- Property view depth: >3 per session
+- Filter usage rate: >70%
+- Split-view usage: >80%
+- Map interaction rate: >60%
+- Property view depth: >5 per session
+- Card hover-to-click: >40%
 
 ### Discovery Metrics
 - Average properties viewed: 8-12 per session
@@ -420,16 +423,19 @@ This document maps the complete user journey for discovering and exploring prope
 ## Accessibility Considerations
 
 ### Screen Reader Support
-- Property cards fully navigable
-- Image descriptions provided
-- Map alternatives available
-- Filter states announced
+- Property cards fully navigable with ARIA labels
+- Spanish and English descriptions
+- Map data available in list format
+- Filter states announced in Spanish
+- Split-view panels independently navigable
 
 ### Keyboard Navigation
-- Full keyboard support
-- Logical tab order
-- Skip to results link
-- Map keyboard controls
+- Full keyboard support for split-view
+- Tab between panels (cards/map)
+- Arrow keys for map navigation
+- Enter to select property
+- Escape to close modals
+- Shortcuts: M (map), L (list), S (split)
 
 ### Visual Accessibility
 - High contrast mode

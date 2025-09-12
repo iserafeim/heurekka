@@ -5,11 +5,12 @@
 
 ## 1. Color System
 
-### Primary Colors
-- **Primary**: `#2563EB` - Main CTAs, primary actions, links
-- **Primary Dark**: `#1D4ED8` - Hover states, active selections
+### Primary Colors (Homepage Authority)
+- **Primary**: `#2563EB` - Main CTAs, primary actions, links, search bar borders
+- **Primary Dark**: `#1D4ED8` - Hover states, active selections, focused search
+- **Primary Darker**: `#1E40AF` - Active/pressed states
 - **Primary Light**: `#DBEAFE` - Subtle backgrounds, selected states
-- **Primary Pale**: `#EFF6FF` - Hover backgrounds, highlights
+- **Primary Pale**: `#EFF6FF` - Hover backgrounds, highlights, hero gradients
 
 ### Secondary Colors
 - **WhatsApp Green**: `#25D366` - WhatsApp CTAs, communication actions
@@ -21,30 +22,33 @@
 - **Accent Purple**: `#8B5CF6` - Premium features, special highlights
 - **Gradient Start**: `#2563EB` - Hero gradients, premium badges
 - **Gradient End**: `#0EA5E9` - Gradient endpoints
+- **Gradient Purple Start**: `#667EEA` - Alternative gradient start
+- **Gradient Purple End**: `#764BA2` - Alternative gradient end
 
 ### Semantic Colors
-- **Success**: `#10B981` - Positive actions, confirmations, verified badges
+- **Success**: `#10B981` - Positive actions, confirmations, verified badges, checkmarks
 - **Success Light**: `#D1FAE5` - Success backgrounds
 - **Warning**: `#F59E0B` - Caution states, time-sensitive alerts
 - **Warning Light**: `#FEF3C7` - Warning backgrounds
 - **Error**: `#EF4444` - Errors, destructive actions, required fields
-- **Error Light**: `#FEE2E2` - Error backgrounds
+- **Error Light**: `#FEF2F2` - Error backgrounds
+- **Error Pale**: `#FEE2E2` - Error field backgrounds
 - **Info**: `#3B82F6` - Informational messages, tips
 - **Info Light**: `#DBEAFE` - Info backgrounds
 
-### Neutral Palette
+### Neutral Palette (Homepage Extracted)
 ```css
---neutral-50: #F9FAFB;  /* Backgrounds */
---neutral-100: #F3F4F6; /* Alternate rows */
---neutral-200: #E5E7EB; /* Borders */
---neutral-300: #D1D5DB; /* Disabled borders */
---neutral-400: #9CA3AF; /* Placeholder text */
---neutral-500: #6B7280; /* Secondary text */
---neutral-600: #4B5563; /* Labels */
---neutral-700: #374151; /* Body text */
---neutral-800: #1F2937; /* Headings */
---neutral-900: #111827; /* Primary text */
---neutral-950: #030712; /* High emphasis */
+--neutral-50: #F9FAFB;  /* Light backgrounds */
+--neutral-100: #F3F4F6; /* Skeleton loading base, alternate rows */
+--neutral-200: #E5E7EB; /* Borders, dividers, skeleton shimmer */
+--neutral-300: #D1D5DB; /* Input borders, disabled borders */
+--neutral-400: #9CA3AF; /* Placeholder text, disabled text */
+--neutral-500: #6B7280; /* Secondary text, meta information, labels */
+--neutral-600: #4B5563; /* Form labels, secondary buttons */
+--neutral-700: #374151; /* Body text, secondary button text */
+--neutral-800: #1F2937; /* Dark backgrounds, modal headers */
+--neutral-900: #111827; /* Primary text, headlines */
+--neutral-950: #030712; /* High emphasis text */
 ```
 
 ### Accessibility Notes
@@ -71,22 +75,26 @@
 - Semibold: 600 (subheadings)
 - Bold: 700 (headings, CTAs)
 
-### Type Scale
+### Type Scale (Homepage Authority)
 
-#### Cluely-Inspired Typography Scale (Updated 2025)
+#### Hero Typography - Mobile → Tablet → Desktop
 
-**Hero Typography (Homepage headlines)**
-- **Hero**: `48px/56px → 64px/72px → 80px/88px, 800, -0.025em` - Dramatic homepage titles
-- **Display**: `36px/44px → 48px/56px → 64px/72px, 700, -0.02em` - Section headlines  
-- **Headline**: `28px/36px → 36px/44px → 48px/56px, 700, -0.015em` - Major headers
+**Hero Section Headlines**
+- **Hero H1**: `28px/36px → 32px/40px → 40px/48px, 700` - Main hero headline
+- **Hero Subheadline**: `16px/24px → 18px/28px → 20px/32px, 400` - Supporting hero text
+- **Section Title**: `22px/28px → 24px/32px → 28px/36px, 600` - Major section headers
+- **Display**: `32px/40px → 40px/48px → 48px/56px, 700` - Trust metrics numbers
 
-**Standard Typography**
-- **Title**: `20px/28px → 24px/32px, 600, -0.01em` - Card titles, minor headers
-- **Subtitle**: `16px/24px → 18px/28px → 20px/32px, 400, 0` - Supporting text, large descriptions
-- **Body Large**: `18px/28px, 400, 0` - Lead paragraphs
-- **Body**: `16px/24px, 400, 0` - Standard text
-- **Body Small**: `14px/20px, 400, 0` - Secondary info
-- **Caption**: `12px/16px, 400, 0` - Metadata, timestamps
+**Component Typography**
+- **Card Title**: `16px/20px, 600` - Property card titles
+- **Price Display**: `16px/20px → 20px/24px, 600` - Property prices
+- **Button Text**: `14px/20px, 600` - CTA buttons
+- **Body Large**: `18px/28px, 400` - Lead paragraphs, value propositions
+- **Body**: `16px/24px, 400` - Standard text, descriptions
+- **Body Small**: `14px/20px, 400` - Secondary info, metadata
+- **Caption**: `12px/16px, 400` - Timestamps, small labels
+- **Label**: `14px/20px, 500` - Form labels, navigation items
+- **Link**: `14px/20px, 500` - Text links, quick suggestions
 
 **Enhanced Spacing System**
 - **Section Spacing**: `64px → 96px → 128px` - Between major sections
@@ -114,21 +122,21 @@
 ### Base Unit
 **8px** grid system for consistent alignment
 
-### Spacing Scale
+### Spacing Scale (Homepage Derived)
 ```css
 --space-0: 0px;
---space-1: 4px;   /* Micro spacing */
---space-2: 8px;   /* Tight spacing */
---space-3: 12px;  /* Compact spacing */
---space-4: 16px;  /* Default spacing */
---space-5: 20px;  /* Comfortable spacing */
---space-6: 24px;  /* Medium spacing */
---space-8: 32px;  /* Large spacing */
---space-10: 40px; /* Section spacing */
---space-12: 48px; /* Major spacing */
---space-16: 64px; /* Hero spacing */
---space-20: 80px; /* Page sections */
---space-24: 96px; /* Maximum spacing */
+--space-1: 4px;   /* Micro spacing between elements */
+--space-2: 8px;   /* Icon margins, small gaps */
+--space-3: 12px;  /* Input padding, compact spacing */
+--space-4: 16px;  /* Default padding, card spacing */
+--space-5: 20px;  /* Button padding, medium gaps */
+--space-6: 24px;  /* Section inner spacing, margins */
+--space-8: 32px;  /* Desktop margins, large gaps */
+--space-10: 40px; /* Section spacing mobile */
+--space-12: 48px; /* Major section breaks, modal spacing */
+--space-16: 64px; /* Hero spacing, desktop sections */
+--space-20: 80px; /* Large desktop sections */
+--space-24: 96px; /* Maximum section spacing */
 ```
 
 ### Grid System
@@ -176,23 +184,24 @@
 
 ## 4. Component Specifications
 
-### Buttons
+### Buttons (Homepage Standard)
 
 #### Primary Button
 **Visual Specifications**
-- **Height**: `48px` (mobile), `40px` (desktop)
-- **Padding**: `12px 24px` (mobile), `8px 20px` (desktop)
+- **Height**: `48px` (consistent across all breakpoints)
+- **Padding**: `12px 24px`
 - **Border Radius**: `8px`
 - **Background**: `#2563EB`
-- **Text**: `14px, 600, #FFFFFF`
+- **Text**: `14px/20px, 600, #FFFFFF`
 - **Shadow**: `0 1px 3px rgba(0, 0, 0, 0.12)`
+- **Min Width**: `180px` (desktop), `100%` (mobile)
 
 **States**
-- **Hover**: Background `#1D4ED8`, Shadow `0 4px 6px rgba(0, 0, 0, 0.15)`
-- **Active**: Background `#1E40AF`, Shadow `inset 0 2px 4px rgba(0, 0, 0, 0.15)`
-- **Focus**: Outline `2px solid #2563EB`, Outline offset `2px`
-- **Disabled**: Background `#E5E7EB`, Text `#9CA3AF`, No shadow
-- **Loading**: Spinner icon, Text opacity `0.7`
+- **Hover**: Background `#1D4ED8`, Shadow `0 4px 6px rgba(37, 99, 235, 0.2)`, Transform `translateY(-1px)`
+- **Active**: Background `#1E40AF`, Shadow `inset 0 1px 2px rgba(0, 0, 0, 0.1)`, Transform `translateY(0)`
+- **Focus**: Border `2px solid #1D4ED8`, Shadow `0 0 0 3px rgba(37, 99, 235, 0.1)`
+- **Disabled**: Background `#E5E7EB`, Text `#9CA3AF`, Cursor `not-allowed`
+- **Loading**: Animated dots `○ ○ ● ○`, Background `#2563EB` (dimmed)
 
 #### WhatsApp Button
 **Visual Specifications**
@@ -223,21 +232,37 @@
 
 ### Form Elements
 
-#### Text Input
+#### Search Bar (Primary Input Pattern)
 **Visual Specifications**
-- **Height**: `48px` (mobile), `40px` (desktop)
+- **Height**: `56px` (mobile), `48px` (desktop)
+- **Width**: `100%`, max `600px`
+- **Padding**: `12px 16px 12px 48px` (with icon)
+- **Border**: `2px solid #2563EB`
+- **Border Radius**: `28px`
+- **Background**: `#FFFFFF`
+- **Font**: `16px/24px, 400, #111827` (prevents iOS zoom)
+- **Placeholder**: `16px/24px, 400, #9CA3AF`
+- **Icon**: `24px` search icon, color `#2563EB`
+- **Shadow**: `0 4px 6px rgba(37, 99, 235, 0.1)`
+
+#### Standard Text Input
+**Visual Specifications**
+- **Height**: `48px`
 - **Padding**: `12px 16px`
 - **Border**: `1px solid #D1D5DB`
 - **Border Radius**: `8px`
 - **Background**: `#FFFFFF`
-- **Font**: `14px, 400, #111827`
-- **Placeholder**: `14px, 400, #9CA3AF`
+- **Font**: `16px/24px, 400, #111827`
+- **Placeholder**: `16px/24px, 400, #9CA3AF`
 
 **States**
-- **Focus**: Border `#2563EB`, Shadow `0 0 0 3px rgba(37, 99, 235, 0.1)`
-- **Error**: Border `#EF4444`, Background `#FEF2F2`
+- **Default**: Border `#2563EB` (search) or `#D1D5DB` (standard)
+- **Hover**: Shadow `0 6px 12px rgba(37, 99, 235, 0.15)` (search only)
+- **Focus**: Border `2px solid #1D4ED8`, Shadow `0 0 0 3px rgba(37, 99, 235, 0.1)`
+- **Has Value**: Show clear button `×` on right
+- **Error**: Border `2px solid #EF4444`, Background `#FEF2F2`
+- **Success**: Border `2px solid #10B981`, Green checkmark icon
 - **Disabled**: Background `#F3F4F6`, Text `#9CA3AF`
-- **Success**: Border `#10B981`, Icon checkmark right-aligned
 
 #### Select Dropdown
 **Visual Specifications**
@@ -258,21 +283,23 @@
 
 ### Cards
 
-#### Property Card
+#### Property Card (Homepage Pattern)
 **Visual Specifications**
 - **Background**: `#FFFFFF`
 - **Border**: `1px solid #E5E7EB`
-- **Border Radius**: `12px`
+- **Border Radius**: `8px`
 - **Shadow**: `0 1px 3px rgba(0, 0, 0, 0.1)`
-- **Padding**: `16px`
-- **Hover**: Shadow `0 4px 12px rgba(0, 0, 0, 0.15)`, Transform `translateY(-2px)`
+- **Padding**: `0` (image full width), content `16px`
+- **Hover**: Shadow `0 4px 6px rgba(0, 0, 0, 0.1)`, Transform `translateY(-2px)`
+- **Active**: Transform `translateY(0)`
 
 **Layout**
-- **Image**: 16:9 ratio, `border-radius: 8px`
-- **Title**: `16px, 600, #111827`
-- **Price**: `20px, 700, #2563EB`
-- **Details**: `14px, 400, #6B7280`
-- **CTA Button**: Full width on mobile, auto on desktop
+- **Image**: 16:9 ratio (400×225px optimized), top corners rounded `8px`
+- **Price**: `16px/20px, 600, #111827` (primary info)
+- **Type**: `14px/20px, 400, #111827` (e.g., "2BR Apartment")
+- **Location**: `14px/20px, 400, #6B7280`
+- **Meta**: `12px/16px, 400, #6B7280` (e.g., "WhatsApp • 2 hours ago")
+- **CTA**: Text link `View Details →` or full-width button
 
 #### Dashboard Card
 **Visual Specifications**
@@ -334,37 +361,58 @@
 --spring: cubic-bezier(0.34, 1.56, 0.64, 1);   /* Playful bounces */
 ```
 
-### Duration Scale
+### Duration Scale (Homepage Timing)
 ```css
 --duration-75: 75ms;    /* Micro interactions */
+--duration-100: 100ms;  /* State changes */
 --duration-150: 150ms;  /* Hover states */
 --duration-200: 200ms;  /* Quick transitions */
---duration-300: 300ms;  /* Standard transitions */
+--duration-300: 300ms;  /* Standard transitions, search dropdown */
+--duration-400: 400ms;  /* Card animations */
 --duration-500: 500ms;  /* Complex animations */
+--duration-600: 600ms;  /* Hero entrance, scroll reveals */
 --duration-700: 700ms;  /* Page transitions */
+--duration-1500: 1500ms; /* Skeleton shimmer cycle */
 ```
 
-### Common Animations
+### Common Animations (Homepage Patterns)
 
-#### Fade In
+#### Fade In Up (Hero Content)
 ```css
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-```
-
-#### Slide Up
-```css
-@keyframes slideUp {
-  from { 
+@keyframes fadeInUp {
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Stagger delays for hero sequence */
+.hero-headline { animation-delay: 0ms; }
+.hero-subheadline { animation-delay: 100ms; }
+.search-bar { animation-delay: 200ms; }
+.cta-button { animation-delay: 300ms; }
+```
+
+#### Shimmer (Loading States)
+```css
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #F3F4F6 25%,
+    #E5E7EB 50%,
+    #F3F4F6 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 ```
 
@@ -408,14 +456,20 @@ animation: spin 1s linear infinite;
 
 ## 6. Elevation System
 
-### Shadow Scale
+### Shadow Scale (Homepage Refined)
 ```css
 --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
---shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+--shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
 --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
 --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
 --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.12);
+
+/* Colored shadows for brand elements */
+--shadow-primary: 0 4px 6px rgba(37, 99, 235, 0.1);
+--shadow-primary-hover: 0 6px 12px rgba(37, 99, 235, 0.15);
+--shadow-primary-focus: 0 0 0 3px rgba(37, 99, 235, 0.1);
+--shadow-whatsapp: 0 2px 8px rgba(37, 211, 102, 0.3);
 ```
 
 ### Elevation Levels

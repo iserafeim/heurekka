@@ -31,46 +31,55 @@ Complete technical implementation guide for developers building the property dis
 
 ### Component Hierarchy
 ```typescript
-// Main component structure
+// Main component structure with split-view architecture
 PropertyDiscovery/
-├── PropertySearch.tsx              // Main container
+├── PropertySearch.tsx              // Main container with split view
 ├── components/
-│   ├── SearchBar/
-│   │   ├── SearchBar.tsx
-│   │   ├── LocationAutocomplete.tsx
-│   │   └── QuickFilters.tsx
-│   ├── ResultsView/
-│   │   ├── ResultsGrid.tsx
-│   │   ├── ResultsList.tsx
-│   │   ├── ResultsMap.tsx
-│   │   └── ViewToggle.tsx
+│   ├── Navigation/
+│   │   ├── NavBar.tsx             // With integrated search
+│   │   ├── SearchBar.tsx          // Spanish autocomplete
+│   │   └── UserActions.tsx
+│   ├── FilterBar/
+│   │   ├── HorizontalFilters.tsx  // Horizontal filter bar
+│   │   ├── PriceDropdown.tsx
+│   │   ├── RoomsSelector.tsx
+│   │   ├── PropertyTypeFilter.tsx
+│   │   └── AdvancedFiltersModal.tsx
+│   ├── SplitView/
+│   │   ├── SplitContainer.tsx     // 70/30 layout manager
+│   │   ├── PropertyCardsPanel.tsx // Left panel (70%)
+│   │   ├── MapPanel.tsx           // Right panel (30%)
+│   │   └── ViewToggle.tsx         // List/Split/Map toggle
 │   ├── PropertyCard/
-│   │   ├── PropertyCard.tsx
+│   │   ├── PropertyCard.tsx        // Clickable card, no contact button
 │   │   ├── PropertyImage.tsx
-│   │   ├── PropertyActions.tsx
-│   │   └── QuickView.tsx
-│   ├── Filters/
-│   │   ├── FilterPanel.tsx
-│   │   ├── PriceRange.tsx
-│   │   ├── PropertyTypes.tsx
-│   │   ├── Amenities.tsx
-│   │   └── AdvancedFilters.tsx
-│   ├── PropertyDetails/
-│   │   ├── PropertyPage.tsx
-│   │   ├── ImageGallery.tsx
-│   │   ├── VirtualTour.tsx
-│   │   ├── PropertyInfo.tsx
-│   │   └── ContactForm.tsx
+│   │   ├── PropertyActions.tsx     // Only favorite button
+│   │   └── PropertyBadges.tsx
+│   ├── MapComponents/
+│   │   ├── MapInstance.tsx        // Mapbox GL wrapper
+│   │   ├── PropertyMarker.tsx
+│   │   ├── MarkerCluster.tsx
+│   │   ├── PropertyTooltip.tsx    // Hover tooltip
+│   │   └── MapControls.tsx
+│   ├── PropertyModal/
+│   │   ├── PropertyDetailModal.tsx  // Main modal component
+│   │   ├── ModalGallery.tsx        // Photo gallery in modal
+│   │   ├── ModalInfo.tsx           // Property details panel
+│   │   ├── WhatsAppCTA.tsx         // Contact button in modal
+│   │   └── ModalAnimations.tsx     // Animation controllers
 │   └── Comparison/
 │       ├── ComparisonBar.tsx
 │       ├── ComparisonTable.tsx
 │       └── ComparisonActions.tsx
 ├── hooks/
 │   ├── usePropertySearch.ts
+│   ├── useSplitViewSync.ts        // Sync cards and map
 │   ├── useMapInteraction.ts
 │   ├── useInfiniteScroll.ts
 │   ├── useFavorites.ts
-│   └── useComparison.ts
+│   ├── usePropertyModal.ts        // Modal state management
+│   ├── useWhatsAppContact.ts      // Contact from modal only
+│   └── useViewToggle.ts
 ├── services/
 │   ├── propertyAPI.ts
 │   ├── geocodingService.ts
@@ -90,26 +99,32 @@ PropertyDiscovery/
 interface PropertySearchProps {
   initialFilters?: SearchFilters;
   onPropertySelect?: (property: Property) => void;
-  viewMode?: 'grid' | 'list' | 'map';
+  viewMode?: 'list' | 'split' | 'map';  // Split view is default
+  locale?: 'es' | 'en';  // Spanish primary
 }
 
 const PropertySearch: React.FC<PropertySearchProps> = ({
   initialFilters,
   onPropertySelect,
-  viewMode = 'grid'
+  viewMode = 'split',  // Default to split view
+  locale = 'es'
 }) => {
   const [filters, setFilters] = useState<SearchFilters>(
     initialFilters || defaultFilters
   );
   const [view, setView] = useState<ViewMode>(viewMode);
+  const [splitRatio, setSplitRatio] = useState({ cards: 70, map: 30 });
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   
-  // Custom hooks
+  // Custom hooks for split-view functionality
   const { search, results, error } = usePropertySearch(filters);
   const { favorites, toggleFavorite } = useFavorites();
-  const { comparison, addToComparison } = useComparison();
+  const { syncCardWithMap, syncMapWithCard } = useSplitViewSync();
+  const { openModal, closeModal, modalState } = usePropertyModal();
+  const { initiateWhatsApp } = useWhatsAppContact();
+  const { currentView, transitionToView } = useViewToggle(view);
   
   // Infinite scroll
   const loadMore = useCallback(() => {
@@ -144,79 +159,339 @@ const PropertySearch: React.FC<PropertySearchProps> = ({
   
   return (
     <div className="property-search">
-      <SearchBar 
-        onSearch={handleSearch}
-        initialLocation={filters.location}
+      <NavBar>
+        <SearchBar 
+          onSearch={handleSearch}
+          initialLocation={filters.location}
+          placeholder="Buscar vecindario, ciudad o código postal"
+          locale={locale}
+        />
+      </NavBar>
+      
+      <HorizontalFilterBar
+        filters={filters}
+        onChange={setFilters}
+        resultCount={results.total}
+        locale={locale}
       />
       
-      <div className="search-content">
-        <FilterPanel
-          filters={filters}
-          onChange={setFilters}
-          resultCount={results.total}
-        />
-        
-        <div className="results-container">
-          <ResultsHeader
-            count={results.total}
-            view={view}
-            onViewChange={setView}
-            sortBy={filters.sortBy}
-            onSortChange={handleSortChange}
-          />
-          
-          {view === 'map' ? (
-            <ResultsMap
-              properties={properties}
-              center={mapCenter}
-              onMarkerClick={handlePropertyClick}
-              onBoundsChange={handleMapBoundsChange}
-            />
-          ) : (
-            <ResultsGrid
+      <div className="split-view-container">
+        {view === 'split' ? (
+          <SplitContainer ratio={splitRatio}>
+            <PropertyCardsPanel
               properties={properties}
               loading={loading}
               favorites={favorites}
               onFavorite={toggleFavorite}
-              onCompare={addToComparison}
-              onPropertyClick={onPropertySelect}
-              view={view}
+              onPropertyHover={syncCardWithMap}
+              onPropertyClick={openModal}  // Opens modal instead of navigation
+              locale={locale}
             />
-          )}
-          
-          {loading && <LoadingIndicator />}
-          {error && <ErrorMessage error={error} onRetry={retry} />}
-        </div>
+            <MapPanel
+              properties={properties}
+              center={mapCenter}
+              onMarkerClick={syncMapWithCard}
+              onBoundsChange={handleMapBoundsChange}
+              onMarkerHover={showPropertyTooltip}
+            />
+          </SplitContainer>
+        ) : view === 'list' ? (
+          <FullListView
+            properties={properties}
+            loading={loading}
+            onPropertyClick={onPropertySelect}
+          />
+        ) : (
+          <FullMapView
+            properties={properties}
+            center={mapCenter}
+            onMarkerClick={handlePropertyClick}
+          />
+        )}
+        
+        <ViewToggle
+          currentView={view}
+          onViewChange={transitionToView}
+          position="top-right"
+        />
+        
+        {loading && <LoadingIndicator />}
+        {error && <ErrorMessage error={error} onRetry={retry} />}
       </div>
-      
-      <ComparisonBar
-        properties={comparison}
-        onCompare={navigateToComparison}
-        onRemove={removeFromComparison}
-      />
     </div>
   );
 };
 ```
 
-#### PropertyCard Component
+#### Property Detail Modal Component
+```typescript
+interface PropertyModalProps {
+  property: Property;
+  isOpen: boolean;
+  onClose: () => void;
+  onWhatsApp: (property: Property) => void;
+  locale: 'es' | 'en';
+}
+
+const PropertyDetailModal: React.FC<PropertyModalProps> = ({
+  property,
+  isOpen,
+  onClose,
+  onWhatsApp,
+  locale = 'es'
+}) => {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isGalleryFullscreen, setGalleryFullscreen] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  
+  // Focus trap for accessibility
+  useFocusTrap(modalRef, isOpen);
+  
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+  
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      
+      switch(e.key) {
+        case 'Escape':
+          onClose();
+          break;
+        case 'ArrowLeft':
+          navigateGallery(-1);
+          break;
+        case 'ArrowRight':
+          navigateGallery(1);
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, activeImageIndex]);
+  
+  const navigateGallery = (direction: number) => {
+    const newIndex = activeImageIndex + direction;
+    if (newIndex >= 0 && newIndex < property.images.length) {
+      setActiveImageIndex(newIndex);
+    }
+  };
+  
+  const handleWhatsAppClick = () => {
+    // Track conversion with full context
+    trackEvent('whatsapp_contact_from_modal', {
+      property_id: property.id,
+      price: property.price,
+      location: property.neighborhood,
+      time_in_modal: getTimeInModal(),
+      images_viewed: activeImageIndex + 1
+    });
+    
+    // Generate rich WhatsApp message
+    const message = locale === 'es' 
+      ? `Hola! Vi esta propiedad en Heurekka:
+        
+        📍 ${property.address}
+        💰 L.${property.price}/mes
+        🏠 ${property.type}
+        🛏️ ${property.bedrooms} habitaciones
+        🚿 ${property.bathrooms} baños
+        📐 ${property.area} m²
+        
+        ¿Podría darme más información?`
+      : `Hi! I saw this property on Heurekka...`;
+    
+    window.open(
+      `https://wa.me/${property.contactPhone}?text=${encodeURIComponent(message)}`,
+      '_blank'
+    );
+  };
+  
+  if (!isOpen) return null;
+  
+  return (
+    <div 
+      className="property-modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div className="property-detail-modal" ref={modalRef}>
+        <div className="modal-header">
+          <h2 id="modal-title">{property.address}</h2>
+          <button 
+            className="modal-close"
+            onClick={onClose}
+            aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {/* Gallery Section */}
+          <section className="modal-gallery">
+            <div className="gallery-main">
+              <img 
+                src={property.images[activeImageIndex]}
+                alt={`${property.type} - Image ${activeImageIndex + 1}`}
+              />
+              
+              <div className="gallery-nav">
+                <button 
+                  onClick={() => navigateGallery(-1)}
+                  disabled={activeImageIndex === 0}
+                  aria-label={locale === 'es' ? 'Imagen anterior' : 'Previous image'}
+                >
+                  <ChevronLeftIcon />
+                </button>
+                <button 
+                  onClick={() => navigateGallery(1)}
+                  disabled={activeImageIndex === property.images.length - 1}
+                  aria-label={locale === 'es' ? 'Siguiente imagen' : 'Next image'}
+                >
+                  <ChevronRightIcon />
+                </button>
+              </div>
+              
+              <div className="image-counter">
+                {activeImageIndex + 1} / {property.images.length}
+              </div>
+            </div>
+            
+            <div className="gallery-thumbnails">
+              {property.images.map((image, index) => (
+                <button
+                  key={index}
+                  className={`gallery-thumbnail ${index === activeImageIndex ? 'active' : ''}`}
+                  onClick={() => setActiveImageIndex(index)}
+                  aria-label={`View image ${index + 1}`}
+                >
+                  <img src={image} alt="" />
+                </button>
+              ))}
+            </div>
+          </section>
+          
+          {/* Information Section */}
+          <section className="modal-info">
+            <div className="modal-info-content">
+              <div className="property-price-block">
+                <p className="modal-price">L.{property.price}/mes</p>
+                <p className="modal-type">{property.type}</p>
+                <p className="modal-location">
+                  <LocationIcon /> {property.neighborhood}, {property.city}
+                </p>
+              </div>
+              
+              <div className="property-specs-grid">
+                <div className="spec-block">
+                  <span className="spec-value">{property.bedrooms}</span>
+                  <span className="spec-label">
+                    {locale === 'es' ? 'Habitaciones' : 'Bedrooms'}
+                  </span>
+                </div>
+                <div className="spec-block">
+                  <span className="spec-value">{property.bathrooms}</span>
+                  <span className="spec-label">
+                    {locale === 'es' ? 'Baños' : 'Bathrooms'}
+                  </span>
+                </div>
+                <div className="spec-block">
+                  <span className="spec-value">{property.area}</span>
+                  <span className="spec-label">m²</span>
+                </div>
+              </div>
+              
+              <div className="amenities-section">
+                <h3 className="section-title">
+                  {locale === 'es' ? 'Amenidades' : 'Amenities'}
+                </h3>
+                <div className="amenities-list">
+                  {property.amenities.map((amenity, index) => (
+                    <div key={index} className="amenity-item">
+                      <CheckIcon className="amenity-icon" />
+                      <span>{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="description-section">
+                <h3 className="section-title">
+                  {locale === 'es' ? 'Descripción' : 'Description'}
+                </h3>
+                <p className="description-text">{property.description}</p>
+              </div>
+              
+              <div className="location-section">
+                <h3 className="section-title">
+                  {locale === 'es' ? 'Ubicación' : 'Location'}
+                </h3>
+                <div className="mini-map">
+                  <MiniMap 
+                    lat={property.coordinates.lat}
+                    lng={property.coordinates.lng}
+                    marker={true}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* WhatsApp CTA */}
+            <div className="modal-contact-section">
+              <button 
+                className="whatsapp-cta-button"
+                onClick={handleWhatsAppClick}
+              >
+                <WhatsAppIcon className="whatsapp-icon" />
+                <span>
+                  {locale === 'es' 
+                    ? 'Contactar por WhatsApp' 
+                    : 'Contact via WhatsApp'}
+                </span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+#### Enhanced PropertyCard Component (No Contact Button)
 ```typescript
 interface PropertyCardProps {
   property: Property;
   isFavorite: boolean;
-  isComparing: boolean;
   onFavorite: (id: string) => void;
-  onCompare: (id: string) => void;
-  onClick: (property: Property) => void;
+  onHover: (id: string | null) => void;  // Sync with map
+  onClick: (property: Property) => void;  // Opens modal
+  locale: 'es' | 'en';
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = memo(({
   property,
   isFavorite,
-  isComparing,
   onFavorite,
-  onCompare,
-  onClick
+  onHover,
+  onWhatsApp,
+  onClick,
+  locale
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showQuickView, setShowQuickView] = useState(false);
@@ -230,8 +505,11 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({
       ref={cardRef}
       className="property-card"
       onClick={() => onClick(property)}
+      onMouseEnter={() => onHover(property.id)}
+      onMouseLeave={() => onHover(null)}
       role="article"
-      aria-label={`Property: ${property.address}`}
+      aria-label={`Propiedad: ${property.address}`}
+      data-property-id={property.id}
     >
       <div className="property-image-container">
         {isVisible && (
@@ -247,10 +525,14 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({
         
         <div className="property-badges">
           {property.isNew && (
-            <span className="badge badge-new">New</span>
+            <span className="badge badge-new">
+              {locale === 'es' ? 'Nuevo' : 'New'}
+            </span>
           )}
           {property.isFeatured && (
-            <span className="badge badge-featured">Featured</span>
+            <span className="badge badge-featured">
+              {locale === 'es' ? 'Destacado' : 'Featured'}
+            </span>
           )}
         </div>
         
@@ -265,17 +547,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({
           >
             <HeartIcon filled={isFavorite} />
           </button>
-          
-          <button
-            className="quick-view-button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowQuickView(true);
-            }}
-            aria-label="Quick view"
-          >
-            <EyeIcon />
-          </button>
+          {/* No quick view - entire card is clickable for modal */}
         </div>
       </div>
       
@@ -290,42 +562,26 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({
         
         <div className="property-specs">
           <span className="spec">
-            <BedIcon /> {property.bedrooms} beds
+            <BedIcon /> {property.bedrooms} {locale === 'es' ? 'hab' : 'beds'}
           </span>
           <span className="spec">
-            <BathIcon /> {property.bathrooms} baths
+            <BathIcon /> {property.bathrooms} {locale === 'es' ? 'baños' : 'baths'}
           </span>
           <span className="spec">
-            <AreaIcon /> {property.sqft} sqft
+            <AreaIcon /> {property.sqft} m²
           </span>
         </div>
         
+        {/* No contact button - moved to modal */}
         <div className="property-footer">
-          <label className="compare-checkbox">
-            <input
-              type="checkbox"
-              checked={isComparing}
-              onChange={(e) => {
-                e.stopPropagation();
-                onCompare(property.id);
-              }}
-              aria-label="Compare this property"
-            />
-            <span>Compare</span>
-          </label>
-          
           <span className="listing-date">
-            Listed {formatRelativeTime(property.listedDate)}
+            {locale === 'es' ? 'Publicado' : 'Listed'} {formatRelativeTime(property.listedDate, locale)}
+          </span>
+          <span className="click-hint">
+            {locale === 'es' ? 'Click para ver detalles' : 'Click for details'}
           </span>
         </div>
       </div>
-      
-      {showQuickView && (
-        <QuickViewModal
-          property={property}
-          onClose={() => setShowQuickView(false)}
-        />
-      )}
     </article>
   );
 });
@@ -335,7 +591,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({
 
 ### Global State Structure
 ```typescript
-// Redux/Context state structure
+// Redux/Context state structure for split-view
 interface AppState {
   search: {
     filters: SearchFilters;
@@ -347,7 +603,13 @@ interface AppState {
     };
     loading: boolean;
     error: string | null;
-    viewMode: 'grid' | 'list' | 'map';
+    viewMode: 'list' | 'split' | 'map';  // Split is default
+  };
+  splitView: {
+    hoveredCardId: string | null;
+    hoveredMarkerId: string | null;
+    syncEnabled: boolean;
+    ratio: { cards: number; map: number };
   };
   map: {
     center: LatLng;
@@ -355,8 +617,9 @@ interface AppState {
     bounds: MapBounds;
     markers: MapMarker[];
     selectedMarker: string | null;
-    drawingMode: boolean;
-    searchArea: GeoJSON | null;
+    hoveredMarker: string | null;  // For tooltip display
+    clusteringEnabled: boolean;
+    visibleProperties: string[];  // IDs visible in current bounds
   };
   user: {
     id: string;
@@ -379,6 +642,13 @@ const searchActions = {
   SET_ERROR: 'search/setError',
   SET_VIEW_MODE: 'search/setViewMode',
   CLEAR_SEARCH: 'search/clear'
+};
+
+const splitViewActions = {
+  SYNC_CARD_HOVER: 'splitView/syncCardHover',
+  SYNC_MAP_HOVER: 'splitView/syncMapHover',
+  UPDATE_RATIO: 'splitView/updateRatio',
+  TOGGLE_SYNC: 'splitView/toggleSync'
 };
 ```
 
@@ -432,12 +702,14 @@ const useSearchFilters = (initialFilters?: Partial<SearchFilters>) => {
 ```typescript
 class PropertyAPI {
   private baseURL = process.env.REACT_APP_API_URL;
+  private locale: 'es' | 'en' = 'es';  // Spanish primary
   
-  // Search properties
+  // Search properties with Spanish support
   async searchProperties(
     filters: SearchFilters,
     page = 1,
-    limit = 24
+    limit = 24,
+    locale = 'es'
   ): Promise<SearchResponse> {
     const params = this.buildSearchParams(filters, page, limit);
     
@@ -467,14 +739,19 @@ class PropertyAPI {
     return response.json();
   }
   
-  // Geocoding service
+  // Geocoding service with Honduras focus
   async geocodeAddress(address: string): Promise<GeocodingResult> {
     const response = await fetch(`${this.baseURL}/geocode`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept-Language': 'es-HN'  // Honduras Spanish
       },
-      body: JSON.stringify({ address })
+      body: JSON.stringify({ 
+        address,
+        country: 'HN',  // Honduras
+        locale: 'es'
+      })
     });
     
     return response.json();
@@ -549,8 +826,14 @@ interface Property {
     lng: number;
     neighborhood: string;
     city: string;
-    state: string;
+    department: string;  // Honduras uses departments
     zipCode: string;
+    country: 'HN';
+  };
+  contact: {
+    phone: string;
+    whatsapp: string;  // WhatsApp number
+    preferredContact: 'whatsapp' | 'phone' | 'email';
   };
   listing: {
     agent: Agent;

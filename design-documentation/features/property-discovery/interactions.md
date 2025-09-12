@@ -19,25 +19,36 @@ Complete interaction and animation specifications for the property discovery fea
 
 ## Table of Contents
 1. [Search Interactions](#search-interactions)
-2. [Map Interactions](#map-interactions)
-3. [Property Card Interactions](#property-card-interactions)
-4. [Gallery Interactions](#gallery-interactions)
-5. [Filter Interactions](#filter-interactions)
-6. [Comparison Interactions](#comparison-interactions)
+2. [Split View Synchronization](#split-view-synchronization)
+3. [Map Interactions](#map-interactions)
+4. [Property Card Interactions](#property-card-interactions)
+5. [Filter Bar Interactions](#filter-bar-interactions)
+6. [View Toggle Interactions](#view-toggle-interactions)
 7. [Performance Patterns](#performance-patterns)
 
 ## Search Interactions
 
-### Search Bar Behaviors
+### Navbar Search Integration
 
-#### Auto-complete
+#### Integrated Search Bar
 ```javascript
-// Location auto-complete
+// Navbar search with Spanish support
+.navbar-search {
+  width: 400px;
+  transition: width 0.3s ease;
+  
+  on:focus {
+    width: 500px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  }
+}
+
+// Location auto-complete in Spanish
 on:input {
   // Debounce input
   debounce(() => {
     if (value.length >= 2) {
-      fetchSuggestions(value);
+      fetchSuggestionsSpanish(value); // Spanish neighborhoods
     }
   }, 300);
 }
@@ -108,63 +119,97 @@ on:select {
 }
 ```
 
-### Quick Filters
+## Split View Synchronization
+
+### Card-Map Coordination
 
 ```javascript
-// Filter chip interactions
-.filter-chip {
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  on:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  on:click {
-    // Toggle animation
-    if (!selected) {
-      animation: chipSelect 0.3s ease;
-      background: #6366F1;
-      color: white;
-    } else {
-      animation: chipDeselect 0.3s ease;
-      background: white;
-      color: #4B5563;
-    }
-  }
-}
-
-@keyframes chipSelect {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-// Multiple selection feedback
-.filter-group {
-  on:change {
-    // Update count badge
-    .filter-count {
-      animation: countUpdate 0.3s ease;
-    }
+// Card hover triggers map pin highlight
+.property-card {
+  on:mouseenter {
+    const pinId = this.dataset.propertyId;
+    mapInstance.highlightPin(pinId);
     
-    // Apply filters with delay
+    // Animate pin with pulse
+    .map-marker[data-id="${pinId}"] {
+      animation: pulse 2s infinite;
+      background: #2563EB;
+      color: white;
+      z-index: 1000;
+    }
+  }
+  
+  on:mouseleave {
+    mapInstance.unhighlightAll();
+  }
+}
+
+// Map pin click highlights card
+.map-marker {
+  on:click {
+    const cardId = this.dataset.id;
+    const card = document.querySelector(`.property-card[data-id="${cardId}"]`);
+    
+    // Smooth scroll to card
+    card.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+    
+    // Highlight card with glow
+    card.classList.add('synchronized');
     setTimeout(() => {
-      applyFilters();
+      card.classList.remove('synchronized');
+    }, 2000);
+  }
+}
+
+// Synchronized panel scrolling
+.cards-panel {
+  on:scroll {
+    throttle(() => {
+      const visibleCards = getVisibleCards();
+      const bounds = calculateBoundsForProperties(visibleCards);
+      
+      // Smooth map adjustment
+      mapInstance.fitBounds(bounds, {
+        padding: 50,
+        duration: 300
+      });
     }, 500);
+  }
+}
+
+// Map pan updates property list
+.map-instance {
+  on:moveend {
+    const bounds = map.getBounds();
+    const visibleProperties = getPropertiesInBounds(bounds);
+    
+    // Update cards panel with fade
+    updatePropertyCards(visibleProperties, {
+      animation: 'fade',
+      duration: 300
+    });
+    
+    // Update count in Spanish
+    updateResultCount(`${visibleProperties.length} propiedades`);
   }
 }
 ```
 
 ## Map Interactions
 
-### Map Navigation
+### Map Panel Interactions (30% View)
 
-#### Pan and Zoom
+#### Constrained Map Controls
 ```javascript
-// Smooth pan
-.map-container {
+// Map in 30% panel - optimized interactions
+.map-panel {
+  // Constrained for smaller viewport
+  minZoom: 10,
+  maxZoom: 18,
+  
   on:pan {
     cursor: grab;
     
@@ -172,9 +217,10 @@ on:select {
       cursor: grabbing;
     }
     
-    // Update visible markers
+    // Real-time sync with cards
     throttle(() => {
-      updateVisibleMarkers(bounds);
+      highlightVisibleProperties(bounds);
+      updateCardFiltering(bounds);
     }, 100);
   }
 }
@@ -211,21 +257,38 @@ on:wheel {
 }
 ```
 
-#### Marker Interactions
+#### Property Tooltip on Hover
 
 ```javascript
-// Marker hover
+// Enhanced marker hover with tooltip
 .map-marker {
   on:mouseenter {
-    // Scale up
+    // Scale marker
     transform: scale(1.2);
     z-index: 1000;
     
-    // Show preview
-    showPropertyPreview(propertyId, {
+    // Show property tooltip
+    const tooltip = createPropertyTooltip({
+      id: propertyId,
+      price: propertyData.price,
+      beds: propertyData.bedrooms,
+      address: propertyData.address,
+      image: propertyData.thumbnail
+    });
+    
+    // Position above marker
+    positionTooltip(tooltip, this, {
       position: 'top',
-      offset: 10,
-      animation: 'fadeIn'
+      offset: 10
+    });
+    
+    // Fade in animation
+    tooltip.animate([
+      { opacity: 0, transform: 'translateY(5px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], {
+      duration: 200,
+      easing: 'ease-out'
     });
   }
   
@@ -278,102 +341,215 @@ on:wheel {
 }
 ```
 
-### Drawing Tools
+## Filter Bar Interactions
+
+### Horizontal Filter Dropdowns
 
 ```javascript
-// Area selection
-.draw-area-tool {
-  on:activate {
-    map.style.cursor = 'crosshair';
+// Filter dropdown behavior
+.filter-dropdown {
+  on:click {
+    // Toggle dropdown
+    this.classList.toggle('active');
     
-    // Show instructions
-    .draw-instructions {
-      animation: slideInTop 0.3s ease;
+    // Show content with animation
+    .filter-dropdown-content {
+      if (active) {
+        display: block;
+        animation: dropIn 0.2s ease;
+      } else {
+        animation: dropOut 0.15s ease;
+        setTimeout(() => display = none, 150);
+      }
     }
-  }
-  
-  on:drawstart {
-    vertices = [];
-    
-    on:click {
-      // Add vertex
-      vertices.push(clickPosition);
-      
-      // Draw vertex marker
-      createVertexMarker(clickPosition);
-      
-      // Update polygon
-      updatePolygon(vertices);
-    }
-  }
-  
-  on:drawend {
-    // Complete polygon animation
-    .drawn-polygon {
-      animation: polygonComplete 0.5s ease;
-    }
-    
-    // Calculate area
-    const area = calculateArea(vertices);
-    showAreaStats(area);
   }
 }
 
-@keyframes polygonComplete {
-  0% { 
-    fill-opacity: 0;
-    stroke-dasharray: 10, 10;
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  100% { 
-    fill-opacity: 0.2;
-    stroke-dasharray: 0, 0;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Price range slider in dropdown
+.price-slider {
+  on:input {
+    // Real-time price display
+    updatePriceDisplay(this.value);
+    
+    // Debounced filter application
+    debounce(() => {
+      applyPriceFilter(this.value);
+      // Update both panels
+      updatePropertyCards();
+      updateMapMarkers();
+    }, 500);
+  }
+}
+
+// Room selector
+.room-selector {
+  .room-option {
+    on:click {
+      this.classList.toggle('selected');
+      
+      // Immediate feedback
+      if (selected) {
+        background: #2563EB;
+        color: white;
+        animation: selectPop 0.2s ease;
+      }
+      
+      // Apply filter
+      updateRoomFilter();
+      syncPanels();
+    }
+  }
+}
+
+// Advanced filters modal
+.more-filters-button {
+  on:click {
+    showModal({
+      content: advancedFiltersForm,
+      width: '600px',
+      animation: 'slideUp',
+      overlay: true
+    });
   }
 }
 ```
 
-## Property Card Interactions
+## View Toggle Interactions
 
-### Card Hover States
+### View Mode Switching
 
 ```javascript
-// Card hover effects
+// View toggle buttons (List/Split/Map)
+.view-toggle {
+  .view-button {
+    on:click {
+      const mode = this.dataset.view;
+      
+      // Transition animations
+      switch(mode) {
+        case 'list':
+          // Full width list view
+          transitionToList();
+          break;
+        case 'split':
+          // 70/30 split view (default)
+          transitionToSplit();
+          break;
+        case 'map':
+          // Full screen map
+          transitionToMap();
+          break;
+      }
+    }
+  }
+}
+
+// Transition to split view
+function transitionToSplit() {
+  const container = document.querySelector('.view-container');
+  
+  // Animate layout change
+  container.animate([
+    { gridTemplateColumns: getCurrentLayout() },
+    { gridTemplateColumns: '70% 30%' }
+  ], {
+    duration: 400,
+    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    fill: 'forwards'
+  });
+  
+  // Initialize map if needed
+  if (!mapInitialized) {
+    initializeMapPanel();
+  }
+  
+  // Sync current properties
+  syncMapWithCards();
+}
+
+// Mobile view toggle
+@media (max-width: 767px) {
+  .view-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    
+    on:click {
+      // Toggle between list and map
+      if (currentView === 'list') {
+        showMapFullscreen();
+      } else {
+        showListView();
+      }
+    }
+  }
+}
+  
+## Property Card Interactions
+
+### Enhanced Card Behaviors in Split View (Modal Trigger)
+```javascript
+// Card hover with map sync - No contact button
 .property-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
+  cursor: pointer;
   
   on:mouseenter {
+    // Elevate card
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     
-    // Image zoom
+    // Sync with map marker
+    const marker = mapInstance.getMarker(this.dataset.id);
+    marker.highlight();
+    marker.showPriceLabel();
+    
+    // Image slow zoom
     .property-image {
       transform: scale(1.05);
       transition: transform 5s ease;
     }
     
-    // Show quick actions
-    .quick-actions {
-      opacity: 1;
-      transform: translateY(0);
-      transition: all 0.2s ease;
-    }
-    
-    // Highlight on map
-    if (mapVisible) {
-      highlightMapMarker(propertyId);
-    }
+    // Show "Click para ver detalles" tooltip
+    showTooltip('Click para ver detalles');
   }
   
   on:mouseleave {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     
+    // Reset map marker
+    const marker = mapInstance.getMarker(this.dataset.id);
+    marker.unhighlight();
+    marker.hidePriceLabel();
+    
     .property-image {
       transform: scale(1);
     }
     
-    .quick-actions {
-      opacity: 0;
-      transform: translateY(10px);
+    hideTooltip();
+  }
+  
+  on:click {
+    // Only handle favorite button, everything else opens modal
+    if (e.target.matches('.favorite-button')) {
+      e.stopPropagation();
+      toggleFavorite(this.dataset.id);
+    } else {
+      // Open property detail modal
+      e.preventDefault();
+      openPropertyModal(this.dataset.id);
     }
   }
 }
@@ -438,37 +614,53 @@ on:wheel {
 }
 ```
 
-### Quick View Modal
+### Property Detail Modal
 
 ```javascript
-// Open quick view
-.property-card {
-  on:click {
-    // Card shrink effect
-    animation: cardPress 0.2s ease;
-    
-    // Open modal
-    setTimeout(() => {
-      openQuickView(propertyId);
-    }, 200);
-  }
-}
-
-// Modal animation
-.quick-view-modal {
-  // Entry animation
-  animation: modalEntry 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+// Open property detail modal
+function openPropertyModal(propertyId) {
+  // Track event
+  trackEvent('property_modal_opened', {
+    property_id: propertyId,
+    source: 'card_click'
+  });
   
-  // Backdrop fade
-  .modal-backdrop {
-    animation: fadeIn 0.3s ease;
+  // Create modal overlay
+  const modal = createPropertyModal(propertyId);
+  
+  // Prevent body scroll
+  document.body.style.overflow = 'hidden';
+  
+  // Animate modal entrance
+  modal.classList.add('entering');
+  requestAnimationFrame(() => {
+    modal.classList.add('entered');
+  });
+  
+  // Load property data
+  loadPropertyDetails(propertyId).then(data => {
+    populateModal(modal, data);
+    initializeGallery(modal);
+    setupWhatsAppButton(modal, data);
+  });
+}
+
+// Modal structure and animations
+.property-modal-overlay {
+  // Backdrop blur effect
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease;
+  
+  .property-detail-modal {
+    // Bounce entrance animation
+    animation: modalBounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
-@keyframes modalEntry {
+@keyframes modalBounceIn {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.95) translateY(20px);
   }
   to {
     opacity: 1;
@@ -476,23 +668,101 @@ on:wheel {
   }
 }
 
-// Close animation
-.modal-close {
-  on:click {
-    .quick-view-modal {
-      animation: modalExit 0.2s ease forwards;
-    }
-    
-    .modal-backdrop {
-      animation: fadeOut 0.2s ease forwards;
+// Gallery interactions in modal
+.modal-gallery {
+  .gallery-thumbnail {
+    on:click {
+      // Update main image
+      const imageUrl = this.dataset.fullsize;
+      updateMainImage(imageUrl);
+      
+      // Update active state
+      document.querySelectorAll('.gallery-thumbnail').forEach(thumb => {
+        thumb.classList.remove('active');
+      });
+      this.classList.add('active');
+      
+      // Track gallery interaction
+      trackEvent('modal_gallery_interaction', {
+        action: 'thumbnail_click'
+      });
     }
   }
+  
+  // Gallery navigation
+  .gallery-nav-prev, .gallery-nav-next {
+    on:click {
+      const direction = this.classList.contains('gallery-nav-next') ? 1 : -1;
+      navigateGallery(direction);
+    }
+  }
+  
+  // Keyboard navigation
+  on:keydown {
+    if (e.key === 'ArrowLeft') navigateGallery(-1);
+    if (e.key === 'ArrowRight') navigateGallery(1);
+    if (e.key === 'Escape') closePropertyModal();
+  }
+}
+
+// WhatsApp button in modal
+.whatsapp-cta-button {
+  on:click {
+    // Ripple effect
+    createRippleEffect(this, e);
+    
+    // Track conversion
+    trackEvent('contact_initiated', {
+      property_id: currentPropertyId,
+      from_modal: true,
+      time_in_modal: getTimeInModal()
+    });
+    
+    // Generate contextual message
+    const message = generateWhatsAppMessage(propertyData);
+    
+    // Open WhatsApp
+    window.open(
+      `https://wa.me/${propertyData.phone}?text=${encodeURIComponent(message)}`,
+      '_blank'
+    );
+  }
+}
+
+// Close modal
+.modal-close, .modal-overlay {
+  on:click {
+    if (e.target === e.currentTarget) {
+      closePropertyModal();
+    }
+  }
+}
+
+function closePropertyModal() {
+  const modal = document.querySelector('.property-modal-overlay');
+  
+  // Exit animation
+  modal.classList.add('exiting');
+  
+  // Re-enable body scroll
+  document.body.style.overflow = '';
+  
+  // Remove after animation
+  setTimeout(() => {
+    modal.remove();
+  }, 300);
+  
+  // Track time spent
+  trackEvent('modal_closed', {
+    time_spent: getTimeInModal(),
+    interaction_count: getInteractionCount()
+  });
 }
 
 @keyframes modalExit {
   to {
     opacity: 0;
-    transform: scale(0.9) translateY(20px);
+    transform: scale(0.95) translateY(20px);
   }
 }
 ```
@@ -657,262 +927,134 @@ on:wheel {
 }
 ```
 
-## Filter Interactions
-
-### Range Sliders
+### WhatsApp Contact from Modal
 
 ```javascript
-// Price range slider
-.price-slider {
-  // Thumb drag
-  .slider-thumb {
-    on:mousedown {
-      isDragging = true;
-      this.style.cursor = 'grabbing';
-      
-      // Show value tooltip
-      .value-tooltip {
-        opacity: 1;
-        transform: translateY(-10px);
-      }
-    }
-    
-    on:mousemove {
-      if (isDragging) {
-        // Update position
-        const percentage = calculatePercentage(event.clientX);
-        updateSliderValue(percentage);
-        
-        // Live preview
-        throttle(() => {
-          previewFilterResults();
-        }, 200);
-      }
-    }
-    
-    on:mouseup {
-      isDragging = false;
-      this.style.cursor = 'grab';
-      
-      // Hide tooltip with delay
-      setTimeout(() => {
-        .value-tooltip {
-          opacity: 0;
-        }
-      }, 1000);
-      
-      // Apply filter
-      applyPriceFilter(minValue, maxValue);
-    }
-  }
+// WhatsApp button only in modal now
+function setupWhatsAppButton(modal, propertyData) {
+  const whatsappButton = modal.querySelector('.whatsapp-cta-button');
   
-  // Range fill animation
-  .range-fill {
-    transition: all 0.2s ease;
-    background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%);
-  }
-}
-```
-
-### Multi-select Filters
-
-```javascript
-// Property type selection
-.property-type-grid {
-  .type-option {
-    transition: all 0.2s ease;
+  whatsappButton.addEventListener('click', (e) => {
+    // Visual feedback
+    whatsappButton.classList.add('sending');
     
-    on:click {
-      toggleSelection();
-      
-      if (selected) {
-        animation: selectBounce 0.3s ease;
-        background: #6366F1;
-        color: white;
-        
-        // Icon animation
-        .type-icon {
-          animation: iconRotate 0.3s ease;
-        }
-      } else {
-        background: white;
-        color: #4B5563;
-      }
-      
-      // Update results count
-      updateResultsPreview();
-    }
-  }
-}
+    // Generate rich message with property details
+    const message = `
+Hola! Estoy interesado en la propiedad que vi en Heurekka:
 
-@keyframes selectBounce {
-  0% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-  100% { transform: scale(1); }
-}
+📍 ${propertyData.address}
+💰 ${propertyData.price}/mes
+🏠 ${propertyData.type}
+🛏️ ${propertyData.bedrooms} habitaciones
+🚿 ${propertyData.bathrooms} baños
+📐 ${propertyData.area} m²
 
-@keyframes iconRotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-```
-
-### Filter Application
-
-```javascript
-// Apply filters button
-.apply-filters-button {
-  on:click {
-    // Button loading state
-    this.disabled = true;
-    animation: buttonLoading 1s ease infinite;
+¿Podría darme más información o agendar una visita?
+    `.trim();
     
-    // Apply filters
-    applyAllFilters().then(() => {
-      // Success animation
-      animation: buttonSuccess 0.3s ease;
-      
-      // Close filter panel
-      setTimeout(() => {
-        closeFilterPanel();
-      }, 300);
+    // Track high-intent conversion
+    trackEvent('whatsapp_contact_from_modal', {
+      property_id: propertyData.id,
+      price: propertyData.price,
+      type: propertyData.type,
+      time_to_contact: getTimeInModal(),
+      images_viewed: getImagesViewed(),
+      description_read: didReadDescription()
     });
-  }
-}
-
-// Clear filters
-.clear-filters-button {
-  on:click {
-    // Confirmation animation
-    animation: shake 0.3s ease;
     
-    // Clear with cascade effect
-    .filter-item {
-      animation: clearCascade 0.3s ease;
-      animation-delay: calc(var(--index) * 0.05s);
-    }
+    // Open WhatsApp with rich context
+    const whatsappUrl = `https://wa.me/${propertyData.contact_phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
     
+    // Success feedback
     setTimeout(() => {
-      resetAllFilters();
-      refreshResults();
+      whatsappButton.classList.remove('sending');
+      whatsappButton.innerHTML = '✓ Contacto iniciado';
     }, 500);
+  });
+}
+
+// Button animation styles
+.whatsapp-cta-button {
+  position: relative;
+  overflow: hidden;
+  
+  &.sending {
+    animation: pulse 0.6s ease;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      transform: translate(-50%, -50%);
+      animation: rippleOut 0.6s ease;
+    }
   }
 }
 
-@keyframes clearCascade {
-  0% { transform: translateX(0); opacity: 1; }
-  50% { transform: translateX(-20px); opacity: 0.5; }
-  100% { transform: translateX(0); opacity: 1; }
+@keyframes rippleOut {
+  to {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+  }
 }
 ```
 
-## Comparison Interactions
-
-### Add to Comparison
+### Responsive Behavior Transitions
 
 ```javascript
-// Compare checkbox
-.compare-checkbox {
-  on:change {
-    if (checked) {
-      // Add animation
-      animation: addToCompare 0.3s ease;
-      
-      // Show comparison bar
-      if (comparisonCount === 1) {
-        .comparison-bar {
-          animation: slideUp 0.3s ease;
-          transform: translateY(0);
+// Tablet to mobile transition
+@media (max-width: 768px) {
+  .split-view-container {
+    // Collapse to single view
+    on:resize {
+      if (window.innerWidth < 768) {
+        // Hide map panel
+        .map-panel {
+          animation: slideOut 0.3s ease forwards;
+        }
+        
+        // Expand cards to full width
+        .cards-panel {
+          animation: expandFull 0.3s ease forwards;
+        }
+        
+        // Show floating map button
+        .map-float-button {
+          animation: fadeIn 0.3s ease;
+          display: block;
         }
       }
-      
-      // Update count
-      .comparison-count {
-        animation: countBump 0.3s ease;
-      }
-    } else {
-      // Remove animation
-      animation: removeFromCompare 0.3s ease;
-    }
-    
-    // Limit check
-    if (comparisonCount >= 4) {
-      showToast('Maximum 4 properties for comparison', 'warning');
-      disableUnselectedCheckboxes();
     }
   }
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
+// Desktop resize handling
+window.addEventListener('resize', debounce(() => {
+  if (window.innerWidth >= 1024) {
+    // Restore split view if previously in split mode
+    if (lastViewMode === 'split') {
+      restoreSplitView();
+    }
+  } else if (window.innerWidth < 768) {
+    // Switch to stacked mobile view
+    switchToMobileView();
   }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes countBump {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
+}, 300));
 ```
 
-### Comparison View
 
-```javascript
-// Open comparison
-.compare-button {
-  on:click {
-    // Transition to comparison view
-    .property-grid {
-      animation: fadeOut 0.3s ease forwards;
-    }
-    
-    setTimeout(() => {
-      showComparisonView();
-      
-      .comparison-table {
-        animation: fadeIn 0.3s ease;
-      }
-    }, 300);
-  }
-}
+```
 
-// Remove from comparison
-.remove-property {
-  on:click {
-    const propertyColumn = this.closest('.property-column');
-    
-    // Remove animation
-    propertyColumn.style.animation = 'slideOutRight 0.3s ease forwards';
-    
-    setTimeout(() => {
-      removeFromComparison(propertyId);
-      rebalanceColumns();
-    }, 300);
-  }
-}
 
-// Highlight differences
-.highlight-differences-toggle {
-  on:change {
-    if (checked) {
-      // Analyze and highlight
-      findDifferences().forEach(cell => {
-        cell.classList.add('highlighted');
-        cell.style.animation = 'highlightPulse 0.5s ease';
-      });
-    } else {
-      removeHighlights();
-    }
-  }
-}
+```
 
-@keyframes highlightPulse {
-  0%, 100% { background: transparent; }
-  50% { background: rgba(99, 102, 241, 0.1); }
-}
 ```
 
 ## Performance Patterns
