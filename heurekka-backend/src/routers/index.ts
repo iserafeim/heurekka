@@ -1,6 +1,8 @@
 import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { homepageRouter } from './homepage';
+import { propertyRouter } from './property';
+import { analyticsRouter } from './analytics';
 import type { Context } from '../server';
 
 const t = initTRPC.context<Context>().create();
@@ -10,6 +12,12 @@ export const appRouter = t.router({
   // Homepage/Landing feature routes
   homepage: homepageRouter,
   
+  // Property Discovery feature routes
+  property: propertyRouter,
+  
+  // Analytics and tracking routes
+  analytics: analyticsRouter,
+  
   // Health check for the entire API
   health: t.procedure
     .query(() => {
@@ -18,7 +26,14 @@ export const appRouter = t.router({
         timestamp: new Date().toISOString(),
         service: 'heurekka-backend',
         version: '1.0.0',
-        features: ['homepage-landing']
+        features: [
+          'homepage-landing',
+          'property-discovery',
+          'property-search',
+          'map-clustering',
+          'whatsapp-integration',
+          'analytics-tracking'
+        ]
       };
     }),
 

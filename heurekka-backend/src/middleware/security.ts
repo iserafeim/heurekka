@@ -5,7 +5,7 @@
 
 import { TRPCError } from '@trpc/server';
 import jwt from 'jsonwebtoken';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import DOMPurify from 'isomorphic-dompurify';
 import validator from 'validator';
 import { createHash, randomBytes } from 'crypto';
@@ -127,10 +127,11 @@ export const createRateLimiter = (
           const payload = jwt.decode(token) as JWTPayload;
           return payload.userId;
         } catch {
-          // Fall back to IP
+          // Fall back to IP using the official helper
         }
       }
-      return req.ip || 'unknown';
+      // Use the official IPv6-safe IP key generator
+      return ipKeyGenerator(req);
     },
     handler: (req, res) => {
       throw new TRPCError({

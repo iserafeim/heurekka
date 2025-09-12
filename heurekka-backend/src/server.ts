@@ -14,7 +14,8 @@ import * as trpcExpress from '@trpc/server/adapters/express';
 // Import our router and services
 import { appRouter } from './routers';
 import { searchEngine } from './services/searchEngine';
-import { cacheService } from './services/cache';
+import { getCacheService } from './services/cache.service';
+import { getWhatsAppService } from './services/whatsapp.service';
 // SECURITY: Import security middleware
 import { getCORSOptions, securityHeaders, createRateLimiter } from './middleware/security';
 
@@ -78,6 +79,15 @@ async function initializeServices() {
     // Initialize search engine
     await searchEngine.initialize();
     
+    // Initialize cache service
+    const cacheService = getCacheService();
+    await cacheService.warmupCache();
+    
+    // Initialize WhatsApp service (health check)
+    const whatsappService = getWhatsAppService();
+    const whatsappHealth = await whatsappService.healthCheck();
+    console.log(`📱 WhatsApp service: ${whatsappHealth.status}`);
+    
     console.log('✅ All services initialized successfully');
   } catch (error) {
     console.error('❌ Failed to initialize services:', error);
@@ -98,9 +108,13 @@ app.use(
 app.get('/health', async (req, res) => {
   try {
     // Check service health
-    const [cacheHealth, searchHealth] = await Promise.all([
+    const cacheService = getCacheService();
+    const whatsappService = getWhatsAppService();
+    
+    const [cacheHealth, searchHealth, whatsappHealth] = await Promise.all([
       cacheService.healthCheck(),
-      searchEngine.healthCheck()
+      searchEngine.healthCheck(),
+      whatsappService.healthCheck()
     ]);
 
     const overallStatus = cacheHealth.status === 'healthy' && searchHealth.status === 'healthy' 
@@ -114,7 +128,8 @@ app.get('/health', async (req, res) => {
       version: '1.0.0',
       services: {
         cache: cacheHealth,
-        search: searchHealth
+        search: searchHealth,
+        whatsapp: whatsappHealth
       }
     });
   } catch (error) {
@@ -274,6 +289,7 @@ async function gracefulShutdown(signal: string) {
     
     // Close service connections
     try {
+      const cacheService = getCacheService();
       await cacheService.disconnect();
       console.log('🗄️ Cache service disconnected');
     } catch (error) {
