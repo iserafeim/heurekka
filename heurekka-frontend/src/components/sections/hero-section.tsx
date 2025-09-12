@@ -74,10 +74,10 @@ export function HeroSection({
                     className="bg-primary relative flex size-5 items-center justify-center rounded shadow-sm">
                     <Sparkle className="size-3 fill-primary-foreground stroke-primary-foreground" />
                   </div>
-                  <span className="font-medium text-foreground">Presentamos Búsqueda Inteligente</span>
+                  <span className="font-medium text-foreground">Presentamos Heurekka</span>
                 </Link>
-                <h1 className="mx-auto mt-8 max-w-4xl text-balance text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-gray-900">Encuentra Tu Nuevo Hogar</h1>
-                <p className="text-gray-600 mx-auto my-6 max-w-2xl text-balance text-lg leading-relaxed">Descubre miles de propiedades en alquiler en Honduras con nuestra plataforma inteligente.</p>
+                <h1 className="mx-auto mt-8 max-w-4xl text-balance text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl text-gray-900">Renta 10x Más Rápido</h1>
+                <p className="text-gray-600 mx-auto my-6 max-w-2xl text-balance text-lg leading-relaxed">La plataforma inteligente que conecta inquilinos y propietarios en segundos.</p>
 
 
                 {/* Search bar integration */}
@@ -88,7 +88,7 @@ export function HeroSection({
                     onChange={setSearchValue}
                     suggestions={suggestions}
                     loading={isLoadingSuggestions}
-                    placeholder="Buscar por ubicación o nombre de propiedad"
+                    placeholder="Buscar propiedades..."
                     className="mx-auto"
                   />
                 </div>

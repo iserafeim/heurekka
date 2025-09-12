@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Search, X, MapPin, Clock, Mic, Loader2 } from 'lucide-react'
+import { Search, X, MapPin, Clock, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { SearchBarProps, Suggestion } from '@/types/homepage'
@@ -66,7 +66,6 @@ export function SearchBar({
 }: SearchBarProps) {
   const [internalValue, setInternalValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [isVoiceSupported, setIsVoiceSupported] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -74,13 +73,6 @@ export function SearchBar({
   const value = controlledValue !== undefined ? controlledValue : internalValue
   const handleValueChange = controlledValue !== undefined ? onChange : setInternalValue
 
-  // Check for voice support
-  useEffect(() => {
-    const hasVoiceSupport = 
-      'webkitSpeechRecognition' in window || 
-      'SpeechRecognition' in window
-    setIsVoiceSupported(hasVoiceSupport)
-  }, [])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,13 +144,6 @@ export function SearchBar({
     inputRef.current?.focus()
   }, [handleValueChange])
 
-  const handleVoiceSearch = useCallback(() => {
-    if (!isVoiceSupported) return
-
-    // This would implement voice search functionality
-    // For now, just focus the input
-    inputRef.current?.focus()
-  }, [isVoiceSupported])
 
   return (
     <div className={cn("relative w-full max-w-2xl", className)}>
@@ -170,10 +155,10 @@ export function SearchBar({
         aria-label="Búsqueda de propiedades"
       >
         {/* Simple, Clean Search Bar - Updated */}
-        <div className="relative flex items-center h-14 bg-background rounded-xl border border-gray-300 shadow-sm overflow-hidden">
+        <div className="relative flex items-center h-12 sm:h-14 bg-background rounded-xl border border-gray-300 shadow-sm overflow-hidden">
           {/* Search Icon */}
-          <div className="flex items-center pl-4">
-            <Search className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-center pl-3 sm:pl-4">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
           </div>
           
           {/* Input */}
@@ -185,7 +170,7 @@ export function SearchBar({
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             placeholder={placeholder}
-            className="flex-1 px-3 py-0 bg-transparent border-0 outline-none text-base placeholder:text-muted-foreground text-foreground"
+            className="flex-1 px-2 sm:px-3 py-0 bg-transparent border-0 outline-none text-sm sm:text-base placeholder:text-muted-foreground text-foreground"
             aria-autocomplete="list"
             aria-controls="search-suggestions"
             aria-expanded={showSuggestions}
@@ -193,36 +178,24 @@ export function SearchBar({
           />
           
           {/* Right Side Buttons */}
-          <div className="flex items-center pr-2 gap-1">
+          <div className="flex items-center pr-1 sm:pr-2 gap-1">
             {value && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleClearSearch}
-                className="h-8 w-8 p-0 hover:bg-muted/80 rounded-full shrink-0"
+                className="h-6 w-6 sm:h-8 sm:w-8 p-0 hover:bg-muted/80 rounded-full shrink-0"
                 aria-label="Limpiar búsqueda"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             )}
 
-            {isVoiceSupported && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleVoiceSearch}
-                className="h-8 w-8 p-0 hover:bg-muted/80 rounded-full shrink-0"
-                aria-label="Búsqueda por voz"
-              >
-                <Mic className="w-4 h-4" />
-              </Button>
-            )}
 
             <button
               type="submit"
-              className="h-10 px-4 rounded-lg shrink-0 text-white font-semibold shadow-lg transition-colors duration-200 disabled:cursor-not-allowed flex items-center justify-center"
+              className="h-9 px-4 sm:h-10 sm:px-4 rounded-lg shrink-0 text-white font-semibold shadow-lg transition-colors duration-200 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base min-w-[70px] sm:min-w-[80px]"
               style={{
                 backgroundColor: '#2563eb',
                 border: 'none'
@@ -239,8 +212,8 @@ export function SearchBar({
               }}
               disabled={isSubmitting || !value.trim()}
             >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <span className="sr-only sm:not-sr-only">Buscar</span>
+              {isSubmitting && <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />}
+              <span>Buscar</span>
             </button>
           </div>
         </div>

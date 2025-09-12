@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PropertyCard } from '@/components/property/property-card'
 import { Button } from '@/components/ui/button'
@@ -159,8 +159,9 @@ export function FeaturedProperties({
 }: FeaturedPropertiesProps) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(true)
+  const [scrollState, setScrollState] = useState({ canScrollLeft: false, canScrollRight: true })
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
 
   const handleFavorite = (propertyId: string) => {
     const isFavorited = favorites.has(propertyId)
@@ -186,29 +187,61 @@ export function FeaturedProperties({
     }
   }
 
-  const updateScrollButtons = () => {
+  const updateScrollButtons = useCallback(() => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
-      setCanScrollLeft(scrollLeft > 0)
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+      const canScrollLeft = scrollLeft > 0
+      const canScrollRight = scrollLeft < scrollWidth - clientWidth - 1
+      
+      // Only update state if values have changed to prevent unnecessary re-renders
+      setScrollState(prevState => {
+        if (prevState.canScrollLeft !== canScrollLeft || prevState.canScrollRight !== canScrollRight) {
+          return { canScrollLeft, canScrollRight }
+        }
+        return prevState
+      })
     }
-  }
+  }, [])
+
+  // Throttled scroll handler that only updates button state after scroll ends
+  const handleScroll = useCallback(() => {
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+    
+    // Set new timeout to update buttons only after scroll ends
+    scrollTimeoutRef.current = setTimeout(() => {
+      updateScrollButtons()
+    }, 150) // 150ms delay after scroll ends
+  }, [updateScrollButtons])
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      const cardWidth = 320 + 32 // Card width + gap
-      scrollContainerRef.current.scrollBy({ left: -cardWidth, behavior: 'smooth' })
-      setTimeout(updateScrollButtons, 100)
+      const container = scrollContainerRef.current
+      const scrollAmount = container.clientWidth * 1.0 // Full viewport width for aggressive scroll
+      container.scrollTo({ 
+        left: container.scrollLeft - scrollAmount, 
+        behavior: 'auto' 
+      })
+      // Update buttons immediately for button clicks
+      setTimeout(updateScrollButtons, 50)
     }
   }
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      const cardWidth = 320 + 32 // Card width + gap
-      scrollContainerRef.current.scrollBy({ left: cardWidth, behavior: 'smooth' })
-      setTimeout(updateScrollButtons, 100)
+      const container = scrollContainerRef.current
+      const scrollAmount = container.clientWidth * 1.0 // Full viewport width for aggressive scroll
+      container.scrollTo({ 
+        left: container.scrollLeft + scrollAmount, 
+        behavior: 'auto' 
+      })
+      // Update buttons immediately for button clicks
+      setTimeout(updateScrollButtons, 50)
     }
   }
+
 
   // Keyboard navigation and wheel scroll support
   useEffect(() => {
@@ -224,30 +257,26 @@ export function FeaturedProperties({
       }
     }
 
-    const handleWheel = (e: WheelEvent) => {
-      if (scrollContainerRef.current && scrollContainerRef.current.contains(e.target as Node)) {
-        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-          // Horizontal scroll detected
-          e.preventDefault()
-          scrollContainerRef.current.scrollLeft += e.deltaX
-          updateScrollButtons()
-        }
-      }
-    }
-
     document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('wheel', handleWheel, { passive: false })
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('wheel', handleWheel)
     }
   }, [])
 
   // Initialize scroll buttons state
   useEffect(() => {
     updateScrollButtons()
-  }, [properties])
+  }, [properties, updateScrollButtons])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
 
   if (properties.length === 0) {
     return null
@@ -273,9 +302,9 @@ export function FeaturedProperties({
           <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <button
               onClick={scrollLeft}
-              disabled={!canScrollLeft}
+              disabled={!scrollState.canScrollLeft}
               className={`w-10 h-10 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center ${
-                canScrollLeft ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
+                scrollState.canScrollLeft ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
               }`}
               aria-label="Anterior"
             >
@@ -284,9 +313,9 @@ export function FeaturedProperties({
             
             <button
               onClick={scrollRight}
-              disabled={!canScrollRight}
+              disabled={!scrollState.canScrollRight}
               className={`w-10 h-10 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center ${
-                canScrollRight ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
+                scrollState.canScrollRight ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
               }`}
               aria-label="Siguiente"
             >
@@ -300,20 +329,17 @@ export function FeaturedProperties({
           {/* Properties carousel */}
           <div
             ref={scrollContainerRef}
-            onScroll={updateScrollButtons}
-            className="flex overflow-x-auto gap-8 pb-4 scroll-smooth focus:outline-none"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            onScroll={handleScroll}
+            className="flex overflow-x-auto gap-4 sm:gap-8 pb-4 focus:outline-none scrollbar-hide"
             tabIndex={0}
             role="region"
             aria-label="Carrusel de propiedades"
           >
-            <style jsx>{`
-              div::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
             {properties.map((property, index) => (
-              <div key={property.id} className="flex-none w-[320px]">
+              <div 
+                key={property.id} 
+                className="flex-none w-[280px] sm:w-[320px]"
+              >
                 <PropertyCard
                   property={property}
                   isFavorited={favorites.has(property.id)}
