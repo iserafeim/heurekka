@@ -5,7 +5,7 @@
 
 import { TRPCError } from '@trpc/server';
 import jwt from 'jsonwebtoken';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import DOMPurify from 'isomorphic-dompurify';
 import validator from 'validator';
 import { createHash, randomBytes } from 'crypto';
