@@ -1,26 +1,12 @@
 import { createTRPCNext } from '@trpc/next';
-import { createTRPCClient, httpBatchLink, loggerLink } from '@trpc/client';
+import { httpBatchLink, loggerLink } from '@trpc/client';
 import superjson from 'superjson';
 
-// Mock AppRouter type for now - will be replaced with actual backend types
-export interface AppRouter {
-  _def: any;
-  createCaller: any;
-  homepage: {
-    getFeaturedProperties: {
-      input: { limit?: number; location?: { lat: number; lng: number } };
-      output: { success: boolean; data: any[]; cached: boolean };
-    };
-    getSearchSuggestions: {
-      input: { query: string; location?: { lat: number; lng: number }; limit?: number };
-      output: { success: boolean; data: any[]; query: string };
-    };
-    searchProperties: {
-      input: { query?: string; location?: { lat: number; lng: number }; filters?: any; page?: number; limit?: number };
-      output: { success: boolean; data: any };
-    };
-  };
-}
+// Import the actual AppRouter type from the backend
+import type { AppRouter } from '../../../../heurekka-backend/src/routers/index';
+
+// Re-export for use in other files
+export type { AppRouter };
 
 /**
  * Get the base URL for the tRPC API
@@ -35,13 +21,13 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_TRPC_URL || 'http://localhost:3001/trpc';
 }
 
-
 /**
  * tRPC client configuration with React Query integration
  */
 export const trpc = createTRPCNext<AppRouter>({
-  config({ ctx }) {
+  config() {
     return {
+      transformer: superjson,
       links: [
         // Logger link for development
         loggerLink({
@@ -52,7 +38,6 @@ export const trpc = createTRPCNext<AppRouter>({
         
         httpBatchLink({
           url: getBaseUrl(),
-          transformer: superjson,
           async headers() {
             const headers: Record<string, string> = {};
             
@@ -81,8 +66,8 @@ export const trpc = createTRPCNext<AppRouter>({
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
-            gcTime: 5 * 60 * 1000, // 5 minutes (renamed from cacheTime)
-            retry: (failureCount, error) => {
+            cacheTime: 5 * 60 * 1000, // 5 minutes
+            retry: (failureCount, error: any) => {
               // Don't retry on 4xx errors
               if (error && typeof error === 'object' && 'status' in error) {
                 const status = error.status as number;
@@ -107,22 +92,6 @@ export const trpc = createTRPCNext<AppRouter>({
    * Server-Side Rendering configuration
    */
   ssr: false,
-});
-
-/**
- * Vanilla tRPC client (without React Query)
- * Useful for server-side operations or when React Query is not available
- */
-export const vanillaTrpcClient = createTRPCClient<AppRouter>({
-  links: [
-    httpBatchLink({
-      url: getBaseUrl(),
-      transformer: superjson,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }),
-  ],
 });
 
 /**

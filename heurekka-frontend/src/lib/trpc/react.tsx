@@ -33,7 +33,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
-            gcTime: 5 * 60 * 1000, // 5 minutes (renamed from cacheTime)
+            cacheTime: 5 * 60 * 1000, // 5 minutes
             retry: (failureCount, error: any) => {
               // Don't retry on client errors (4xx)
               if (error?.status >= 400 && error?.status < 500) {

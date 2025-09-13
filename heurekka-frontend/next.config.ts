@@ -11,16 +11,54 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
-    domains: [
+    remotePatterns: [
       // Supabase Storage domains
-      'your-project-id.supabase.co',
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
       // CDN domains for property images
-      'images.heurekka.com',
+      {
+        protocol: 'https',
+        hostname: 'images.heurekka.com',
+        port: '',
+        pathname: '/**',
+      },
       // Mapbox static images
-      'api.mapbox.com',
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Development placeholder images
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
       // External image sources (development)
-      'localhost',
-      '127.0.0.1'
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 
@@ -59,6 +97,10 @@ const nextConfig: NextConfig = {
             value: 'nosniff',
           },
           {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
@@ -72,27 +114,42 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=(), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
+            value: 'geolocation=(self), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
           },
           // Content Security Policy
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'" + (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
+              "script-src 'self'" + (isDev ? " 'unsafe-inline' 'unsafe-eval'" : " 'strict-dynamic' 'nonce-{nonce}'"),
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
+              "img-src 'self' data: https://images.unsplash.com https://cdn.heurekka.com https://storage.googleapis.com https://res.cloudinary.com https://api.mapbox.com https://picsum.photos blob:",
               "media-src 'self' https:",
               "object-src 'none'",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://wa.me",
               "frame-ancestors 'none'",
-              "connect-src 'self' https://*.supabase.co https://api.mapbox.com https://maps.googleapis.com" + (isDev ? " ws://localhost:* http://localhost:*" : ""),
+              "frame-src 'none'",
+              "connect-src 'self' https://*.supabase.co https://api.mapbox.com https://maps.googleapis.com https://wa.me" + (isDev ? " ws://localhost:* http://localhost:*" : ""),
               "worker-src 'self' blob:",
               "child-src 'self' blob:",
               "manifest-src 'self'",
-              "upgrade-insecure-requests"
+              "navigate-to 'self' https://wa.me",
+              "upgrade-insecure-requests",
+              "block-all-mixed-content"
             ].join('; '),
           },
         ],

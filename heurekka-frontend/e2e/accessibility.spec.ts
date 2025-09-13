@@ -1,10 +1,13 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-test.describe('Homepage Accessibility Tests', () => {
+test.describe('Property Discovery Accessibility Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/propiedades')
     await page.waitForLoadState('networkidle')
+    
+    // Wait for property cards to load
+    await page.waitForSelector('[data-testid="property-card"]', { state: 'visible', timeout: 10000 })
   })
 
   test('should not have any automatically detectable accessibility issues', async ({ page }) => {

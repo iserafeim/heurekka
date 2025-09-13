@@ -53,9 +53,9 @@ export default function HomePage() {
       }
     }
 
-    // Navigate to search results page
+    // Navigate to property discovery page
     if (typeof window !== 'undefined') {
-      window.location.href = `/search?${searchParams.toString()}`
+      window.location.href = `/propiedades?${searchParams.toString()}`
     }
   }
 
