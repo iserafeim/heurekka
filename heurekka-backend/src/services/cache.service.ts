@@ -31,21 +31,36 @@ export class CacheService {
     const redisHost = process.env.REDIS_HOST || 'localhost';
     const redisPort = parseInt(process.env.REDIS_PORT || '6379');
     const redisPassword = process.env.REDIS_PASSWORD;
+    const redisUsername = process.env.REDIS_USERNAME;
+    const redisTls = process.env.REDIS_TLS === 'true';
 
     if (redisUrl) {
       this.redis = new Redis(redisUrl, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 1,
+        // Security configurations
+        lazyConnect: true,
+        connectTimeout: 10000,
+        commandTimeout: 5000,
+        // TLS configuration if enabled
+        tls: redisTls ? {} : undefined,
       });
     } else {
       this.redis = new Redis({
         host: redisHost,
         port: redisPort,
         password: redisPassword,
+        username: redisUsername, // Redis 6+ ACL support
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 1,
+        // Security configurations
+        lazyConnect: true,
+        connectTimeout: 10000,
+        commandTimeout: 5000,
+        // TLS configuration if enabled
+        tls: redisTls ? {} : undefined,
       });
     }
 
@@ -59,10 +74,16 @@ export class CacheService {
   }
 
   /**
-   * Generic get method
+   * Generic get method with key validation
    */
   async get(key: string): Promise<string | null> {
     try {
+      // Validate cache key for security
+      if (!this.isValidCacheKey(key)) {
+        console.warn('Invalid cache key attempted:', key);
+        return null;
+      }
+      
       return await this.redis.get(key);
     } catch (error) {
       console.error('Redis get error:', error);
@@ -71,10 +92,22 @@ export class CacheService {
   }
 
   /**
-   * Generic set method
+   * Generic set method with key validation and size limits
    */
   async set(key: string, value: string, ttlSeconds?: number): Promise<boolean> {
     try {
+      // Validate cache key for security
+      if (!this.isValidCacheKey(key)) {
+        console.warn('Invalid cache key attempted:', key);
+        return false;
+      }
+      
+      // Limit value size to prevent memory issues (max 1MB)
+      if (value.length > 1024 * 1024) {
+        console.warn('Cache value too large, skipping:', key, 'size:', value.length);
+        return false;
+      }
+      
       if (ttlSeconds) {
         await this.redis.setex(key, ttlSeconds, value);
       } else {
@@ -551,6 +584,48 @@ export class CacheService {
     }
     
     return result;
+  }
+
+  /**
+   * Validate cache key for security - prevent injection and ensure proper format
+   */
+  private isValidCacheKey(key: string): boolean {
+    // Key must start with our namespace
+    if (!key.startsWith('heurekka:')) {
+      return false;
+    }
+    
+    // Key must be reasonable length (max 250 chars)
+    if (key.length > 250) {
+      return false;
+    }
+    
+    // Key must only contain safe characters
+    const validKeyPattern = /^[a-zA-Z0-9:_\-\.]+$/;
+    if (!validKeyPattern.test(key)) {
+      return false;
+    }
+    
+    // Key must be one of our defined prefixes
+    const validPrefixes = Object.values(this.CACHE_KEYS);
+    return validPrefixes.some(prefix => key.startsWith(prefix));
+  }
+
+  /**
+   * Create secure user-specific cache key
+   */
+  private createUserCacheKey(baseKey: string, userId?: string, isAuthenticated: boolean = false): string {
+    const userType = isAuthenticated ? 'auth' : 'anon';
+    const userIdentifier = userId ? this.hashUserId(userId) : 'anonymous';
+    return `${baseKey}${userType}:${userIdentifier}:`;
+  }
+
+  /**
+   * Hash user ID for privacy in cache keys
+   */
+  private hashUserId(userId: string): string {
+    // Create a non-reversible hash of user ID for cache keys
+    return this.simpleHash(userId + process.env.CACHE_SALT || 'heurekka_default_salt');
   }
 }
 

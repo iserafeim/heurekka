@@ -11,12 +11,17 @@ import type {
   PropertyContactEvent
 } from '../types/property';
 
+interface UserContext {
+  userId?: string;
+  isAuthenticated: boolean;
+}
+
 export class PropertyService {
   
   /**
    * Search properties with filters, location, and pagination
    */
-  async searchProperties(filters: SearchFilters): Promise<SearchResults> {
+  async searchProperties(filters: SearchFilters, userContext?: UserContext): Promise<SearchResults> {
     try {
       const {
         location,
@@ -33,48 +38,54 @@ export class PropertyService {
         radiusKm
       } = filters;
 
-      // Build base query
+      // Build base query with selective field projection based on user authentication
+      const baseFields = `
+        id,
+        title,
+        description,
+        type,
+        price_amount,
+        currency,
+        bedrooms,
+        bathrooms,
+        area_sqm,
+        amenities,
+        view_count,
+        favorite_count,
+        contact_count,
+        created_at,
+        updated_at,
+        property_locations!inner(
+          neighborhood,
+          city,
+          coordinates,
+          formatted_address
+          ${userContext?.isAuthenticated ? ', street_address' : ''}
+        ),
+        property_images(
+          id,
+          image_url,
+          alt_text,
+          is_primary,
+          display_order
+        ),
+        landlords(
+          id,
+          business_name,
+          rating,
+          verification_status
+          ${userContext?.isAuthenticated ? ', whatsapp_number' : ''}
+        )
+      `;
+      
+      // Add sensitive fields only for authenticated users
+      const sensitiveFields = userContext?.isAuthenticated 
+        ? ', contact_whatsapp, contact_phone, contact_email' 
+        : '';
+
       let query = supabaseService.instance.client
         .from('properties')
-        .select(`
-          id,
-          title,
-          description,
-          type,
-          price_amount,
-          currency,
-          bedrooms,
-          bathrooms,
-          area_sqm,
-          amenities,
-          view_count,
-          favorite_count,
-          contact_count,
-          contact_whatsapp,
-          created_at,
-          updated_at,
-          property_locations!inner(
-            street_address,
-            neighborhood,
-            city,
-            coordinates,
-            formatted_address
-          ),
-          property_images(
-            id,
-            image_url,
-            alt_text,
-            is_primary,
-            display_order
-          ),
-          landlords(
-            id,
-            business_name,
-            whatsapp_number,
-            rating,
-            verification_status
-          )
-        `, { count: 'exact' })
+        .select(baseFields + sensitiveFields, { count: 'exact' })
         .eq('status', 'active');
 
       // Apply price filters
@@ -173,8 +184,8 @@ export class PropertyService {
         throw new Error('Failed to search properties');
       }
 
-      // Transform data
-      const properties = data?.map(this.transformPropertyData) || [];
+      // Transform data with user context
+      const properties = data?.map(property => this.transformPropertyData(property, userContext?.isAuthenticated)) || [];
 
       // Generate next cursor
       const nextCursor = properties.length === limit ? String(from + limit) : null;
@@ -195,16 +206,49 @@ export class PropertyService {
   /**
    * Get property by ID with full details
    */
-  async getPropertyById(id: string): Promise<Property | null> {
+  async getPropertyById(id: string, userContext?: UserContext): Promise<Property | null> {
     try {
+      // Build selective query based on user authentication
+      const selectFields = userContext?.isAuthenticated 
+        ? `
+            *,
+            property_locations(*),
+            property_images(*),
+            landlords(*)
+          `
+        : `
+            id,
+            title,
+            description,
+            type,
+            price_amount,
+            currency,
+            bedrooms,
+            bathrooms,
+            area_sqm,
+            amenities,
+            view_count,
+            favorite_count,
+            created_at,
+            updated_at,
+            property_locations(
+              neighborhood,
+              city,
+              coordinates,
+              formatted_address
+            ),
+            property_images(*),
+            landlords(
+              id,
+              business_name,
+              rating,
+              verification_status
+            )
+          `;
+
       const { data, error } = await supabaseService.instance.client
         .from('properties')
-        .select(`
-          *,
-          property_locations(*),
-          property_images(*),
-          landlords(*)
-        `)
+        .select(selectFields)
         .eq('id', id)
         .eq('status', 'active')
         .single();
@@ -220,7 +264,7 @@ export class PropertyService {
       // Increment view count
       await this.incrementViewCount(id);
 
-      return this.transformDetailedPropertyData(data);
+      return this.transformDetailedPropertyData(data, userContext?.isAuthenticated);
 
     } catch (error) {
       console.error('Error in getPropertyById:', error);
@@ -623,7 +667,7 @@ export class PropertyService {
   }
 
   // Data transformation methods
-  private transformPropertyData = (rawData: any): Property => {
+  private transformPropertyData = (rawData: any, isAuthenticated: boolean = false): Property => {
     const location = rawData.property_locations?.[0] || rawData.property_locations;
     const landlord = rawData.landlords || {};
     
@@ -632,7 +676,10 @@ export class PropertyService {
       title: rawData.title,
       description: rawData.description || '',
       type: rawData.type,
-      address: location?.formatted_address || location?.street_address || '',
+      // Conditionally include sensitive location data
+      address: isAuthenticated 
+        ? (location?.formatted_address || location?.street_address || '')
+        : (location?.neighborhood ? `${location.neighborhood}, Tegucigalpa` : 'Tegucigalpa'),
       neighborhood: location?.neighborhood || '',
       coordinates: {
         lat: location?.coordinates ? location.coordinates.coordinates[1] : 0,
@@ -657,11 +704,13 @@ export class PropertyService {
       viewCount: rawData.view_count || 0,
       favoriteCount: rawData.favorite_count || 0,
       contactCount: rawData.contact_count || 0,
-      contactPhone: rawData.contact_whatsapp,
+      // Only include contact info for authenticated users
+      contactPhone: isAuthenticated ? rawData.contact_whatsapp : undefined,
       landlord: {
         id: landlord.id,
         name: landlord.business_name || 'Propietario',
-        phone: landlord.whatsapp_number,
+        // Only include phone for authenticated users
+        phone: isAuthenticated ? landlord.whatsapp_number : undefined,
         rating: landlord.rating || 4.5,
         verified: landlord.verification_status === 'verified',
       },
@@ -670,10 +719,10 @@ export class PropertyService {
     };
   };
 
-  private transformDetailedPropertyData = (rawData: any): Property => {
+  private transformDetailedPropertyData = (rawData: any, isAuthenticated: boolean = false): Property => {
     // Same as transformPropertyData but with additional details
     return {
-      ...this.transformPropertyData(rawData),
+      ...this.transformPropertyData(rawData, isAuthenticated),
       // Add any additional fields for detailed view
       floor: rawData.floor,
       totalFloors: rawData.total_floors,

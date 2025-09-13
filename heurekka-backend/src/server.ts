@@ -18,6 +18,8 @@ import { getCacheService } from './services/cache.service';
 import { getWhatsAppService } from './services/whatsapp.service';
 // SECURITY: Import security middleware
 import { getCORSOptions, securityHeaders, createRateLimiter } from './middleware/security';
+// SECURITY: Import authentication middleware
+import { extractAuthContext, authMiddleware, AuthContext } from './middleware/auth';
 
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -56,6 +58,9 @@ app.use(cors(corsOptions));
 app.use(compression());
 app.use(morgan('combined'));
 
+// SECURITY: Add authentication middleware
+app.use(authMiddleware);
+
 // SECURITY: Limit payload size to prevent DoS
 app.use(express.json({ limit: '1mb' })); // Reduced from 10mb
 app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Reduced from 10mb
@@ -63,11 +68,17 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Reduced from 1
 // Export the router type for frontend
 export type AppRouter = typeof appRouter;
 
-// Create context for tRPC
-const createContext = ({ req, res }: trpcExpress.CreateExpressContextOptions) => ({
-  req,
-  res,
-});
+// Create context for tRPC with authentication
+const createContext = async ({ req, res }: trpcExpress.CreateExpressContextOptions) => {
+  // Extract authentication context from request
+  const auth = await extractAuthContext(req);
+  
+  return {
+    req,
+    res,
+    auth, // Add authentication context
+  };
+};
 
 export type Context = Awaited<ReturnType<typeof createContext>>;
 

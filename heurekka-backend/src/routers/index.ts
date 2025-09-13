@@ -1,14 +1,12 @@
-import { initTRPC } from '@trpc/server';
 import { z } from 'zod';
 import { homepageRouter } from './homepage';
 import { propertyRouter } from './property';
 import { analyticsRouter } from './analytics';
 import type { Context } from '../server';
-
-const t = initTRPC.context<Context>().create();
+import { router, publicProcedure } from '../lib/trpc';
 
 // Main application router that combines all feature routers
-export const appRouter = t.router({
+export const appRouter = router({
   // Homepage/Landing feature routes
   homepage: homepageRouter,
   
@@ -19,7 +17,7 @@ export const appRouter = t.router({
   analytics: analyticsRouter,
   
   // Health check for the entire API
-  health: t.procedure
+  health: publicProcedure
     .query(() => {
       return {
         status: 'healthy',
@@ -38,7 +36,7 @@ export const appRouter = t.router({
     }),
 
   // Basic hello endpoint for testing
-  hello: t.procedure
+  hello: publicProcedure
     .input(z.object({ name: z.string().optional() }))
     .query(({ input }) => {
       return {
