@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { SearchFilters, Property, UsePropertySearchResult, PropertyType } from '@/types/property';
 import { trpc } from '@/lib/trpc';
+import { transformBackendProperties, transformSearchFilters } from '@/lib/transformers/property';
 
 /**
  * Hook for property search functionality
@@ -12,6 +13,11 @@ export function usePropertySearch(): UsePropertySearchResult {
   const [hasMore, setHasMore] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<SearchFilters | null>(null);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get tRPC utils at the top level of the hook
+  const utils = trpc.useUtils();
 
   // Fallback mock data for development when API is unavailable
   const getMockProperties = (): Property[] => [
@@ -83,7 +89,7 @@ export function usePropertySearch(): UsePropertySearchResult {
     }
   ];
 
-  // Main search function with tRPC integration and fallback
+  // Main search function with real tRPC integration
   const search = useCallback(async (filters: SearchFilters): Promise<void> => {
     const searchFilters = {
       ...filters,
@@ -91,24 +97,49 @@ export function usePropertySearch(): UsePropertySearchResult {
     };
 
     setCurrentFilters(searchFilters);
-    
+    setLoading(true);
+    setError(null);
+
     try {
-      // For now, fall back to mock data until tRPC routes are properly set up
-      const mockProperties = getMockProperties();
-      setProperties(mockProperties);
-      setTotal(mockProperties.length);
-      setHasMore(false);
-      setCursor(undefined);
+      // Transform frontend filters to backend format
+      const backendFilters = transformSearchFilters(searchFilters);
+
+      // Use tRPC utils for imperative queries in React components
+      const response = await utils.homepage.searchProperties.fetch(backendFilters);
+
+      if (response.success && response.data) {
+        // Transform backend properties to frontend format
+        const transformedProperties = transformBackendProperties(response.data.properties || []);
+
+        setProperties(transformedProperties);
+        setTotal(response.data.total || transformedProperties.length);
+        // Calculate hasMore based on total properties vs current page
+        const hasMoreResults = (response.data.total || 0) > (response.data.properties?.length || 0);
+        setHasMore(hasMoreResults);
+        setCursor(hasMoreResults ? `page-${(response.data.page || 1) + 1}` : undefined);
+      } else {
+        console.warn('Search API returned no data');
+        // Fallback to mock data
+        const mockProperties = getMockProperties();
+        setProperties(mockProperties);
+        setTotal(mockProperties.length);
+        setHasMore(false);
+        setCursor(undefined);
+      }
     } catch (error) {
-      console.warn('Search error:', error);
-      // Fallback to mock data
+      console.error('Property search error:', error);
+      setError('Error al buscar propiedades. Intentando con datos de ejemplo...');
+
+      // Fallback to mock data for development
       const mockProperties = getMockProperties();
       setProperties(mockProperties);
       setTotal(mockProperties.length);
       setHasMore(false);
       setCursor(undefined);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [utils]);
 
   // Load more function for infinite scroll
   const loadMore = useCallback(async (): Promise<void> => {
@@ -134,8 +165,8 @@ export function usePropertySearch(): UsePropertySearchResult {
     properties,
     total,
     hasMore,
-    loading: false, // Will be updated when tRPC is properly configured
-    error: null, // Will be updated when tRPC is properly configured
+    loading,
+    error,
     search,
     loadMore,
     refresh

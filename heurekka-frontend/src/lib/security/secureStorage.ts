@@ -185,6 +185,14 @@ export const secureStorage = {
       
       // Decrypt and parse
       const decryptedValue = decrypt(encryptedValue);
+
+      // Validate decrypted value before parsing
+      if (!decryptedValue || decryptedValue.trim() === '') {
+        console.warn('Decrypted value is empty, cleaning up corrupted data');
+        secureStorage.removeItem(key);
+        return null;
+      }
+
       return JSON.parse(decryptedValue) as T;
       
     } catch (error) {

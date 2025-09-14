@@ -1,35 +1,55 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Pool } from 'pg';
 import type { Property, SearchResults, Suggestion, HomepageData, AnalyticsEvent } from '../types/homepage';
 
 class SupabaseService {
-  private client: SupabaseClient;
+  private client: SupabaseClient | null = null;
+  private pgPool: Pool | null = null;
+  private useDirectPg = false;
 
   constructor() {
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
+    const databaseUrl = process.env.DATABASE_URL;
+
+    // Try to use local PostgreSQL if DATABASE_URL is available (localhost or Docker)
+    if (databaseUrl && (databaseUrl.includes('localhost') || databaseUrl.includes('postgres:5432'))) {
+      console.log('🔄 Using direct PostgreSQL connection for local/Docker development');
+      this.useDirectPg = true;
+      this.pgPool = new Pool({
+        connectionString: databaseUrl,
+      });
+    } else if (supabaseUrl && supabaseKey) {
+      console.log('☁️ Using Supabase client');
+      this.client = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+    } else {
+      throw new Error('Missing database configuration - need either DATABASE_URL or Supabase credentials');
     }
-    
-    this.client = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
   }
 
   async getFeaturedProperties(limit: number = 6, userLocation?: { lat: number; lng: number }): Promise<Property[]> {
     try {
+      if (this.useDirectPg) {
+        return await this.getFeaturedPropertiesWithPg(limit, userLocation);
+      }
+
+      if (!this.client) {
+        throw new Error('Supabase client not initialized');
+      }
+
       let query = this.client
         .from('properties')
         .select(`
           *,
-          property_images (*),
-          landlords (*)
+          landlords (*),
+          property_images (*)
         `)
-        .eq('status', 'active')
+        .in('status', ['available', 'active'])
         .eq('featured', true)
         .order('featured_at', { ascending: false })
         .limit(limit);
@@ -42,7 +62,7 @@ class SupabaseService {
           user_lng: userLocation.lng,
           property_limit: limit
         });
-        
+
         if (distanceOrderedData) {
           return distanceOrderedData.map(this.transformPropertyData);
         }
@@ -50,7 +70,7 @@ class SupabaseService {
       }
 
       const { data, error } = await query;
-      
+
       if (error) {
         console.error('Error fetching featured properties:', error);
         throw new Error('Failed to fetch featured properties');
@@ -74,15 +94,19 @@ class SupabaseService {
     }
   ): Promise<SearchResults> {
     try {
+      console.log('🔍 Starting searchProperties with params:', searchParams);
       const { query: searchText, location, filters, page = 1, limit = 20, sortBy = 'relevance' } = searchParams;
       const offset = (page - 1) * limit;
 
-      let baseQuery = this.client
+      if (this.useDirectPg) {
+        return await this.searchPropertiesWithPg(searchParams);
+      }
+
+      let baseQuery = this.client!
         .from('properties')
         .select(`
           *,
-          property_images (*),
-          landlords (*)
+          property_images (*)
         `, { count: 'exact' })
         .eq('status', 'active');
 
@@ -165,22 +189,29 @@ class SupabaseService {
       // Apply pagination
       baseQuery = baseQuery.range(offset, offset + limit - 1);
 
+      console.log('📊 Executing query...');
       const { data, error, count } = await baseQuery;
 
+      console.log('✅ Query result:', { dataCount: data?.length, error: error?.message, count });
+
       if (error) {
-        console.error('Error searching properties:', error);
+        console.error('❌ Error searching properties:', error);
         throw new Error('Failed to search properties');
       }
 
-      // Get facets for filtering
-      const facets = await this.getSearchFacets(searchParams);
+      // Get facets for filtering - temporarily disabled for debugging
+      // const facets = await this.getSearchFacets(searchParams);
 
       return {
         properties: data?.map(this.transformPropertyData) || [],
         total: count || 0,
         page,
         limit,
-        facets
+        facets: {
+          neighborhoods: [],
+          priceRanges: [],
+          propertyTypes: []
+        }
       };
     } catch (error) {
       console.error('Database error in searchProperties:', error);
@@ -188,8 +219,173 @@ class SupabaseService {
     }
   }
 
+  private async getFeaturedPropertiesWithPg(limit: number = 6, userLocation?: { lat: number; lng: number }): Promise<Property[]> {
+    try {
+      if (!this.pgPool) {
+        throw new Error('PostgreSQL pool not initialized');
+      }
+
+      const query = `
+        SELECT
+          p.*,
+          l.name as landlord_name,
+          l.photo_url as landlord_photo,
+          l.rating as landlord_rating,
+          l.response_rate as landlord_response_rate,
+          l.whatsapp_enabled as landlord_whatsapp_enabled,
+          ST_X(p.location::geometry) as lng,
+          ST_Y(p.location::geometry) as lat,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', pi.id,
+                'url', pi.url,
+                'thumbnail_url', pi.thumbnail_url,
+                'alt', pi.alt,
+                'width', pi.width,
+                'height', pi.height,
+                'order_index', pi.order_index
+              ) ORDER BY pi.order_index
+            ) FILTER (WHERE pi.id IS NOT NULL),
+            '[]'::json
+          ) as property_images
+        FROM properties p
+        JOIN landlords l ON p.landlord_id = l.id
+        LEFT JOIN property_images pi ON p.id = pi.property_id
+        WHERE p.status = 'active' AND p.featured = true
+        GROUP BY p.id, l.name, l.photo_url, l.rating, l.response_rate, l.whatsapp_enabled
+        ORDER BY p.featured_at DESC NULLS LAST
+        LIMIT $1
+      `;
+
+      const result = await this.pgPool.query(query, [limit]);
+      return result.rows.map(row => this.transformPropertyData(row));
+    } catch (error) {
+      console.error('PostgreSQL getFeaturedProperties error:', error);
+      throw new Error('Failed to get featured properties');
+    }
+  }
+
+  private async searchPropertiesWithPg(searchParams: {
+    query?: string;
+    location?: { lat: number; lng: number };
+    filters?: any;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+  }): Promise<SearchResults> {
+    const { query: searchText, location, filters, page = 1, limit = 20, sortBy = 'relevance' } = searchParams;
+    const offset = (page - 1) * limit;
+
+    try {
+      // Build the SQL query
+      let whereConditions = ['p.status = $1'];
+      let queryParams: any[] = ['active'];
+      let paramIndex = 2;
+
+      // Add text search
+      if (searchText) {
+        whereConditions.push(`(p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`);
+        queryParams.push(`%${searchText}%`);
+        paramIndex++;
+      }
+
+      // Add filters
+      if (filters?.priceMin) {
+        whereConditions.push(`p.price_amount >= $${paramIndex}`);
+        queryParams.push(filters.priceMin);
+        paramIndex++;
+      }
+      if (filters?.priceMax) {
+        whereConditions.push(`p.price_amount <= $${paramIndex}`);
+        queryParams.push(filters.priceMax);
+        paramIndex++;
+      }
+      if (filters?.bedrooms?.length > 0) {
+        whereConditions.push(`p.bedrooms = ANY($${paramIndex})`);
+        queryParams.push(filters.bedrooms);
+        paramIndex++;
+      }
+
+      // Build ORDER BY clause
+      let orderBy = 'p.created_at DESC';
+      if (sortBy === 'price_asc') orderBy = 'p.price_amount ASC';
+      else if (sortBy === 'price_desc') orderBy = 'p.price_amount DESC';
+      else if (sortBy === 'date_desc') orderBy = 'p.created_at DESC';
+
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM properties p
+        WHERE ${whereConditions.join(' AND ')}
+      `;
+
+      const dataQuery = `
+        SELECT
+          p.*,
+          ST_X(p.location::geometry) as lng,
+          ST_Y(p.location::geometry) as lat,
+          l.id as landlord_id,
+          l.name as landlord_name,
+          l.photo_url as landlord_photo,
+          l.rating as landlord_rating,
+          l.response_rate as landlord_response_rate,
+          l.whatsapp_enabled as landlord_whatsapp_enabled,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', pi.id,
+                'url', pi.url,
+                'thumbnail_url', pi.thumbnail_url,
+                'alt', pi.alt,
+                'width', pi.width,
+                'height', pi.height,
+                'order_index', pi.order_index
+              ) ORDER BY pi.order_index
+            ) FILTER (WHERE pi.id IS NOT NULL),
+            '[]'::json
+          ) as property_images
+        FROM properties p
+        LEFT JOIN property_images pi ON p.id = pi.property_id
+        LEFT JOIN landlords l ON p.landlord_id = l.id
+        WHERE ${whereConditions.join(' AND ')}
+        GROUP BY p.id, l.id
+        ORDER BY ${orderBy}
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+
+      queryParams.push(limit, offset);
+
+      const [countResult, dataResult] = await Promise.all([
+        this.pgPool!.query(countQuery, queryParams.slice(0, -2)), // Remove limit/offset for count
+        this.pgPool!.query(dataQuery, queryParams)
+      ]);
+
+      const total = parseInt(countResult.rows[0].total);
+      const properties = dataResult.rows.map(row => this.transformPropertyData(row));
+
+      return {
+        properties,
+        total,
+        page,
+        limit,
+        facets: {
+          neighborhoods: [],
+          priceRanges: [],
+          propertyTypes: []
+        }
+      };
+    } catch (error) {
+      console.error('PostgreSQL search error:', error);
+      throw new Error('Failed to search properties');
+    }
+  }
+
   async getSearchSuggestions(query: string, location?: { lat: number; lng: number }, limit: number = 5): Promise<Suggestion[]> {
     try {
+      if (!this.client) {
+        throw new Error('Supabase client not initialized');
+      }
+
       const suggestions: Suggestion[] = [];
 
       // Get location suggestions
@@ -273,6 +469,11 @@ class SupabaseService {
 
   async trackAnalyticsEvent(event: AnalyticsEvent): Promise<void> {
     try {
+      if (!this.client) {
+        console.warn('Supabase client not available for analytics tracking');
+        return;
+      }
+
       await this.client
         .from('analytics_events')
         .insert({
@@ -290,6 +491,10 @@ class SupabaseService {
 
   async saveProperty(userId: string, propertyId: string): Promise<void> {
     try {
+      if (!this.client) {
+        throw new Error('Supabase client not available for saving property');
+      }
+
       await this.client
         .from('saved_properties')
         .upsert({
@@ -317,8 +522,8 @@ class SupabaseService {
       type: rawData.type,
       address: rawData.address,
       coordinates: {
-        lat: rawData.location?.coordinates[1] || 0,
-        lng: rawData.location?.coordinates[0] || 0
+        lat: rawData.lat || 0,
+        lng: rawData.lng || 0
       },
       price: {
         amount: rawData.price_amount,
@@ -339,7 +544,7 @@ class SupabaseService {
         alt: img.alt || rawData.title,
         width: img.width,
         height: img.height,
-        order: img.order
+        order: img.order_index
       })) || [],
       virtualTour: rawData.virtual_tour_url,
       video: rawData.video_url,
@@ -353,12 +558,12 @@ class SupabaseService {
       responseTime: rawData.response_time || 60,
       verificationStatus: rawData.verification_status || 'pending',
       landlord: {
-        id: rawData.landlords?.id,
-        name: rawData.landlords?.name || 'Property Owner',
-        photo: rawData.landlords?.photo_url,
-        rating: rawData.landlords?.rating || 4.5,
-        responseRate: rawData.landlords?.response_rate || 85,
-        whatsappEnabled: rawData.landlords?.whatsapp_enabled || true
+        id: rawData.landlord_id,
+        name: rawData.landlord_name || 'Property Owner',
+        photo: rawData.landlord_photo,
+        rating: rawData.landlord_rating || 4.5,
+        responseRate: rawData.landlord_response_rate || 85,
+        whatsappEnabled: rawData.landlord_whatsapp_enabled !== false
       }
     };
   }
@@ -374,16 +579,24 @@ class SupabaseService {
   }
 
   private async getPopularSearches(limit: number): Promise<string[]> {
+    if (!this.client) {
+      return [];
+    }
+
     const { data } = await this.client
       .from('search_analytics')
       .select('query')
       .order('search_count', { ascending: false })
       .limit(limit);
-    
+
     return data?.map(item => item.query) || [];
   }
 
   private async getRecentListings(limit: number): Promise<Property[]> {
+    if (!this.client) {
+      return [];
+    }
+
     const { data } = await this.client
       .from('properties')
       .select(`
@@ -399,6 +612,10 @@ class SupabaseService {
   }
 
   private async getPopularNeighborhoods(limit: number) {
+    if (!this.client) {
+      return [];
+    }
+
     const { data } = await this.client
       .from('neighborhoods')
       .select('name, property_count')
@@ -412,6 +629,14 @@ class SupabaseService {
   }
 
   private async getSearchMetrics() {
+    if (!this.client) {
+      return {
+        totalProperties: 0,
+        averageResponseTime: 60,
+        successfulMatches: 0
+      };
+    }
+
     const { data } = await this.client
       .from('search_metrics')
       .select('*')

@@ -50,7 +50,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const debouncedQuery = useDebounce(query, 300);
   
   // Fetch suggestions from backend
-  const { data: autocompleteData, isLoading } = trpc.property.autocomplete.useQuery(
+  const { data: suggestionsData, isLoading } = trpc.homepage.getSearchSuggestions.useQuery(
     {
       query: debouncedQuery,
       limit: 8,
@@ -63,23 +63,46 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   // Update suggestions when data changes
   useEffect(() => {
-    if (autocompleteData && Array.isArray(autocompleteData)) {
+    if (suggestionsData?.success && suggestionsData.data && Array.isArray(suggestionsData.data)) {
       // Transform backend data to SearchSuggestion format with sanitization
-      const transformedSuggestions: SearchSuggestion[] = autocompleteData.map((item: any, index: number) => ({
+      const transformedSuggestions: SearchSuggestion[] = suggestionsData.data.map((item: any, index: number) => ({
         id: `suggestion-${index}`,
-        text: sanitizeText(item.name || item.text || item),
+        text: sanitizeText(item.name || item.text || item.title || item),
         type: item.type || 'neighborhood',
-        subtitle: sanitizeText(item.subtitle || item.city || ''),
-        coordinates: item.coordinates
+        subtitle: sanitizeText(item.subtitle || item.city || item.neighborhood || ''),
+        coordinates: item.coordinates || item.location
       }));
-      
+
       setSuggestions(transformedSuggestions);
       setShowSuggestions(transformedSuggestions.length > 0 && debouncedQuery.length >= 2);
+    } else if (suggestionsData?.success === false) {
+      // API returned error, use fallback suggestions
+      const fallbackSuggestions: SearchSuggestion[] = [
+        {
+          id: 'fallback-1',
+          text: 'Lomas del Guijarro',
+          type: 'neighborhood',
+          subtitle: 'Tegucigalpa',
+          coordinates: { lat: 14.0850, lng: -87.1950 }
+        },
+        {
+          id: 'fallback-2',
+          text: 'Colonia Palmira',
+          type: 'neighborhood',
+          subtitle: 'Tegucigalpa',
+          coordinates: { lat: 14.0723, lng: -87.1921 }
+        }
+      ].filter(suggestion =>
+        suggestion.text.toLowerCase().includes(debouncedQuery.toLowerCase())
+      );
+
+      setSuggestions(fallbackSuggestions);
+      setShowSuggestions(fallbackSuggestions.length > 0 && debouncedQuery.length >= 2);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [autocompleteData, debouncedQuery]);
+  }, [suggestionsData, debouncedQuery]);
 
   // Update loading state
   useEffect(() => {
