@@ -109,13 +109,18 @@ class SearchEngine {
     }
 
     try {
+      console.log('🚀 SearchEngine.searchProperties called with:', searchParams);
+
       // Track search analytics
       if (searchParams.query) {
+        console.log('📈 Tracking search analytics...');
         await this.trackSearch(searchParams.query, searchParams.location);
       }
 
+      console.log('🔍 Calling supabaseService.searchProperties...');
       // Perform the search
       const results = await supabaseService.searchProperties(searchParams);
+      console.log('✅ Got results from supabaseService:', { propertiesCount: results.properties.length });
 
       // Cache the results
       if (this.config.cacheEnabled && results.properties.length > 0) {

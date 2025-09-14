@@ -78,25 +78,23 @@ services:
       - NODE_ENV=development
       - PORT=3001
       - HOST=0.0.0.0
-      - DATABASE_URL=postgresql://heurekka:heurekka123@postgres:5432/heurekka_dev
+      # DATABASE_URL=postgresql://heurekka:heurekka123@postgres:5432/heurekka_dev  # Disabled - using Supabase instead
       - REDIS_URL=redis://redis:6379
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - SUPABASE_URL=https://your-project.supabase.co
-      - SUPABASE_ANON_KEY=your-anon-key-here
-      - SUPABASE_SERVICE_KEY=your-service-key-here
+      - SUPABASE_URL=https://pvgapnlfccpkicfwmgwk.supabase.co
+      - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2Z2FwbmxmY2Nwa2ljZndtZ3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MjUxNjEsImV4cCI6MjA3MjUwMTE2MX0.FGmwPFGK3g81y0bEszrQPISY4ZvLNc1JNEMj9mtQ0Ac
+      - SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2Z2FwbmxmY2Nwa2ljZndtZ3drIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjkyNTE2MSwiZXhwIjoyMDcyNTAxMTYxfQ.GJk7pvqT4ug9o48bAmG2Tc9D52oD_N9GVHRiRREgMNU
       - JWT_SECRET=dev-jwt-secret-change-in-production
       - CORS_ORIGIN=http://localhost:3000
       - LOG_LEVEL=debug
     ports:
       - "3001:3001"
     volumes:
-      - ./src:/app/src:ro
+      - ./src:/app/src
       - ./package.json:/app/package.json:ro
       - ./tsconfig.json:/app/tsconfig.json:ro
       - /app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       elasticsearch:
