@@ -587,11 +587,11 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   }
 
   return (
-    <div className={`map-panel relative ${className}`}>
-      {/* Map container */}
+    <div className={`map-panel relative h-full ${className}`}>
+      {/* Map container - Fixed height, stays in place */}
       <div
         ref={mapContainer}
-        className="w-full h-full bg-gray-100"
+        className="w-full h-full bg-gray-100 sticky top-0"
         style={{ minHeight: '400px' }}
       />
 

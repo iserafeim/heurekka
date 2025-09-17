@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
-import { PropertyCard } from '@/components/property/property-card'
+import { PropertyCard } from '@/components/ui/property-card'
 import { Button } from '@/components/ui/button'
 import type { Property } from '@/types/homepage'
 

@@ -262,12 +262,12 @@ Gracias!`;
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
               {/* Gallery Section */}
               <div className="gallery-section">
-                {property.images && property.images.length > 0 ? (
+                {property.images && property.images.length > 0 && property.images[0] && property.images[0].trim() !== '' ? (
                   <div className="space-y-4">
                     {/* Main image */}
                     <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
                       <Image
-                        src={property.images[activeImageIndex]}
+                        src={property.images[activeImageIndex] || ''}
                         alt={`${getPropertyTypeLabel(property.propertyType)} - Imagen ${activeImageIndex + 1}`}
                         fill
                         className="object-cover"
@@ -311,7 +311,7 @@ Gracias!`;
                     {/* Thumbnail strip */}
                     {property.images.length > 1 && (
                       <div className="flex gap-2 overflow-x-auto pb-2">
-                        {property.images.map((image, index) => (
+                        {property.images.filter(img => img && img.trim() !== '').map((image, index) => (
                           <button
                             key={index}
                             onClick={() => {

@@ -22,7 +22,7 @@ export const SplitContainer: React.FC<SplitContainerProps> = ({
   onRatioChange,
   minWidth = 300,
   maxWidth = 80,
-  resizable = true,
+  resizable = false, // Disable resizing to enforce fixed 70/30 layout
   className = ''
 }) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -130,51 +130,21 @@ export const SplitContainer: React.FC<SplitContainerProps> = ({
   }, [resizable, ratio.cards, onRatioChange]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className={`split-container flex h-full ${className}`}
+      className={`split-container h-full grid grid-cols-1 md:grid-cols-[60%_40%] lg:grid-cols-[70%_30%] ${className}`}
       style={{ minHeight: '400px' }}
     >
-      {/* Left Panel - Property Cards */}
-      <div 
-        className="split-panel-left flex-shrink-0 relative"
-        style={{ width: `${ratio.cards}%` }}
+      {/* Left Panel - Property Cards (70%) */}
+      <div
+        className="split-panel-left relative overflow-hidden"
       >
         {leftChild}
       </div>
 
-      {/* Divider */}
-      {resizable && (
-        <div
-          ref={dividerRef}
-          className={`split-divider flex-shrink-0 w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize relative group transition-colors duration-200 ${
-            isDragging ? 'bg-blue-500' : ''
-          }`}
-          onMouseDown={handleMouseDown}
-          onKeyDown={handleKeyDown}
-          tabIndex={0}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Redimensionar paneles"
-          aria-valuenow={Math.round(ratio.cards)}
-          aria-valuemin={20}
-          aria-valuemax={80}
-          aria-valuetext={`${Math.round(ratio.cards)}% tarjetas, ${Math.round(ratio.map)}% mapa`}
-        >
-          {/* Hover indicator */}
-          <div className="absolute inset-y-0 -left-1 -right-1 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <div className="w-1 h-8 bg-blue-500 rounded-full shadow-md"></div>
-          </div>
-          
-          {/* Focus indicator */}
-          <div className="absolute inset-y-0 -left-2 -right-2 rounded focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-opacity-50"></div>
-        </div>
-      )}
-
-      {/* Right Panel - Map */}
-      <div 
-        className="split-panel-right flex-1 relative"
-        style={{ width: `${ratio.map}%` }}
+      {/* Right Panel - Map (30%) */}
+      <div
+        className="split-panel-right relative overflow-hidden"
       >
         {rightChild}
       </div>

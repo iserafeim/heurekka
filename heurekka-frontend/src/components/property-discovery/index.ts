@@ -9,7 +9,7 @@ export { SearchBar } from './SearchBar';
 export { FilterBar } from './FilterBar';
 export { SplitContainer } from './SplitContainer';
 export { PropertyCardsPanel } from './PropertyCardsPanel';
-export { PropertyCard } from './PropertyCard';
+export { PropertyCard } from '@/components/ui/property-card';
 export { MapPanel } from './MapPanel';
 export { PropertyDetailModal } from './PropertyDetailModal';
 export { ViewToggle } from './ViewToggle';

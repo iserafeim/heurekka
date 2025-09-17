@@ -64,12 +64,16 @@ export interface SearchFilters {
   priceMin: number;
   priceMax: number;
   bedrooms: number[];
+  bathrooms: number[];
   propertyTypes: PropertyType[];
   amenities: string[];
   sortBy: SortOption;
   radiusKm: number;
   cursor?: string;
   limit: number;
+  // New filters for redesigned UI
+  petsAllowed?: boolean;
+  hasDeals?: boolean;
 }
 
 export interface SearchResponse {

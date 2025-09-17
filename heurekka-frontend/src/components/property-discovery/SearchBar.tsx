@@ -50,14 +50,24 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const debouncedQuery = useDebounce(query, 300);
   
   // Fetch suggestions from backend
-  const { data: suggestionsData, isLoading } = trpc.homepage.getSearchSuggestions.useQuery(
+  const { data: suggestionsData, isLoading, error } = trpc.homepage.getSearchSuggestions.useQuery(
     {
       query: debouncedQuery,
       limit: 8,
     },
     {
-      enabled: debouncedQuery.length >= 2,
+      enabled: debouncedQuery.length >= 2 && debouncedQuery.trim() !== '',
       staleTime: 60000, // Cache for 1 minute
+      retry: 2, // Only retry twice
+      retryDelay: 1000, // Wait 1 second between retries
+      onError: (error) => {
+        console.warn('Search suggestions API error:', error);
+        setLoading(false); // Force loading to false on error
+      },
+      onSettled: () => {
+        // Always set loading to false when query settles (success or error)
+        setLoading(false);
+      }
     }
   );
 
@@ -98,16 +108,33 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
       setSuggestions(fallbackSuggestions);
       setShowSuggestions(fallbackSuggestions.length > 0 && debouncedQuery.length >= 2);
-    } else {
+    } else if (debouncedQuery.length < 2) {
+      // Clear everything when query is too short
       setSuggestions([]);
       setShowSuggestions(false);
+      setLoading(false);
     }
   }, [suggestionsData, debouncedQuery]);
 
+  // Handle errors separately to avoid dependency array issues
+  useEffect(() => {
+    if (error) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setLoading(false);
+      console.warn('Search suggestions API error:', error);
+    }
+  }, [error]);
+
   // Update loading state
   useEffect(() => {
-    setLoading(isLoading);
-  }, [isLoading]);
+    // Only set loading to true if we have a query and the API is actually loading
+    if (debouncedQuery.length >= 2 && debouncedQuery.trim() !== '') {
+      setLoading(isLoading);
+    } else {
+      setLoading(false);
+    }
+  }, [isLoading, debouncedQuery]);
 
   // Handle input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +267,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
             placeholder={placeholder}
-            className="w-full pl-10 pr-12 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            className="w-full pl-10 pr-12 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             autoComplete="off"
             aria-label={locale === 'es' ? 'Buscar ubicación' : 'Search location'}
             aria-expanded={showSuggestions}

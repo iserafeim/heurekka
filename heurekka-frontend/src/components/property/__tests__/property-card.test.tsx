@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PropertyCard } from '../property-card'
+import { PropertyCard } from '@/components/ui/property-card'
 import type { Property } from '@/types/homepage'
 
 // Mock Next.js Image component

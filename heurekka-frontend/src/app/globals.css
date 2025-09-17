@@ -2,11 +2,59 @@
 @import "tw-animate-css";
 @import "mapbox-gl/dist/mapbox-gl.css";
 
+/* Mobile Filter Modal Animations */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
 /* Property Discovery Styles */
 .property-discovery {
   /* Ensure proper focus management */
   --focus-ring: 2px solid #3b82f6;
   --focus-ring-offset: 2px;
+}
+
+/* Property Cards Panel - Partial cards visibility */
+.property-cards-grid {
+  /* Create a smooth scroll experience with partial card visibility */
+  max-height: calc(100vh - 200px); /* Adjust based on header height */
+  overflow-y: auto;
+}
+
+/* Split view responsive grid for partial cards visibility */
+@media (min-width: 1024px) {
+  .property-cards-split-view {
+    /* Show 3 full rows + partial 4th row to hint at more content */
+    max-height: calc(3.5 * var(--card-height, 300px) + 80px); /* 3.5 rows + gaps */
+    overflow-y: auto;
+  }
+}
+
+/* Custom scrollbar for property panel */
+.property-cards-panel ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.property-cards-panel ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.property-cards-panel ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.property-cards-panel ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Accessibility improvements */

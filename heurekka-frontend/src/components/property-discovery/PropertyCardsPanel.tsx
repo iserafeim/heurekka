@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { Property, SPANISH_TEXT } from '@/types/property';
-import { PropertyCard } from './PropertyCard';
+import { PropertyCard } from '@/components/ui/property-card';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 
 interface PropertyCardsPanelProps {
@@ -18,6 +18,10 @@ interface PropertyCardsPanelProps {
   locale?: 'es' | 'en';
   viewMode?: 'grid' | 'list';
   className?: string;
+  totalResults?: number;
+  currentLocation?: string;
+  sortBy?: string;
+  onSortChange?: (sortBy: string) => void;
 }
 
 /**
@@ -36,7 +40,11 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
   hasMore,
   locale = 'es',
   viewMode = 'grid',
-  className = ''
+  className = '',
+  totalResults = 0,
+  currentLocation = '',
+  sortBy = 'relevancia',
+  onSortChange
 }) => {
   const [isNearBottom, setIsNearBottom] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -102,13 +110,89 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
     onFavoriteToggle(propertyId);
   }, [onFavoriteToggle]);
 
-  // Get grid columns based on container width
+  // Get grid columns based on container width and design specifications
   const getGridClasses = () => {
     if (viewMode === 'list') {
-      return 'grid grid-cols-1 gap-4';
+      // Full List View: 4 columns on desktop (1024px+), 2 columns on tablet, 1 column on mobile
+      return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 lg:gap-6';
     }
-    return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
+    // Split View: Mobile: Single column full-width, Tablet: 2 columns, Desktop: 3 columns with 20px gap
+    return 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5';
   };
+
+  // Handle sort change
+  const handleSortChange = useCallback((newSortBy: string) => {
+    if (onSortChange) {
+      onSortChange(newSortBy);
+    }
+  }, [onSortChange]);
+
+  // Results Header Component
+  const ResultsHeader = () => (
+    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between">
+        <span className="text-sm text-gray-700">All rentals</span>
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-gray-700">Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value)}
+            className="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-no-repeat bg-right pr-6"
+            style={{
+              backgroundImage: `url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>')`,
+              backgroundSize: '16px 16px',
+              backgroundPosition: 'right 4px center',
+            }}
+          >
+            <option value="relevancia">Relevancia</option>
+            <option value="recientes">Recientes</option>
+            <option value="precio_asc">Precio ↑</option>
+            <option value="precio_desc">Precio ↓</option>
+            <option value="area_asc">Área ↑</option>
+            <option value="area_desc">Área ↓</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden md:flex items-center justify-between">
+        {/* Results count - Left side */}
+        <div className="text-sm text-gray-900">
+          <span className="font-medium">{totalResults}</span>{' '}
+          {totalResults === 1 ? 'propiedad' : 'propiedades'}{' '}
+          {currentLocation && (
+            <span>en <span className="font-medium">{currentLocation}</span></span>
+          )}
+        </div>
+
+        {/* Sort dropdown - Right side */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Ordenar:</span>
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="text-sm border-none bg-transparent focus:outline-none cursor-pointer text-gray-900 font-medium pr-4 appearance-none"
+              style={{
+                backgroundImage: `url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"></polyline></svg>')`,
+                backgroundSize: '16px 16px',
+                backgroundPosition: 'right center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            >
+              <option value="relevancia">Más relevantes</option>
+              <option value="recientes">Más recientes</option>
+              <option value="precio_asc">Precio ↑</option>
+              <option value="precio_desc">Precio ↓</option>
+              <option value="area_asc">Área ↑</option>
+              <option value="area_desc">Área ↓</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   // Empty state component
   const EmptyState = () => (
@@ -129,33 +213,44 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
   );
 
   // Loading skeleton component
-  const LoadingSkeleton = () => (
-    <div className={getGridClasses()}>
-      {[...Array(viewMode === 'list' ? 3 : 8)].map((_, index) => (
-        <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
-          <div className="h-48 bg-gray-200"></div>
-          <div className="p-4 space-y-3">
-            <div className="h-6 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="flex gap-4">
-              <div className="h-4 w-16 bg-gray-200 rounded"></div>
-              <div className="h-4 w-16 bg-gray-200 rounded"></div>
-              <div className="h-4 w-16 bg-gray-200 rounded"></div>
+  const LoadingSkeleton = () => {
+    // For full list view, show 12 skeleton cards (4x3 grid)
+    // For split view, show 6 skeleton cards
+    const skeletonCount = viewMode === 'list' ? 12 : 6;
+
+    return (
+      <div className={getGridClasses()}>
+        {[...Array(skeletonCount)].map((_, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+            <div className={`${viewMode === 'list' ? 'h-48' : 'h-48'} bg-gray-200`}></div>
+            <div className="p-4 space-y-3">
+              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="flex gap-2">
+                <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                <div className="h-4 w-12 bg-gray-200 rounded"></div>
+              </div>
+              {/* Contact button skeleton */}
+              <div className="h-8 bg-gray-200 rounded mt-3"></div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <div className={`property-cards-panel ${className}`}>
-      <div 
+    <div className={`property-cards-panel flex flex-col h-full ${className}`}>
+      {/* Results Header - Fixed */}
+      <ResultsHeader />
+
+      {/* Scrollable Content */}
+      <div
         ref={containerRef}
-        className="h-full overflow-y-auto"
-        style={{ 
+        className="flex-1 overflow-y-auto property-cards-split-view"
+        style={{
           scrollBehavior: 'smooth',
-          // Custom scrollbar styling
           scrollbarWidth: 'thin',
           scrollbarColor: '#CBD5E0 #F7FAFC'
         }}
@@ -163,10 +258,10 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
         <div className="p-6">
           {/* Loading state for initial load */}
           {loading && properties.length === 0 && <LoadingSkeleton />}
-          
+
           {/* Empty state */}
           {!loading && properties.length === 0 && <EmptyState />}
-          
+
           {/* Properties grid */}
           {properties.length > 0 && (
             <div className={getGridClasses()}>
@@ -188,8 +283,13 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
           )}
           
           {/* Infinite scroll trigger */}
+          {/*
+            Infinite scroll optimized for:
+            - Full List View: Initial load 12 properties (4×3 grid), load more in batches of 4 (one new row)
+            - Split View: Initial load 6 properties (3 full + 3 partial), load more in batches of 3
+          */}
           {properties.length > 0 && hasMore && (
-            <div 
+            <div
               ref={loadMoreRef}
               className="flex items-center justify-center py-8"
             >
