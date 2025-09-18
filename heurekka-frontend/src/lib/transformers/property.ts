@@ -181,7 +181,7 @@ export function transformBackendProperties(backendProperties: BackendProperty[])
  * Transform frontend search filters to backend API format
  */
 export function transformSearchFilters(frontendFilters: any) {
-  return {
+  const backendFilters = {
     query: frontendFilters.location || undefined,
     location: frontendFilters.coordinates ? {
       lat: frontendFilters.coordinates.lat,
@@ -193,6 +193,7 @@ export function transformSearchFilters(frontendFilters: any) {
       priceMin: frontendFilters.priceMin,
       priceMax: frontendFilters.priceMax,
       bedrooms: frontendFilters.bedrooms,
+      bathrooms: frontendFilters.bathrooms, // Added missing bathrooms filter
       propertyTypes: frontendFilters.propertyTypes?.map((type: PropertyType) => type.toLowerCase()),
       amenities: frontendFilters.amenities
     },
@@ -200,6 +201,13 @@ export function transformSearchFilters(frontendFilters: any) {
     limit: frontendFilters.limit || 20,
     sortBy: transformSortOption(frontendFilters.sortBy)
   };
+
+  console.log('🔄 Frontend filters:', JSON.stringify(frontendFilters, null, 2));
+  console.log('🔄 Transformed to backend:', JSON.stringify(backendFilters, null, 2));
+  console.log('🔄 Backend filters.bedrooms:', backendFilters.filters.bedrooms);
+  console.log('🔄 Backend filters.bathrooms:', backendFilters.filters.bathrooms);
+
+  return backendFilters;
 }
 
 /**

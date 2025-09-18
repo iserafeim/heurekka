@@ -57,7 +57,37 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     title: ''
   });
 
+  // Temporary filters for beds/baths dropdown (only applied on "View results")
+  const [tempBedroomsBaths, setTempBedroomsBaths] = useState<{
+    bedrooms: number[];
+    bathrooms: number[];
+  }>({
+    bedrooms: [],
+    bathrooms: []
+  });
+
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Initialize temp filters when beds/baths dropdown opens
+  useEffect(() => {
+    if (dropdowns.bedrooms) {
+      setTempBedroomsBaths({
+        bedrooms: filters.bedrooms || [],
+        bathrooms: filters.bathrooms || []
+      });
+    }
+  }, [dropdowns.bedrooms, filters.bedrooms, filters.bathrooms]);
+
+  // Reset temp filters when dropdown closes without applying
+  useEffect(() => {
+    if (!dropdowns.bedrooms) {
+      // Reset to current filters when dropdown closes
+      setTempBedroomsBaths({
+        bedrooms: filters.bedrooms || [],
+        bathrooms: filters.bathrooms || []
+      });
+    }
+  }, [dropdowns.bedrooms, filters.bedrooms, filters.bathrooms]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -128,12 +158,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   // Handle bedrooms change
   const handleBedroomsChange = useCallback((bedrooms: number[]) => {
-    // Validate bedroom numbers (1-10 range)
+    // Validate bedroom numbers (0-10 range, 0 represents studio)
     const validatedBedrooms = bedrooms
       .filter(num => typeof num === 'number' && !isNaN(num))
-      .map(num => validateNumber(num, 1, 10))
+      .map(num => validateNumber(num, 0, 10)) // Changed from 1 to 0 to allow studio
       .filter((num, index, arr) => arr.indexOf(num) === index); // Remove duplicates
-    
+
     onFiltersChange({ bedrooms: validatedBedrooms });
   }, [onFiltersChange]);
 
@@ -324,57 +354,103 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.bedrooms && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-80 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Habitaciones y Baños</h3>
-
-                <div className="space-y-4">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-96 p-6">
+                <div className="space-y-8">
+                  {/* Bedrooms Section */}
                   <div>
-                    <label className="block text-sm text-gray-600 mb-2">Habitaciones</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1, 2, 3, 4, 5, 6].map(num => (
-                        <button
-                          key={`bed-${num}`}
-                          onClick={() => {
-                            const newBedrooms = filters.bedrooms.includes(num)
-                              ? filters.bedrooms.filter(b => b !== num)
-                              : [...filters.bedrooms, num];
-                            handleBedroomsChange(newBedrooms);
-                          }}
-                          className={`px-3 py-2 text-sm border border-gray-200 rounded-md transition-colors duration-200 ${
-                            filters.bedrooms.includes(num)
-                              ? 'bg-blue-50 border-blue-300 text-blue-700'
-                              : 'hover:border-blue-300 hover:bg-blue-50'
-                          }`}
-                        >
-                          {num}+
-                        </button>
-                      ))}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Bedrooms</h3>
+                    <div className="bg-gray-100 rounded-full p-2 flex gap-2">
+                      {['Studio', '1', '2', '3', '4+'].map(option => {
+                        const value = option === 'Studio' ? 0 : option === '4+' ? 4 : parseInt(option);
+                        const isSelected = tempBedroomsBaths.bedrooms.includes(value);
+                        return (
+                          <button
+                            key={`bedroom-${option}`}
+                            onClick={() => {
+                              const newBedrooms = isSelected
+                                ? tempBedroomsBaths.bedrooms.filter(b => b !== value)
+                                : [...tempBedroomsBaths.bedrooms, value];
+                              setTempBedroomsBaths(prev => ({ ...prev, bedrooms: newBedrooms }));
+                            }}
+                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-full transition-all duration-200 ${
+                              isSelected
+                                ? 'bg-gray-800 text-white'
+                                : 'text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
+                  {/* Bathrooms Section */}
                   <div>
-                    <label className="block text-sm text-gray-600 mb-2">Baños</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[1, 2, 3, 4].map(num => (
-                        <button
-                          key={`bath-${num}`}
-                          onClick={() => {
-                            const currentBathrooms = filters.bathrooms || [];
-                            const newBathrooms = currentBathrooms.includes(num)
-                              ? currentBathrooms.filter(b => b !== num)
-                              : [...currentBathrooms, num];
-                            onFiltersChange({ bathrooms: newBathrooms });
-                          }}
-                          className={`px-3 py-2 text-sm border border-gray-200 rounded-md transition-colors duration-200 ${
-                            (filters.bathrooms || []).includes(num)
-                              ? 'bg-blue-50 border-blue-300 text-blue-700'
-                              : 'hover:border-blue-300 hover:bg-blue-50'
-                          }`}
-                        >
-                          {num}+
-                        </button>
-                      ))}
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Bathrooms</h3>
+                    <div className="bg-gray-100 rounded-full p-2 flex gap-2">
+                      {['1', '2', '3', '4', '5+'].map(option => {
+                        const value = option === '5+' ? 5 : parseInt(option);
+                        const isSelected = tempBedroomsBaths.bathrooms.includes(value);
+                        return (
+                          <button
+                            key={`bathroom-${option}`}
+                            onClick={() => {
+                              const newBathrooms = isSelected
+                                ? tempBedroomsBaths.bathrooms.filter(b => b !== value)
+                                : [...tempBedroomsBaths.bathrooms, value];
+                              setTempBedroomsBaths(prev => ({ ...prev, bathrooms: newBathrooms }));
+                            }}
+                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-full transition-all duration-200 ${
+                              isSelected
+                                ? 'bg-gray-800 text-white'
+                                : 'text-gray-700 hover:bg-gray-200'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
                     </div>
+                  </div>
+
+                  {/* Footer with Clear and View Results */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        // Clear temporary filters
+                        setTempBedroomsBaths({ bedrooms: [], bathrooms: [] });
+                        // Apply empty filters immediately and reset all filters to defaults
+                        onFiltersChange({
+                          bedrooms: [],
+                          bathrooms: [],
+                          location: '',
+                          priceMin: 0,
+                          priceMax: 100000,
+                          propertyTypes: [],
+                          amenities: [],
+                          sortBy: SortOption.RELEVANCE,
+                          petsAllowed: false,
+                          hasDeals: false
+                        });
+                        setDropdowns(prev => ({ ...prev, bedrooms: false }));
+                      }}
+                      className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200 underline"
+                    >
+                      Clear
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        // Apply the temporary filters using the proper handler
+                        handleBedroomsChange(tempBedroomsBaths.bedrooms);
+                        onFiltersChange({ bathrooms: tempBedroomsBaths.bathrooms });
+                        setDropdowns(prev => ({ ...prev, bedrooms: false }));
+                      }}
+                      className="bg-gray-900 text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
+                    >
+                      View results
+                    </button>
                   </div>
                 </div>
               </div>

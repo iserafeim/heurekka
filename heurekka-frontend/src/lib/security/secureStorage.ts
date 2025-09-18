@@ -194,10 +194,11 @@ export const secureStorage = {
       }
 
       return JSON.parse(decryptedValue) as T;
-      
+
     } catch (error) {
       console.error('Error retrieving encrypted data:', error);
-      // Clean up corrupted data
+      // Clean up corrupted data when decryption fails
+      console.warn('Cleaning up corrupted encrypted data for key:', key);
       secureStorage.removeItem(key);
       return null;
     }

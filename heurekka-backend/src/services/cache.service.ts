@@ -363,6 +363,35 @@ export class CacheService {
   }
 
   /**
+   * Invalidate all search result caches
+   */
+  async invalidateSearchResults(): Promise<void> {
+    try {
+      console.log('🧹 Invalidating all search result caches...');
+      const patterns = [
+        `${this.CACHE_KEYS.PROPERTY_SEARCH}*`,
+        `${this.CACHE_KEYS.MAP_BOUNDS}*`,
+        `${this.CACHE_KEYS.CLUSTERS}*`,
+        `${this.CACHE_KEYS.FACETS}*`,
+      ];
+
+      let totalDeleted = 0;
+      for (const pattern of patterns) {
+        const keys = await this.redis.keys(pattern);
+        if (keys.length > 0) {
+          await this.redis.del(...keys);
+          totalDeleted += keys.length;
+          console.log(`🧹 Deleted ${keys.length} keys matching ${pattern}`);
+        }
+      }
+      console.log(`🧹 Total cache keys deleted: ${totalDeleted}`);
+    } catch (error) {
+      console.error('Error invalidating search results cache:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Cache user favorites (session-based)
    */
   async cacheUserFavorites(userId: string, favorites: string[]): Promise<void> {

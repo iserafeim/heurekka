@@ -153,6 +153,27 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Temporary endpoint to clear search cache (for debugging filter issues)
+app.post('/debug/clear-cache', async (req, res) => {
+  try {
+    const cacheService = getCacheService();
+    await cacheService.invalidateSearchResults();
+    console.log('🧹 Search cache cleared successfully');
+    res.json({
+      success: true,
+      message: 'Search cache cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear cache',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Root endpoint with enhanced information
 app.get('/', (req, res) => {
   res.json({

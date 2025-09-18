@@ -105,9 +105,14 @@ export function usePropertySearch(): UsePropertySearchResult {
       const backendFilters = transformSearchFilters(searchFilters);
 
       // Use tRPC utils for imperative queries in React components
+      console.log('🚀 Sending to backend:', JSON.stringify(backendFilters, null, 2));
       const response = await utils.homepage.searchProperties.fetch(backendFilters);
+      console.log('📥 Backend response:', response);
 
       if (response.success && response.data) {
+        console.log('📊 Backend returned properties count:', response.data.properties?.length);
+        console.log('📊 Properties:', response.data.properties?.map(p => ({id: p.id, bedrooms: p.bedrooms, bathrooms: p.bathrooms})));
+
         // Transform backend properties to frontend format
         const transformedProperties = transformBackendProperties(response.data.properties || []);
 

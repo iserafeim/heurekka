@@ -272,6 +272,10 @@ class CacheService {
     await this.redis.del('heurekka:homepage:data');
   }
 
+  async invalidateSearchResults(): Promise<void> {
+    await this.invalidatePattern('search:*');
+  }
+
   // Health Check
   async healthCheck(): Promise<{ status: string; latency?: number }> {
     try {
@@ -288,19 +292,48 @@ class CacheService {
 
   // Utility Methods
   generateSearchHash(searchParams: any): string {
+    console.log('🔍 generateSearchHash input:', JSON.stringify(searchParams, null, 2));
+
     // Create a consistent hash for search parameters
+    // IMPORTANT: Do not include page/limit in hash - we want pages to share the same base cache
+    const rawFilters = searchParams.filters || {};
+    console.log('🔍 Raw filters before normalization:', JSON.stringify(rawFilters, null, 2));
+
+    const normalizedFilters = this.normalizeFilters(rawFilters);
+    console.log('🔍 Normalized filters:', JSON.stringify(normalizedFilters, null, 2));
+
     const normalized = {
       query: searchParams.query || '',
-      location: searchParams.location ? 
-        `${Math.round(searchParams.location.lat * 1000) / 1000},${Math.round(searchParams.location.lng * 1000) / 1000}` : 
+      location: searchParams.location ?
+        `${Math.round(searchParams.location.lat * 1000) / 1000},${Math.round(searchParams.location.lng * 1000) / 1000}` :
         null,
-      filters: searchParams.filters || {},
-      sortBy: searchParams.sortBy || 'relevance',
-      page: searchParams.page || 1,
-      limit: searchParams.limit || 20
+      filters: normalizedFilters,
+      sortBy: searchParams.sortBy || 'relevance'
     };
 
-    return Buffer.from(JSON.stringify(normalized)).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+    console.log('🔍 Final normalized object:', JSON.stringify(normalized, null, 2));
+
+    // Use simple JSON.stringify without replacer function to avoid issues
+    const hashString = JSON.stringify(normalized);
+    console.log('🔑 Generating hash from:', hashString);
+
+    // Use a proper hash function instead of base64 + substring
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(hashString).digest('hex').substring(0, 32);
+    console.log('🔑 Generated hash:', hash);
+    return hash;
+  }
+
+  // Helper to ensure filters are normalized consistently
+  private normalizeFilters(filters: any): any {
+    return {
+      priceMin: filters.priceMin || null,
+      priceMax: filters.priceMax || null,
+      bedrooms: Array.isArray(filters.bedrooms) ? filters.bedrooms.sort() : [],
+      bathrooms: Array.isArray(filters.bathrooms) ? filters.bathrooms.sort() : [],
+      propertyTypes: Array.isArray(filters.propertyTypes) ? filters.propertyTypes.sort() : [],
+      amenities: Array.isArray(filters.amenities) ? filters.amenities.sort() : []
+    };
   }
 
   generateLocationHash(location: { lat: number; lng: number }): string {

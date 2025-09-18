@@ -123,13 +123,43 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Search when filters change (temporarily disabled for map bounds to prevent constant re-searching with mock data)
   useEffect(() => {
+    console.log('🔍 Search effect triggered, filters:', state.filters);
     if (Object.keys(state.filters).length > 0) {
       // Only search if the change was NOT just bounds (to prevent map movement from clearing properties)
       const filtersWithoutBounds = { ...state.filters };
       delete filtersWithoutBounds.bounds;
-      
+
       // Only trigger search if there are meaningful filter changes beyond just bounds
-      if (Object.keys(filtersWithoutBounds).some(key => state.filters[key] !== undefined && state.filters[key] !== '' && state.filters[key] !== null)) {
+      const hasSignificantFilters = Object.keys(filtersWithoutBounds).some(key => {
+        const value = (state.filters as any)[key];
+        const defaultValue = (defaultFilters as any)[key];
+
+        let isSignificant = false;
+
+        if (Array.isArray(value)) {
+          // For arrays, significant if not empty
+          isSignificant = value.length > 0;
+        } else if (typeof value === 'string') {
+          // For strings, significant if not empty and not default
+          isSignificant = value !== '' && value !== defaultValue;
+        } else if (typeof value === 'number') {
+          // For numbers, significant if different from default
+          isSignificant = value !== defaultValue;
+        } else {
+          // For other types, significant if not undefined/null and not default
+          isSignificant = value !== undefined && value !== null && value !== defaultValue;
+        }
+
+        console.log(`🔍 Filter ${key}:`, value, 'default:', defaultValue, 'significant:', isSignificant);
+        return isSignificant;
+      });
+
+      console.log('🔍 Has significant filters:', hasSignificantFilters, 'Will search:', hasSignificantFilters);
+      if (hasSignificantFilters) {
+        search(state.filters);
+      } else {
+        // If no significant filters, search with empty/default filters to show all properties
+        console.log('🔍 No significant filters, searching with defaults to show all properties');
         search(state.filters);
       }
     }
@@ -151,14 +181,19 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: Partial<SearchFilters>) => {
-    setState(prev => ({
-      ...prev,
-      filters: {
+    console.log('🔍 Filter change:', newFilters);
+    setState(prev => {
+      const updatedFilters = {
         ...prev.filters,
         ...newFilters,
         cursor: undefined // Reset pagination when filters change
-      }
-    }));
+      };
+      console.log('🔍 Updated filters:', updatedFilters);
+      return {
+        ...prev,
+        filters: updatedFilters
+      };
+    });
   }, []);
 
   // Handle view mode changes

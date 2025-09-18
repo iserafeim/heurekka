@@ -35,7 +35,7 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
     }
   }, [isOpen, filters]);
 
-  const handleBedroomToggle = (num: number | 'studio') => {
+  const handleBedroomToggle = (num: number) => {
     const currentBedrooms = tempFilters.bedrooms || [];
     const newBedrooms = currentBedrooms.includes(num)
       ? currentBedrooms.filter(b => b !== num)
@@ -66,19 +66,22 @@ export const MobileFilterModal: React.FC<MobileFilterModalProps> = ({
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Bedrooms</h3>
         <div className="flex gap-2 justify-between">
-          {['studio', 1, 2, 3, '4+'].map(option => (
-            <button
-              key={option}
-              onClick={() => handleBedroomToggle(option === 'studio' ? 'studio' : option === '4+' ? 4 : option)}
-              className={`flex-1 py-4 text-center text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-0 focus-visible:outline-none ${
-                (tempFilters.bedrooms || []).includes(option === 'studio' ? 'studio' : option === '4+' ? 4 : option)
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {option === 'studio' ? 'Studio' : option}
-            </button>
-          ))}
+          {['studio', 1, 2, 3, '4+'].map(option => {
+            const value = option === 'studio' ? 0 : option === '4+' ? 4 : option as number;
+            return (
+              <button
+                key={option}
+                onClick={() => handleBedroomToggle(value)}
+                className={`flex-1 py-4 text-center text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-0 focus-visible:outline-none ${
+                  (tempFilters.bedrooms || []).includes(value)
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {option === 'studio' ? 'Studio' : option}
+              </button>
+            );
+          })}
         </div>
       </div>
 

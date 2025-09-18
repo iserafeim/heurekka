@@ -97,20 +97,24 @@ class SearchEngine {
     limit?: number;
     sortBy?: string;
   }): Promise<SearchResults> {
+    console.log('🚀 SearchEngine.searchProperties called with:', JSON.stringify(searchParams, null, 2));
+
     // Generate search hash for caching
     const searchHash = cacheService.generateSearchHash(searchParams);
+    console.log('🔑 Generated search hash:', searchHash);
 
     // Check cache first
     if (this.config.cacheEnabled) {
+      console.log('📦 Checking cache...');
       const cached = await cacheService.getSearchResults(searchHash);
       if (cached) {
+        console.log('✅ Found cached results, returning from cache');
         return cached;
       }
+      console.log('❌ No cached results found');
     }
 
     try {
-      console.log('🚀 SearchEngine.searchProperties called with:', searchParams);
-
       // Track search analytics
       if (searchParams.query) {
         console.log('📈 Tracking search analytics...');
@@ -124,7 +128,10 @@ class SearchEngine {
 
       // Cache the results
       if (this.config.cacheEnabled && results.properties.length > 0) {
+        console.log('💾 Caching results with hash:', searchHash);
         await cacheService.setSearchResults(searchHash, results);
+      } else {
+        console.log('🚫 Not caching results - cache disabled or no properties');
       }
 
       return results;
