@@ -4,6 +4,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { SearchFilters, PropertyType, SortOption, SPANISH_TEXT } from '@/types/property';
 import { validatePrice, validateNumber } from '@/lib/security/validation';
 import { MobileFilterModal } from './MobileFilterModal';
+import { Slider } from '@/components/ui/slider';
+import { PriceHistogram } from './PriceHistogram';
 
 interface FilterBarProps {
   filters: SearchFilters;
@@ -66,6 +68,24 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     bathrooms: []
   });
 
+  // Temporary filters for price dropdown (only applied on "View results")
+  const [tempPrice, setTempPrice] = useState<{
+    priceMin: number;
+    priceMax: number;
+  }>({
+    priceMin: 0,
+    priceMax: 100000
+  });
+
+  // Temporary filters for type dropdown (only applied on "View results")
+  const [tempPropertyTypes, setTempPropertyTypes] = useState<PropertyType[]>([]);
+
+  // Temporary filters for pets dropdown (only applied on "View results")
+  const [tempPetsAllowed, setTempPetsAllowed] = useState<boolean>(false);
+
+  // Temporary filters for deals dropdown (only applied on "View results")
+  const [tempHasDeals, setTempHasDeals] = useState<boolean>(false);
+
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Initialize temp filters when beds/baths dropdown opens
@@ -88,6 +108,69 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       });
     }
   }, [dropdowns.bedrooms, filters.bedrooms, filters.bathrooms]);
+
+  // Initialize temp price filters when price dropdown opens
+  useEffect(() => {
+    if (dropdowns.price) {
+      setTempPrice({
+        priceMin: filters.priceMin,
+        priceMax: filters.priceMax
+      });
+    }
+  }, [dropdowns.price, filters.priceMin, filters.priceMax]);
+
+  // Reset temp price filters when dropdown closes without applying
+  useEffect(() => {
+    if (!dropdowns.price) {
+      // Reset to current filters when dropdown closes
+      setTempPrice({
+        priceMin: filters.priceMin,
+        priceMax: filters.priceMax
+      });
+    }
+  }, [dropdowns.price, filters.priceMin, filters.priceMax]);
+
+  // Initialize temp property types filters when dropdown opens
+  useEffect(() => {
+    if (dropdowns.propertyType) {
+      setTempPropertyTypes(filters.propertyTypes || []);
+    }
+  }, [dropdowns.propertyType, filters.propertyTypes]);
+
+  // Reset temp property types filters when dropdown closes without applying
+  useEffect(() => {
+    if (!dropdowns.propertyType) {
+      setTempPropertyTypes(filters.propertyTypes || []);
+    }
+  }, [dropdowns.propertyType, filters.propertyTypes]);
+
+  // Initialize temp pets filters when dropdown opens
+  useEffect(() => {
+    if (dropdowns.pets) {
+      setTempPetsAllowed(filters.petsAllowed || false);
+    }
+  }, [dropdowns.pets, filters.petsAllowed]);
+
+  // Reset temp pets filters when dropdown closes without applying
+  useEffect(() => {
+    if (!dropdowns.pets) {
+      setTempPetsAllowed(filters.petsAllowed || false);
+    }
+  }, [dropdowns.pets, filters.petsAllowed]);
+
+  // Initialize temp deals filters when dropdown opens
+  useEffect(() => {
+    if (dropdowns.deals) {
+      setTempHasDeals(filters.hasDeals || false);
+    }
+  }, [dropdowns.deals, filters.hasDeals]);
+
+  // Reset temp deals filters when dropdown closes without applying
+  useEffect(() => {
+    if (!dropdowns.deals) {
+      setTempHasDeals(filters.hasDeals || false);
+    }
+  }, [dropdowns.deals, filters.hasDeals]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -145,16 +228,27 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const handlePriceChange = useCallback((min: number, max: number) => {
     const validatedMin = validatePrice(min.toString());
     const validatedMax = validatePrice(max.toString());
-    
+
     // Ensure min <= max
     const finalMin = Math.min(validatedMin, validatedMax);
     const finalMax = Math.max(validatedMin, validatedMax);
-    
+
     onFiltersChange({
       priceMin: finalMin,
       priceMax: finalMax
     });
   }, [onFiltersChange]);
+
+  // Handle slider range change (temporary - only applied on "View results")
+  const handleTempSliderChange = useCallback((values: number[]) => {
+    if (values.length === 2) {
+      const [min, max] = values;
+      setTempPrice({
+        priceMin: min,
+        priceMax: max
+      });
+    }
+  }, []);
 
   // Handle bedrooms change
   const handleBedroomsChange = useCallback((bedrooms: number[]) => {
@@ -236,7 +330,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* Beds/Baths Filter Pill */}
           <button
             onClick={() => openMobileModal('bedrooms', 'Beds & Baths')}
-            className={`flex-shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
               filters.bedrooms.length > 0 || (filters.bathrooms && filters.bathrooms.length > 0)
                 ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
                 : 'bg-white text-gray-700 active:bg-gray-200'
@@ -248,7 +342,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* Price Filter Pill */}
           <button
             onClick={() => toggleDropdown('price')}
-            className={`flex-shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
               dropdowns.price
                 ? (filters.priceMin > 0 || filters.priceMax < 100000
                     ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -264,7 +358,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* Type Filter Pill */}
           <button
             onClick={() => toggleDropdown('propertyType')}
-            className={`flex-shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
               dropdowns.propertyType
                 ? (filters.propertyTypes.length > 0
                     ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -280,7 +374,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* Pets Filter Pill */}
           <button
             onClick={() => toggleDropdown('pets')}
-            className={`flex-shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
               dropdowns.pets
                 ? (filters.petsAllowed
                     ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -296,7 +390,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* Deals Filter Pill */}
           <button
             onClick={() => toggleDropdown('deals')}
-            className={`flex-shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
               dropdowns.deals
                 ? (filters.hasDeals
                     ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -312,7 +406,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* More Filters Pill */}
           <button
             onClick={() => toggleDropdown('more')}
-            className={`flex-shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
               dropdowns.more
                 ? 'bg-gray-200 text-gray-700 border-gray-300'
                 : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200'
@@ -332,7 +426,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="relative" ref={el => { dropdownRefs.current.bedrooms = el; }}>
             <button
               onClick={() => toggleDropdown('bedrooms')}
-              className={`px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.bedrooms
                   ? (filters.bedrooms.length > 0 || (filters.bathrooms && filters.bathrooms.length > 0)
                       ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -354,15 +448,31 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.bedrooms && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-96 p-6">
-                <div className="space-y-8">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-80 p-4">
+                <div className="space-y-5">
                   {/* Bedrooms Section */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Bedrooms</h3>
-                    <div className="bg-gray-100 rounded-full p-2 flex gap-2">
-                      {['Studio', '1', '2', '3', '4+'].map(option => {
+                    <h3 className="text-xs text-gray-600 mb-4">Bedrooms</h3>
+                    <div className="border border-gray-200 rounded-full p-1.5 flex">
+                      {['Studio', '1', '2', '3', '4+'].map((option, index) => {
                         const value = option === 'Studio' ? 0 : option === '4+' ? 4 : parseInt(option);
                         const isSelected = tempBedroomsBaths.bedrooms.includes(value);
+                        const nextValue = index < 4 ? (index === 0 ? 1 : index === 4 ? 4 : index + 1) : null;
+                        const prevValue = index > 0 ? (index === 1 ? 0 : index === 4 ? 3 : index - 1) : null;
+                        const isNextSelected = nextValue !== null && tempBedroomsBaths.bedrooms.includes(nextValue);
+                        const isPrevSelected = prevValue !== null && tempBedroomsBaths.bedrooms.includes(prevValue);
+
+                        let roundedClass = 'rounded-full';
+                        if (isSelected) {
+                          if (isPrevSelected && isNextSelected) {
+                            roundedClass = 'rounded-none';
+                          } else if (isPrevSelected) {
+                            roundedClass = 'rounded-r-full rounded-l-none';
+                          } else if (isNextSelected) {
+                            roundedClass = 'rounded-l-full rounded-r-none';
+                          }
+                        }
+
                         return (
                           <button
                             key={`bedroom-${option}`}
@@ -372,9 +482,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                 : [...tempBedroomsBaths.bedrooms, value];
                               setTempBedroomsBaths(prev => ({ ...prev, bedrooms: newBedrooms }));
                             }}
-                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-full transition-all duration-200 ${
+                            className={`flex-1 py-1.5 px-2 text-xs font-medium transition-all duration-100 ${roundedClass} ${
                               isSelected
-                                ? 'bg-gray-800 text-white'
+                                ? 'bg-blue-600 text-white'
                                 : 'text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -387,11 +497,27 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
                   {/* Bathrooms Section */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Bathrooms</h3>
-                    <div className="bg-gray-100 rounded-full p-2 flex gap-2">
-                      {['1', '2', '3', '4', '5+'].map(option => {
+                    <h3 className="text-xs text-gray-600 mb-4">Bathrooms</h3>
+                    <div className="border border-gray-200 rounded-full p-1.5 flex">
+                      {['1', '2', '3', '4', '5+'].map((option, index) => {
                         const value = option === '5+' ? 5 : parseInt(option);
                         const isSelected = tempBedroomsBaths.bathrooms.includes(value);
+                        const nextValue = index < 4 ? (index === 4 ? 5 : index + 2) : null;
+                        const prevValue = index > 0 ? (index === 4 ? 4 : index) : null;
+                        const isNextSelected = nextValue !== null && tempBedroomsBaths.bathrooms.includes(nextValue);
+                        const isPrevSelected = prevValue !== null && tempBedroomsBaths.bathrooms.includes(prevValue);
+
+                        let roundedClass = 'rounded-full';
+                        if (isSelected) {
+                          if (isPrevSelected && isNextSelected) {
+                            roundedClass = 'rounded-none';
+                          } else if (isPrevSelected) {
+                            roundedClass = 'rounded-r-full rounded-l-none';
+                          } else if (isNextSelected) {
+                            roundedClass = 'rounded-l-full rounded-r-none';
+                          }
+                        }
+
                         return (
                           <button
                             key={`bathroom-${option}`}
@@ -401,9 +527,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                 : [...tempBedroomsBaths.bathrooms, value];
                               setTempBedroomsBaths(prev => ({ ...prev, bathrooms: newBathrooms }));
                             }}
-                            className={`flex-1 py-2 px-3 text-sm font-medium rounded-full transition-all duration-200 ${
+                            className={`flex-1 py-1.5 px-2 text-xs font-medium transition-all duration-100 ${roundedClass} ${
                               isSelected
-                                ? 'bg-gray-800 text-white'
+                                ? 'bg-blue-600 text-white'
                                 : 'text-gray-700 hover:bg-gray-200'
                             }`}
                           >
@@ -415,7 +541,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   </div>
 
                   {/* Footer with Clear and View Results */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     <button
                       onClick={() => {
                         // Clear temporary filters
@@ -447,7 +573,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         onFiltersChange({ bathrooms: tempBedroomsBaths.bathrooms });
                         setDropdowns(prev => ({ ...prev, bedrooms: false }));
                       }}
-                      className="bg-gray-900 text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
+                      className="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
                     >
                       View results
                     </button>
@@ -461,7 +587,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="relative" ref={el => { dropdownRefs.current.price = el; }}>
             <button
               onClick={() => toggleDropdown('price')}
-              className={`px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.price
                   ? (filters.priceMin > 0 || filters.priceMax < 100000
                       ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -483,61 +609,85 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.price && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-80 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">
-                  {SPANISH_TEXT.filters.price}
-                </h3>
-                
-                <div className="space-y-4">
-                  {/* Price inputs */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Mínimo
-                      </label>
-                      <input
-                        type="number"
-                        value={filters.priceMin}
-                        onChange={(e) => handlePriceChange(validatePrice(e.target.value), filters.priceMax)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-0"
-                        min="0"
-                        step="1000"
-                      />
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-96 p-5">
+                <div className="space-y-5">
+                  {/* Price Input Fields */}
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white border border-gray-300 rounded-lg px-3 py-2 flex-1">
+                      <div className="text-xs text-gray-600 mb-0.5">Min price</div>
+                      <div className="text-sm text-gray-900">
+                        {formatCurrency(tempPrice.priceMin)}
+                        <span className="text-gray-500 ml-1">/mo</span>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Máximo
-                      </label>
-                      <input
-                        type="number"
-                        value={filters.priceMax}
-                        onChange={(e) => handlePriceChange(filters.priceMin, validatePrice(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-0"
-                        min="0"
-                        step="1000"
-                      />
+                    <div className="text-gray-600 font-bold">—</div>
+                    <div className="bg-white border border-gray-300 rounded-lg px-3 py-2 flex-1">
+                      <div className="text-xs text-gray-600 mb-0.5">Max price</div>
+                      <div className="text-sm text-gray-900">
+                        {formatCurrency(tempPrice.priceMax)}
+                        <span className="text-gray-500 ml-1">/mo</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Quick price ranges */}
+
+                  {/* Price Histogram */}
                   <div>
-                    <p className="text-sm text-gray-600 mb-2">Rangos rápidos:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { min: 0, max: 10000, label: 'Hasta L.10,000' },
-                        { min: 10000, max: 25000, label: 'L.10,000 - L.25,000' },
-                        { min: 25000, max: 50000, label: 'L.25,000 - L.50,000' },
-                        { min: 50000, max: 100000, label: 'L.50,000+' }
-                      ].map(range => (
-                        <button
-                          key={`${range.min}-${range.max}`}
-                          onClick={() => handlePriceChange(range.min, range.max)}
-                          className="px-3 py-2 text-sm border border-gray-200 rounded-md hover:border-blue-300 hover:bg-blue-50 transition-colors duration-200"
-                        >
-                          {range.label}
-                        </button>
-                      ))}
-                    </div>
+                    <PriceHistogram
+                      minPrice={0}
+                      maxPrice={100000}
+                      selectedMin={tempPrice.priceMin}
+                      selectedMax={tempPrice.priceMax}
+                    />
+                  </div>
+
+                  {/* Dual Range Slider */}
+                  <div className="px-2">
+                    <Slider
+                      value={[tempPrice.priceMin, tempPrice.priceMax]}
+                      onValueChange={handleTempSliderChange}
+                      max={100000}
+                      min={0}
+                      step={1000}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      // Clear temporary filters
+                      setTempPrice({ priceMin: 0, priceMax: 100000 });
+                      // Apply empty filters immediately and reset all filters to defaults
+                      onFiltersChange({
+                        priceMin: 0,
+                        priceMax: 100000,
+                        bedrooms: [],
+                        bathrooms: [],
+                        location: '',
+                        propertyTypes: [],
+                        amenities: [],
+                        sortBy: SortOption.RELEVANCE,
+                        petsAllowed: false,
+                        hasDeals: false
+                      });
+                      setDropdowns(prev => ({ ...prev, price: false }));
+                    }}
+                    className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200 underline"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      // Apply the temporary price filters using the proper handler
+                      handlePriceChange(tempPrice.priceMin, tempPrice.priceMax);
+                      setDropdowns(prev => ({ ...prev, price: false }));
+                    }}
+                    className="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    View results
+                  </button>
                   </div>
                 </div>
               </div>
@@ -548,7 +698,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="relative" ref={el => { dropdownRefs.current.propertyType = el; }}>
             <button
               onClick={() => toggleDropdown('propertyType')}
-              className={`px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.propertyType
                   ? (filters.propertyTypes.length > 0
                       ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -570,34 +720,59 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.propertyType && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-56 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Tipo de Propiedad</h3>
-
-                <div className="space-y-2">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-52 p-3">
+                <div className="space-y-3">
                   {[
-                    { value: PropertyType.APARTMENT, label: 'Apartamento' },
-                    { value: PropertyType.HOUSE, label: 'Casa' },
-                    { value: PropertyType.ROOM, label: 'Habitación' },
-                    { value: PropertyType.OFFICE, label: 'Oficina' }
+                    { value: PropertyType.APARTMENT, label: 'Apartment' },
+                    { value: PropertyType.HOUSE, label: 'House' },
+                    { value: PropertyType.ROOM, label: 'Room' },
+                    { value: PropertyType.OFFICE, label: 'Townhouse' },
                   ].map(type => (
                     <label
                       key={type.value}
-                      className="flex items-center p-2 rounded-md hover:bg-gray-50 cursor-pointer"
+                      className="flex items-center cursor-pointer"
                     >
                       <input
                         type="checkbox"
-                        checked={filters.propertyTypes.includes(type.value)}
+                        checked={tempPropertyTypes.includes(type.value)}
                         onChange={(e) => {
                           const newTypes = e.target.checked
-                            ? [...filters.propertyTypes, type.value]
-                            : filters.propertyTypes.filter(t => t !== type.value);
-                          handlePropertyTypeChange(newTypes);
+                            ? [...tempPropertyTypes, type.value]
+                            : tempPropertyTypes.filter(t => t !== type.value);
+                          setTempPropertyTypes(newTypes);
                         }}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <span className="ml-3 text-sm">{type.label}</span>
+                      <span className="ml-3 text-sm text-gray-900">{type.label}</span>
                     </label>
                   ))}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200 mt-3">
+                  <button
+                    onClick={() => {
+                      // Clear temporary filters
+                      setTempPropertyTypes([]);
+                      // Apply empty filters immediately
+                      handlePropertyTypeChange([]);
+                      setDropdowns(prev => ({ ...prev, propertyType: false }));
+                    }}
+                    className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200 underline"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      // Apply the temporary property type filters
+                      handlePropertyTypeChange(tempPropertyTypes);
+                      setDropdowns(prev => ({ ...prev, propertyType: false }));
+                    }}
+                    className="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    View results
+                  </button>
                 </div>
               </div>
             )}
@@ -607,7 +782,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="relative" ref={el => { dropdownRefs.current.pets = el; }}>
             <button
               onClick={() => toggleDropdown('pets')}
-              className={`px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.pets
                   ? (filters.petsAllowed
                       ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -626,19 +801,53 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.pets && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Mascotas</h3>
-
-                <div className="space-y-2">
-                  <label className="flex items-center p-2 rounded-md hover:bg-gray-50 cursor-pointer">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-56 p-4">
+                <div className="space-y-4">
+                  <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={filters.petsAllowed || false}
-                      onChange={(e) => onFiltersChange({ petsAllowed: e.target.checked })}
+                      checked={tempPetsAllowed}
+                      onChange={(e) => setTempPetsAllowed(e.target.checked)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-3 text-sm">Se permiten mascotas</span>
+                    <span className="ml-3 text-sm text-gray-900">Dogs allowed</span>
                   </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-gray-900">Cats allowed</span>
+                  </label>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
+                  <button
+                    onClick={() => {
+                      // Clear temporary filters
+                      setTempPetsAllowed(false);
+                      // Apply empty filters immediately
+                      onFiltersChange({ petsAllowed: false });
+                      setDropdowns(prev => ({ ...prev, pets: false }));
+                    }}
+                    className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200 underline"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      // Apply the temporary pets filters
+                      onFiltersChange({ petsAllowed: tempPetsAllowed });
+                      setDropdowns(prev => ({ ...prev, pets: false }));
+                    }}
+                    className="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    View results
+                  </button>
                 </div>
               </div>
             )}
@@ -648,7 +857,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="relative" ref={el => { dropdownRefs.current.deals = el; }}>
             <button
               onClick={() => toggleDropdown('deals')}
-              className={`px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.deals
                   ? (filters.hasDeals
                       ? 'bg-blue-100 border-blue-400 text-blue-700'
@@ -667,19 +876,80 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.deals && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Ofertas Especiales</h3>
-
-                <div className="space-y-2">
-                  <label className="flex items-center p-2 rounded-md hover:bg-gray-50 cursor-pointer">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-56 p-4">
+                <div className="space-y-4">
+                  <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={filters.hasDeals || false}
-                      onChange={(e) => onFiltersChange({ hasDeals: e.target.checked })}
+                      checked={tempHasDeals}
+                      onChange={(e) => setTempHasDeals(e.target.checked)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <span className="ml-3 text-sm">Solo propiedades con descuentos</span>
+                    <span className="ml-3 text-sm text-gray-900">Rent special</span>
                   </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-gray-900">No security deposit</span>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-gray-900">Price drop</span>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-gray-900">Sweet deal</span>
+                  </label>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => {}}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-3 text-sm text-gray-900">Utilities included</span>
+                  </label>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
+                  <button
+                    onClick={() => {
+                      // Clear temporary filters
+                      setTempHasDeals(false);
+                      // Apply empty filters immediately
+                      onFiltersChange({ hasDeals: false });
+                      setDropdowns(prev => ({ ...prev, deals: false }));
+                    }}
+                    className="text-gray-600 hover:text-gray-800 font-medium text-sm transition-colors duration-200 underline"
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      // Apply the temporary deals filters
+                      onFiltersChange({ hasDeals: tempHasDeals });
+                      setDropdowns(prev => ({ ...prev, deals: false }));
+                    }}
+                    className="bg-gray-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    View results
+                  </button>
                 </div>
               </div>
             )}
@@ -690,7 +960,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="relative" ref={el => { dropdownRefs.current.more = el; }}>
             <button
               onClick={() => toggleDropdown('more')}
-              className={`px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+              className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.more
                   ? 'bg-gray-200 text-gray-700 border-gray-300'
                   : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200'
@@ -703,16 +973,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </button>
 
             {dropdowns.more && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-56 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Más Filtros</h3>
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-52 p-3">
+                <h3 className="font-medium text-gray-900 mb-2.5">Más Filtros</h3>
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div>
                     <label className="block text-sm text-gray-600 mb-2">Radio de búsqueda</label>
                     <select
                       value={filters.radiusKm}
                       onChange={(e) => onFiltersChange({ radiusKm: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-0"
+                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-0"
                     >
                       <option value={5}>5 km</option>
                       <option value={10}>10 km</option>
@@ -724,7 +994,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   {activeFilters > 0 && (
                     <button
                       onClick={handleClearFilters}
-                      className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
+                      className="w-full px-2.5 py-1.5 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200 border border-gray-200"
                     >
                       Limpiar todos los filtros ({activeFilters})
                     </button>

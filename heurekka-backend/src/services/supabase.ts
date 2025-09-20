@@ -13,7 +13,8 @@ class SupabaseService {
     const databaseUrl = process.env.DATABASE_URL;
 
     // Try to use local PostgreSQL if DATABASE_URL is available (localhost or Docker)
-    if (databaseUrl && (databaseUrl.includes('localhost') || databaseUrl.includes('postgres:5432'))) {
+    // TEMP: Disabled PostgreSQL direct connection to force Supabase client usage for coordinate debugging
+    if (false && databaseUrl && (databaseUrl.includes('localhost') || databaseUrl.includes('postgres:5432'))) {
       console.log('🔄 Using direct PostgreSQL connection for local/Docker development');
       this.useDirectPg = true;
       this.pgPool = new Pool({
@@ -34,9 +35,10 @@ class SupabaseService {
 
   async getFeaturedProperties(limit: number = 6, userLocation?: { lat: number; lng: number }): Promise<Property[]> {
     try {
-      if (this.useDirectPg) {
-        return await this.getFeaturedPropertiesWithPg(limit, userLocation);
-      }
+      // Force Supabase client usage for coordinate debugging
+      // if (this.useDirectPg) {
+      //   return await this.getFeaturedPropertiesWithPg(limit, userLocation);
+      // }
 
       if (!this.client) {
         throw new Error('Supabase client not initialized');
@@ -99,12 +101,13 @@ class SupabaseService {
       console.log('🔍 Filters received:', JSON.stringify(filters, null, 2));
       const offset = (page - 1) * limit;
 
-      if (this.useDirectPg) {
-        console.log('🔄 Using PostgreSQL direct connection');
-        return await this.searchPropertiesWithPg(searchParams);
-      }
+      // Force Supabase client usage for coordinate debugging
+      // if (this.useDirectPg) {
+      //   console.log('🐘 Using PostgreSQL direct connection for search');
+      //   return await this.searchPropertiesWithPg(searchParams);
+      // }
 
-      console.log('🔄 Using Supabase client');
+      console.log('☁️ Using Supabase client for search');
 
       let baseQuery = this.client!
         .from('properties')
@@ -835,6 +838,47 @@ class SupabaseService {
 
   // Private helper methods
   private transformPropertyData(rawData: any): Property {
+    // Extract coordinates from PostGIS location field
+    let lat = rawData.lat || 0;
+    let lng = rawData.lng || 0;
+
+    // If we have a PostGIS location field but no lat/lng, parse the location
+    if (!lat && !lng && rawData.location) {
+      try {
+        // PostGIS location field comes as either:
+        // 1. A string like "POINT(-87.21 14.095)"
+        // 2. An object with coordinates
+        if (typeof rawData.location === 'string' && rawData.location.includes('POINT')) {
+          // Extract from "POINT(-87.21 14.095)" format
+          const match = rawData.location.match(/POINT\(([^)]+)\)/);
+          if (match) {
+            const coords = match[1].split(' ');
+            lng = parseFloat(coords[0]);
+            lat = parseFloat(coords[1]);
+          }
+        } else if (rawData.location && typeof rawData.location === 'object') {
+          // Handle PostGIS object format
+          if (rawData.location.coordinates) {
+            lng = rawData.location.coordinates[0];
+            lat = rawData.location.coordinates[1];
+          }
+        }
+      } catch (error) {
+        console.warn('Error parsing location field:', error);
+      }
+    }
+
+    // Debug logging for coordinate extraction (temporarily disabled)
+    // console.log('🔍 DEBUG - Raw data coordinates:', {
+    //   id: rawData.id,
+    //   title: rawData.title,
+    //   originalLat: rawData.lat,
+    //   originalLng: rawData.lng,
+    //   locationField: rawData.location,
+    //   extractedLat: lat,
+    //   extractedLng: lng
+    // });
+
     return {
       id: rawData.id,
       title: rawData.title,
@@ -842,8 +886,8 @@ class SupabaseService {
       type: rawData.type,
       address: rawData.address,
       coordinates: {
-        lat: rawData.lat || 0,
-        lng: rawData.lng || 0
+        lat: lat,
+        lng: lng
       },
       price: {
         amount: rawData.price_amount,
@@ -868,11 +912,11 @@ class SupabaseService {
       })) || [],
       virtualTour: rawData.virtual_tour_url,
       video: rawData.video_url,
-      availableFrom: new Date(rawData.available_from),
+      availableFrom: rawData.available_from ? new Date(rawData.available_from) : new Date(),
       minimumStay: rawData.minimum_stay,
       maximumStay: rawData.maximum_stay,
-      createdAt: new Date(rawData.created_at),
-      updatedAt: new Date(rawData.updated_at),
+      createdAt: rawData.created_at ? new Date(rawData.created_at) : new Date(),
+      updatedAt: rawData.updated_at ? new Date(rawData.updated_at) : new Date(),
       viewCount: rawData.view_count || 0,
       saveCount: rawData.save_count || 0,
       responseTime: rawData.response_time || 60,
