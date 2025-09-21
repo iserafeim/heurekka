@@ -47,6 +47,12 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   // Set Mapbox access token
   mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 
+  // Store onBoundsChange in a ref to avoid re-initialization
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  useEffect(() => {
+    onBoundsChangeRef.current = onBoundsChange;
+  }, [onBoundsChange]);
+
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -103,7 +109,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       map.current.on('load', () => {
         console.log('🗺️ Map loaded, setting up clustering...');
         setMapLoaded(true);
-        
+
         // Setup clustering immediately after map loads (bypass mapLoaded check since we know it's loaded)
         if (map.current && !map.current.getSource('properties')) {
           setupClusteringDirectly();
@@ -114,12 +120,14 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       map.current.on('moveend', () => {
         if (map.current) {
           const bounds = map.current.getBounds();
-          onBoundsChange({
-            north: bounds.getNorth(),
-            south: bounds.getSouth(),
-            east: bounds.getEast(),
-            west: bounds.getWest()
-          });
+          if (bounds) {
+            onBoundsChangeRef.current({
+              north: bounds.getNorth(),
+              south: bounds.getSouth(),
+              east: bounds.getEast(),
+              west: bounds.getWest()
+            });
+          }
         }
       });
 
@@ -133,11 +141,11 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           sourceId: e.sourceId || 'unknown',
           isEmpty: Object.keys(e).length === 0
         });
-        
+
         // Provide more specific error messages
         let errorMessage = 'Error al cargar el mapa';
         const errorMsg = e.error?.message || e.message || '';
-        
+
         // Check if it's an empty error object (common with invalid tokens)
         if (Object.keys(e).length === 0 || (!e.error && !e.message && !e.type)) {
           errorMessage = 'Token de Mapbox inválido o no configurado. Verifica la configuración del mapa.';
@@ -150,7 +158,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         } else if (e.source || e.sourceId) {
           errorMessage = `Error al cargar datos del mapa: ${e.source || e.sourceId}`;
         }
-        
+
         setMapError(errorMessage);
       });
 
@@ -165,7 +173,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         map.current = null;
       }
     };
-  }, [center.lat, center.lng, zoom, onBoundsChange]);
+  }, [center.lat, center.lng, zoom]); // Only re-initialize when center or zoom props change
 
   // Show property tooltip
   const showPropertyTooltip = useCallback((e: mapboxgl.MapMouseEvent, properties: any) => {

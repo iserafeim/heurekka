@@ -330,77 +330,76 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {/* Beds/Baths Filter Pill */}
           <button
             onClick={() => openMobileModal('bedrooms', 'Beds & Baths')}
-            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
+            className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-1 ${
               filters.bedrooms.length > 0 || (filters.bathrooms && filters.bathrooms.length > 0)
-                ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
-                : 'bg-white text-gray-700 active:bg-gray-200'
+                ? 'bg-white border-gray-900 text-gray-900'
+                : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            Beds/Baths
+            <span>Beds/Baths</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {/* Price Filter Pill */}
           <button
-            onClick={() => toggleDropdown('price')}
-            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
-              dropdowns.price
-                ? (filters.priceMin > 0 || filters.priceMax < 100000
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-gray-200 text-gray-700 border-gray-300')
-                : (filters.priceMin > 0 || filters.priceMax < 100000
-                    ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
-                    : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
+            onClick={() => openMobileModal('price', 'Price')}
+            className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-1 ${
+              filters.priceMin > 0 || filters.priceMax < 100000
+                ? 'bg-white border-gray-900 text-gray-900'
+                : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            Price
+            <span>Price</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {/* Type Filter Pill */}
           <button
-            onClick={() => toggleDropdown('propertyType')}
-            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
-              dropdowns.propertyType
-                ? (filters.propertyTypes.length > 0
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-gray-200 text-gray-700 border-gray-300')
-                : (filters.propertyTypes.length > 0
-                    ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
-                    : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
+            onClick={() => openMobileModal('propertyType', 'Property Type')}
+            className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-1 ${
+              filters.propertyTypes.length > 0
+                ? 'bg-white border-gray-900 text-gray-900'
+                : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            Type
+            <span>Type</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {/* Pets Filter Pill */}
           <button
-            onClick={() => toggleDropdown('pets')}
-            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
-              dropdowns.pets
-                ? (filters.petsAllowed
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-gray-200 text-gray-700 border-gray-300')
-                : (filters.petsAllowed
-                    ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
-                    : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
+            onClick={() => openMobileModal('pets', 'Pets')}
+            className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-1 ${
+              filters.petsAllowed
+                ? 'bg-white border-gray-900 text-gray-900'
+                : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            Pets
+            <span>Pets</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {/* Deals Filter Pill */}
           <button
-            onClick={() => toggleDropdown('deals')}
-            className={`flex-shrink-0 px-2 py-1.5 border border-gray-300 rounded-lg text-sm font-medium transition-colors duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
-              dropdowns.deals
-                ? (filters.hasDeals
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-gray-200 text-gray-700 border-gray-300')
-                : (filters.hasDeals
-                    ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
-                    : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
+            onClick={() => openMobileModal('deals', 'Deals')}
+            className={`flex-shrink-0 px-3 py-2 border rounded-lg text-sm font-medium flex items-center gap-1 ${
+              filters.hasDeals
+                ? 'bg-white border-gray-900 text-gray-900'
+                : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            Deals
+            <span>Deals</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {/* More Filters Pill */}
@@ -482,7 +481,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                 : [...tempBedroomsBaths.bedrooms, value];
                               setTempBedroomsBaths(prev => ({ ...prev, bedrooms: newBedrooms }));
                             }}
-                            className={`flex-1 py-1.5 px-2 text-xs font-medium transition-all duration-100 ${roundedClass} ${
+                            className={`flex-1 py-1.5 px-2 text-xs font-medium ${roundedClass} ${
                               isSelected
                                 ? 'bg-blue-600 text-white'
                                 : 'text-gray-700 hover:bg-gray-200'
@@ -527,7 +526,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                 : [...tempBedroomsBaths.bathrooms, value];
                               setTempBedroomsBaths(prev => ({ ...prev, bathrooms: newBathrooms }));
                             }}
-                            className={`flex-1 py-1.5 px-2 text-xs font-medium transition-all duration-100 ${roundedClass} ${
+                            className={`flex-1 py-1.5 px-2 text-xs font-medium ${roundedClass} ${
                               isSelected
                                 ? 'bg-blue-600 text-white'
                                 : 'text-gray-700 hover:bg-gray-200'

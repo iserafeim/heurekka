@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { Heart } from 'lucide-react'
+import { Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -52,9 +52,17 @@ export function PropertyCard({
 }: UnifiedPropertyCardProps) {
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   // Determine the actual favorited state (supports both prop names)
   const actualIsFavorited = isFavorited || isFavorite;
+
+  // Reset image states when property changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+    setImageError(false);
+    setImageLoading(true);
+  }, [property.id]);
 
   // Check if this is a Property Discovery property
   const isPropertyDiscoveryFormat = (prop: any): prop is Property => {
@@ -77,11 +85,38 @@ export function PropertyCard({
     }
   };
 
+  // Utility function to ensure image URL is properly formatted
+  const ensureValidImageUrl = (url: string): string => {
+    if (!url || url.trim() === '') return '';
+
+    // If it's already a complete URL, return as-is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+
+    // If it's just a photo ID, convert to full Unsplash URL
+    if (url.startsWith('photo-')) {
+      const cleanId = url.replace(/^photo-/, '');
+      return `https://images.unsplash.com/photo-${cleanId}?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80`;
+    }
+
+    // If it's some other format, return as-is (might be a relative URL)
+    return url;
+  };
+
   // Data transformation to normalize Property Discovery format to Homepage format
   const normalizeProperty = (property: Property | HomepageProperty): HomepageProperty => {
-    // If already homepage format, return as-is
+    // If already homepage format, ensure URLs are valid
     if ('images' in property && Array.isArray(property.images) && property.images[0]?.url) {
-      return property as HomepageProperty;
+      const homepageProperty = property as HomepageProperty;
+      return {
+        ...homepageProperty,
+        images: homepageProperty.images.map(img => ({
+          ...img,
+          url: ensureValidImageUrl(img.url),
+          thumbnailUrl: ensureValidImageUrl(img.thumbnailUrl || img.url)
+        }))
+      };
     }
 
     // Transform Property Discovery format to Homepage format
@@ -114,8 +149,8 @@ export function PropertyCard({
       amenities: discoveryProperty.amenities || [],
       images: discoveryProperty.images?.map((img, index) => ({
         id: `${discoveryProperty.id}-${index}`,
-        url: img,
-        thumbnailUrl: img,
+        url: ensureValidImageUrl(img),
+        thumbnailUrl: ensureValidImageUrl(img),
         alt: `${getPropertyTypeLabel(discoveryProperty.propertyType)} - ${discoveryProperty.neighborhood}`,
         width: 400,
         height: 300,
@@ -208,7 +243,39 @@ export function PropertyCard({
 
   // Normalize property data
   const normalizedProperty = normalizeProperty(property);
-  const primaryImage = normalizedProperty.images?.[0];
+  const currentImage = normalizedProperty.images?.[currentImageIndex] || normalizedProperty.images?.[0];
+  const hasMultipleImages = normalizedProperty.images && normalizedProperty.images.length > 1;
+
+  // Image navigation functions
+  const goToPrevImage = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!hasMultipleImages) return;
+    // Reset image states when changing images
+    setImageError(false);
+    setImageLoading(true);
+    setCurrentImageIndex(prev =>
+      prev > 0 ? prev - 1 : (normalizedProperty.images?.length || 1) - 1
+    );
+  }, [hasMultipleImages, normalizedProperty.images?.length]);
+
+  const goToNextImage = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!hasMultipleImages) return;
+    // Reset image states when changing images
+    setImageError(false);
+    setImageLoading(true);
+    setCurrentImageIndex(prev =>
+      prev < (normalizedProperty.images?.length || 1) - 1 ? prev + 1 : 0
+    );
+  }, [hasMultipleImages, normalizedProperty.images?.length]);
+
+  const goToImage = useCallback((index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Reset image states when changing images
+    setImageError(false);
+    setImageLoading(true);
+    setCurrentImageIndex(index);
+  }, []);
 
   // Determine if card should be clickable
   const isClickable = !!onClick;
@@ -230,22 +297,44 @@ export function PropertyCard({
     >
       {/* Image section - rectangular 3:2 aspect ratio */}
       <div className="relative aspect-[3/2] bg-neutral-100">
-        {primaryImage && primaryImage.url && primaryImage.url.trim() !== '' && !imageError ? (
+        {currentImage && currentImage.url && currentImage.url.trim() !== '' && !imageError ? (
           <Image
-            src={primaryImage.url}
-            alt={primaryImage.alt || normalizedProperty.title}
+            src={currentImage.url}
+            alt={currentImage.alt || normalizedProperty.title}
             fill
             className={cn(
-              "object-cover transition-all duration-300",
-              imageLoading ? "opacity-0" : "opacity-100",
-              isHovered ? "scale-105" : "scale-100"
+              "object-cover transition-opacity duration-300",
+              imageLoading ? "opacity-0" : "opacity-100"
             )}
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
             loading="lazy"
-            onLoad={() => setImageLoading(false)}
+            onLoad={() => {
+              setImageLoading(false)
+              setImageError(false)
+            }}
             onError={() => {
+              console.warn(`Image failed to load: ${currentImage?.url} for property: ${normalizedProperty.title}`)
               setImageError(true)
               setImageLoading(false)
+
+              // Enhanced fallback logic: try to find a working image
+              const totalImages = normalizedProperty.images?.length || 0;
+
+              // If we have multiple images, try the next one
+              if (totalImages > 1 && currentImageIndex < totalImages - 1) {
+                console.log(`Trying next image (${currentImageIndex + 1}) for property: ${normalizedProperty.title}`)
+                setCurrentImageIndex(prev => prev + 1)
+                setImageError(false) // Reset error state to try loading next image
+                setImageLoading(true)
+              }
+              // If current image fails and it's not the first image, fallback to first image
+              else if (currentImageIndex > 0) {
+                console.log(`Falling back to first image for property: ${normalizedProperty.title}`)
+                setCurrentImageIndex(0)
+                setImageError(false) // Reset error state to try loading first image
+                setImageLoading(true)
+              }
+              // If all else fails, the error state remains and "Sin imagen" will be shown
             }}
           />
         ) : (
@@ -271,6 +360,48 @@ export function PropertyCard({
             />
           </Button>
         </div>
+
+        {/* Image navigation buttons - only show if multiple images */}
+        {hasMultipleImages && (
+          <>
+            {/* Previous button */}
+            <button
+              onClick={goToPrevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              aria-label="Imagen anterior"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Next button */}
+            <button
+              onClick={goToNextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              aria-label="Imagen siguiente"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
+        {/* Image position indicators (dots) */}
+        {hasMultipleImages && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {normalizedProperty.images?.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => goToImage(index, e)}
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all duration-200",
+                  index === currentImageIndex
+                    ? "bg-white shadow-lg"
+                    : "bg-white/50 hover:bg-white/75"
+                )}
+                aria-label={`Ir a imagen ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
 
 
         {/* Amenity badge top-left */}
