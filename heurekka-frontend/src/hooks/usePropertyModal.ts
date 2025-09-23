@@ -30,10 +30,10 @@ export function usePropertyModal(): UsePropertyModalResult {
     },
     description: 'Moderno apartamento de 2 habitaciones con excelente ubicación en una de las mejores zonas de Tegucigalpa. Cuenta con acabados de primera calidad, cocina equipada, y una vista espectacular de la ciudad.',
     images: [
-      'https://via.placeholder.com/600x400?text=Vista+Principal',
-      'https://via.placeholder.com/600x400?text=Cocina',
-      'https://via.placeholder.com/600x400?text=Dormitorio',
-      'https://via.placeholder.com/600x400?text=Baño'
+      'https://picsum.photos/600/400?random=10',
+      'https://picsum.photos/600/400?random=11',
+      'https://picsum.photos/600/400?random=12',
+      'https://picsum.photos/600/400?random=13'
     ],
     amenities: ['parking', 'security', 'gym', 'pool'],
     landlord: {

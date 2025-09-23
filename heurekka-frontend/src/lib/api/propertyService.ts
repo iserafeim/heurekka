@@ -19,6 +19,56 @@ interface PropertyResponse {
 
 export class PropertyService {
   /**
+   * Transform backend property data to ensure frontend compatibility
+   */
+  private transformPropertyDetails(property: any): any {
+    // Process images and add fallbacks if needed
+    let processedImages = [];
+
+    if (property.images && property.images.length > 0) {
+      // Transform backend images to string URLs
+      processedImages = property.images.map((img: any) => {
+        if (typeof img === 'string') {
+          return img; // Already a string URL
+        }
+        // Extract URL from image object
+        if (typeof img === 'object' && img.url) {
+          return img.url;
+        }
+        return null; // Invalid image data
+      }).filter((url: string | null) => url && typeof url === 'string' && url.trim() !== '');
+    }
+
+    // If no valid images, add placeholder images based on property type
+    if (processedImages.length === 0) {
+      const propertyType = property.propertyType || property.type || 'apartment';
+      const typeText = propertyType === 'apartment' ? 'Apartamento' :
+                     propertyType === 'house' ? 'Casa' :
+                     propertyType === 'room' ? 'Habitación' : 'Propiedad';
+
+      processedImages = [
+        `https://picsum.photos/600/400?random=1`,
+        `https://picsum.photos/600/400?random=2`,
+        `https://picsum.photos/600/400?random=3`
+      ];
+    }
+
+    return {
+      ...property,
+      images: processedImages,
+      // Ensure required fields exist
+      area: property.area || property.areaSqm || 0,
+      city: property.city || 'Tegucigalpa',
+      propertyType: property.propertyType || property.type || 'apartment',
+      // Ensure price is a number
+      price: typeof property.price === 'object' ? property.price.amount : property.price,
+      // Ensure coordinates exist
+      coordinates: property.coordinates || { lat: 0, lng: 0 },
+      // Ensure amenities is an array
+      amenities: Array.isArray(property.amenities) ? property.amenities : [],
+    };
+  }
+  /**
    * Search properties with filters
    */
   async searchProperties(filters: SearchFilters): Promise<SearchResponse> {
@@ -61,12 +111,61 @@ export class PropertyService {
         throw new Error('ID de propiedad inválido');
       }
 
-      const response = await httpClient.get<PropertyResponse>(`/properties/${propertyId}`);
-      return response.property;
+      console.log('Fetching property details for ID:', propertyId);
+
+      // Call TRPC endpoint via HTTP GET (for queries)
+      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const input = encodeURIComponent(JSON.stringify({"0": {"json": {"id": propertyId}}}));
+      const url = `${baseUrl}/trpc/property.getById?batch=1&input=${input}`;
+
+      console.log('Calling TRPC endpoint:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Response not OK:', response.status, response.statusText, 'URL:', url);
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('TRPC Response:', data);
+
+      // Extract the property from TRPC batch response format
+      // TRPC batch returns an array, we need the first element
+      const result = Array.isArray(data) ? data[0] : data;
+
+      // Check for TRPC errors
+      if (result?.error) {
+        console.error('TRPC Error:', result.error);
+        throw new Error(result.error?.json?.message || 'Error en la respuesta del servidor');
+      }
+
+      const property = result?.result?.data?.json;
+
+      if (!property) {
+        console.warn('No property found in response');
+        throw new Error('Propiedad no encontrada');
+      }
+
+      console.log('Property details retrieved:', property);
+      console.log('Original images:', property.images);
+
+      // Transform backend data to ensure frontend compatibility
+      const transformedProperty = this.transformPropertyDetails(property);
+      console.log('Transformed images:', transformedProperty.images);
+      return transformedProperty as PropertyDetails;
     } catch (error) {
       console.error('Property details error:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        error: error
+        error: error,
+        propertyId: propertyId
       });
       throw new Error('Error al cargar los detalles de la propiedad. Por favor, intenta de nuevo.');
     }

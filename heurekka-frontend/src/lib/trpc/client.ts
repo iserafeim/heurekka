@@ -16,7 +16,7 @@ function getBaseUrl() {
     // Browser should use relative URL
     return process.env.NEXT_PUBLIC_TRPC_URL || 'http://localhost:3001/trpc';
   }
-  
+
   // SSR should use full URL
   return process.env.NEXT_PUBLIC_TRPC_URL || 'http://localhost:3001/trpc';
 }

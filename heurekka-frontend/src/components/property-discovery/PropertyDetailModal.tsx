@@ -262,13 +262,20 @@ Gracias!`;
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
               {/* Gallery Section */}
               <div className="gallery-section">
-                {property.images && property.images.length > 0 && property.images[0] && property.images[0].trim() !== '' ? (
+                {property.images && property.images.length > 0 && property.images[0] && (
+                  (typeof property.images[0] === 'string' ? property.images[0].trim() !== '' :
+                   ((property.images[0] as any).url && (property.images[0] as any).url.trim() !== ''))
+                ) ? (
                   <div className="space-y-4">
                     {/* Main image */}
                     <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
                       <Image
-                        src={property.images[activeImageIndex] || ''}
-                        alt={`${getPropertyTypeLabel(property.propertyType)} - Imagen ${activeImageIndex + 1}`}
+                        src={typeof property.images[activeImageIndex] === 'string'
+                          ? property.images[activeImageIndex] || ''
+                          : property.images[activeImageIndex]?.url || ''}
+                        alt={typeof property.images[activeImageIndex] === 'string'
+                          ? `${getPropertyTypeLabel(property.propertyType)} - Imagen ${activeImageIndex + 1}`
+                          : property.images[activeImageIndex]?.alt || `${getPropertyTypeLabel(property.propertyType)} - Imagen ${activeImageIndex + 1}`}
                         fill
                         className="object-cover"
                         sizes="(max-width: 1024px) 100vw, 50vw"
@@ -311,7 +318,9 @@ Gracias!`;
                     {/* Thumbnail strip */}
                     {property.images.length > 1 && (
                       <div className="flex gap-2 overflow-x-auto pb-2">
-                        {property.images.filter(img => img && img.trim() !== '').map((image, index) => (
+                        {property.images.filter(img => img && (
+                          typeof img === 'string' ? img.trim() !== '' : ((img as any).url && (img as any).url.trim() !== '')
+                        )).map((image, index) => (
                           <button
                             key={index}
                             onClick={() => {
@@ -326,8 +335,8 @@ Gracias!`;
                             aria-label={`Ver imagen ${index + 1}`}
                           >
                             <Image
-                              src={image}
-                              alt={`Thumbnail ${index + 1}`}
+                              src={typeof image === 'string' ? image : (image as any)?.url || ''}
+                              alt={typeof image === 'string' ? `Thumbnail ${index + 1}` : (image as any)?.alt || `Thumbnail ${index + 1}`}
                               width={80}
                               height={64}
                               className="w-full h-full object-cover"
