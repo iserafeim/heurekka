@@ -137,7 +137,7 @@ export function transformBackendProperty(backendProperty: BackendProperty): Prop
     bathrooms: typeof backendProperty.bathrooms === 'string'
       ? parseFloat(backendProperty.bathrooms)
       : backendProperty.bathrooms,
-    area: backendProperty.size.value || 0,
+    area: backendProperty.area_sqm || backendProperty.areaSqm || backendProperty.area || backendProperty.size?.value || 0,
     propertyType: getPropertyType(backendProperty.type),
     images: transformImages(backendProperty.images),
     description: backendProperty.description,

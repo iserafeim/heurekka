@@ -895,7 +895,7 @@ class SupabaseService {
         period: rawData.price_period || 'month'
       },
       size: {
-        value: rawData.size_value,
+        value: rawData.area_sqm || rawData.size_value || 0,
         unit: rawData.size_unit || 'm2'
       },
       bedrooms: rawData.bedrooms,

@@ -57,7 +57,7 @@ export class PropertyService {
       ...property,
       images: processedImages,
       // Ensure required fields exist
-      area: property.area || property.areaSqm || 0,
+      area: property.area || property.areaSqm || property.area_sqm || property.size?.value || 0,
       city: property.city || 'Tegucigalpa',
       propertyType: property.propertyType || property.type || 'apartment',
       // Ensure price is a number
