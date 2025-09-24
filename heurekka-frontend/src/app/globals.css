@@ -191,7 +191,17 @@
 
 /* Property modal animations */
 .property-modal-overlay {
-  animation: fadeIn 0.3s ease;
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  animation: fadeInOverlay 0.3s ease;
+}
+
+@keyframes fadeInOverlay {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
 }
 
 .property-detail-modal {

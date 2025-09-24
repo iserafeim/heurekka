@@ -209,152 +209,742 @@ Explore Page
 
 ## Component Specifications
 
-### Property Detail Modal
+### Property Detail Modal - Image-First Design
 
 #### Modal Structure
-- **Trigger**: Click anywhere on property card (no contact button on cards)
-- **Size**: 90% viewport width, max 1200px
-- **Height**: 90vh with scrollable content
-- **Overlay**: Dark backdrop with blur effect
+- **Trigger**: Click anywhere on property card
+- **Size**: 95% viewport width, max 1400px
+- **Height**: 95vh with optimized scrolling
+- **Overlay**: Semi-transparent backdrop (rgba(0,0,0,0.4))
 - **Animation**: Smooth scale-up entrance, fade-out exit
+- **Focus**: Large, immersive image gallery as primary element
 
-#### Modal Layout
+#### Enhanced Modal Layout - Desktop (1024px+) - Zillow Style
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Property Detail Modal                │
-│  ╳                                                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────┬──────────────────────┐│
-│  │                                 │                      ││
-│  │     Photo Gallery               │   Property Info      ││
-│  │     (60% width)                 │   (40% width)        ││
-│  │                                 │                      ││
-│  │  [Main Image]                   │  L.12,000/mes        ││
-│  │                                 │  Apartamento 2BR     ││
-│  │  [Thumb1][Thumb2][Thumb3]       │  Los Próceres        ││
-│  │  [Thumb4][Thumb5][+10 más]      │                      ││
-│  │                                 │  ─────────────────   ││
-│  │                                 │                      ││
-│  │                                 │  Características:    ││
-│  │                                 │  • 2 habitaciones    ││
-│  │                                 │  • 1 baño            ││
-│  │                                 │  • 65 m²             ││
-│  │                                 │  • Parqueo incluido  ││
-│  │                                 │  • Seguridad 24/7    ││
-│  │                                 │                      ││
-│  │                                 │  ─────────────────   ││
-│  │                                 │                      ││
-│  │                                 │  Descripción:        ││
-│  │                                 │  [Full description]  ││
-│  │                                 │                      ││
-│  │                                 │  ─────────────────   ││
-│  │                                 │                      ││
-│  │                                 │  Ubicación:          ││
-│  │                                 │  [Mini map]          ││
-│  │                                 │                      ││
-│  │                                 │  ─────────────────   ││
-│  │                                 │                      ││
-│  │                                 │  ┌────────────────┐  ││
-│  │                                 │  │ 💬 Contactar   │  ││
-│  │                                 │  │ por WhatsApp   │  ││
-│  │                                 │  └────────────────┘  ││
-│  │                                 │                      ││
-│  └─────────────────────────────────┴──────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                     Property Detail Modal - Image-First                   │
+│  ╳                                                              🔍 ⛶      │ Header
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│                         HERO IMAGE GALLERY                               │
+│                           (Full Width)                                   │
+│                                                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                     │ │
+│  │                    MAIN HERO IMAGE                                  │ │
+│  │                     [900×400px]                                     │ │
+│  │                                                                     │ │
+│  │        ◀  [Image Navigation]  ▶     1/15 fotos   🔍 Ver galería   │ │
+│  │                                                                     │ │
+│  └─────────────────────────────────────────────────────────────────────┘ │
+│                                                                           │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ [+8 más]             │
+│  │Img1│ │Img2│ │Img3│ │Img4│ │Img5│ │Img6│ │Img7│                      │
+│  └────┘ └────┘ └────┘ └────┘ └────┘ └────┘ └────┘                      │
+│  ──────────────────── THUMBNAIL STRIP ────────────────────              │
+│                                                                           │
+│  ┌─────────────────────────────────────────────┬─────────────────────────┐ │
+│  │                                             │                         │ │
+│  │           PROPERTY INFORMATION              │    STICKY ACTION BAR    │ │
+│  │                (75% width)                  │       (25% width)       │ │
+│  │                                             │                         │ │
+│  │  ┌─────────────────────────────────────────┐│  ┌─────────────────────┐ │ │
+│  │  │   L.12,000/mes    💎 Premium           ││  │   L.12,000/mes      │ │ │
+│  │  │   Boulevard Morazán, Tegucigalpa        ││  │   💎 Premium        │ │ │
+│  │  └─────────────────────────────────────────┘│  └─────────────────────┘ │ │
+│  │                                             ││                         │ │
+│  │  ┌───────────┬───────────┬──────────┐      ││  ┌─────────────────────┐ │ │
+│  │  │     0     │     2     │    60    │      ││  │ 💬 Contactar por    │ │ │
+│  │  │Habitacion.│  Baños    │   m²     │      ││  │    WhatsApp         │ │ │
+│  │  └───────────┴───────────┴──────────┘      ││  └─────────────────────┘ │ │
+│  │                                             ││                         │ │
+│  │  🌟 Amenidades                              ││  ┌─────────────────────┐ │ │
+│  │  ✓ parking       ✓ air_conditioning        ││  │   📞 Llamar ahora   │ │ │
+│  │  ✓ security      ✓ reception_area          ││  └─────────────────────┘ │ │
+│  │  [Ver todas las amenidades]                ││                         │ │
+│  │                                             ││  ┌─────────────────────┐ │ │
+│  │  📝 Descripción                             ││  │  📧 Enviar mensaje  │ │ │
+│  │  Moderna oficina en Boulevard Morazán.     ││  └─────────────────────┘ │ │
+│  │  Ideal para consultorios médicos, bufetes  ││                         │ │
+│  │  de abogados o empresas pequeñas.          ││       🔒 STICKY         │ │
+│  │  Excelente ubicación comercial.            ││       POSITION          │ │
+│  │  [Leer más]                                ││                         │ │
+│  │                                             ││                         │ │
+│  │  📍 Ubicación y Área                       ││                         │ │
+│  │  ┌─────────────────────────────────────────┐││                         │ │
+│  │  │           [Interactive Map]             │││                         │ │
+│  │  │               📍                       │││                         │ │
+│  │  │        Boulevard Morazán                │││                         │ │
+│  │  └─────────────────────────────────────────┘││                         │ │
+│  │                                             ││                         │ │
+│  │  🚗 Travel Times                            ││                         │ │
+│  │  [Add destination input]                   ││                         │ │
+│  │                                             ││                         │ │
+│  └─────────────────────────────────────────────┴─────────────────────────┘ │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### Modal Content Sections
+#### Enhanced Modal Layout - Tablet (768-1023px)
+```
+┌─────────────────────────────────────────────────────────┐
+│                Property Detail Modal                    │
+│  ╳                                           🔍        │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │              HERO IMAGE GALLERY                     │ │
+│  │                 [540×360px]                         │ │
+│  │                                                     │ │
+│  │      ◀  [Full Screen Gallery]  ▶                   │ │
+│  │                                                     │ │
+│  │           1 / 15 fotos    🔍 Ver galería           │ │
+│  └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐ [+10 más]         │
+│  │Img1│ │Img2│ │Img3│ │Img4│ │Img5│                   │
+│  └────┘ └────┘ └────┘ └────┘ └────┘                   │
+│  ────────────── THUMBNAIL STRIP ──────────────         │
+│                                                         │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  L.12,000/mes             💎 Oficina Premium       │ │
+│  │  Boulevard Morazán, Tegucigalpa                     │ │
+│  └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│  ┌────────────┬────────────┬────────────┬─────────────┐ │
+│  │     0      │     2      │    60      │ Amenidades  │ │
+│  │Habitaciones│   Baños    │    m²      │   [Ver +]   │ │
+│  └────────────┴────────────┴────────────┴─────────────┘ │
+│                                                         │
+│  📝 Descripción                                         │
+│  Moderna oficina en Boulevard Morazán. Ideal para      │
+│  consultorios médicos, bufetes de abogados o empresas  │
+│  pequeñas. Excelente ubicación comercial.              │
+│  [Leer más]                                             │
+│                                                         │
+│  📍 Ubicación                                           │
+│  [Expandable mini-map section]                          │
+│                                                         │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │           💬 Contactar por WhatsApp                 │ │
+│  └─────────────────────────────────────────────────────┘ │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
 
-**Gallery Section (Left - 60%)**
-- **Main Image**: Large featured image with zoom capability
-- **Thumbnails**: Grid of smaller images below main
-- **Gallery Controls**: Previous/Next arrows, fullscreen button
-- **Image Counter**: "1 de 15 fotos"
-- **Virtual Tour Button**: If available
+#### Enhanced Modal Layout - Mobile (320-767px)
+```
+┌─────────────────────────┐
+│    Property Modal       │
+│  ╳                     │
+├─────────────────────────┤
+│                         │
+│  ┌─────────────────────┐ │
+│  │                     │ │
+│  │    FULL-SCREEN      │ │
+│  │    HERO IMAGE       │ │
+│  │    [320×240px]      │ │
+│  │                     │ │
+│  │  ◀  1/15 fotos  ▶   │ │
+│  │                     │ │
+│  └─────────────────────┘ │
+│                         │
+│  ┌─┐┌─┐┌─┐┌─┐┌─┐ +10   │
+│  │1││2││3││4││5│ más    │
+│  └─┘└─┘└─┘└─┘└─┘       │
+│  ──── THUMBNAILS ────   │
+│                         │
+│  ┌─────────────────────┐ │
+│  │   L.12,000/mes      │ │
+│  │   💎 Premium        │ │
+│  └─────────────────────┘ │
+│                         │
+│  Boulevard Morazán      │
+│  Tegucigalpa           │
+│                         │
+│  ┌───┬────┬────┬──────┐ │
+│  │ 0 │ 2  │ 60 │Ameni.│ │
+│  │Hab│Baño│ m² │[Ver+]│ │
+│  └───┴────┴────┴──────┘ │
+│                         │
+│  🌟 Amenidades          │
+│  ✓ parking             │
+│  ✓ air_conditioning    │
+│  ✓ security            │
+│  [Ver todas]           │
+│                         │
+│  📝 Descripción         │
+│  Moderna oficina en    │
+│  Boulevard Morazán.    │
+│  Ideal para consul-    │
+│  torios médicos...     │
+│  [Leer más]            │
+│                         │
+│  📍 Ubicación           │
+│  [Mini Map]            │
+│                         │
+│  ┌─────────────────────┐ │
+│  │ 💬 Contactar por    │ │
+│  │    WhatsApp         │ │
+│  └─────────────────────┘ │
+│                         │
+└─────────────────────────┘
+```
 
-**Information Section (Right - 40%)**
-- **Price Block**: Large, prominent pricing
-- **Title & Location**: Property type and neighborhood
-- **Quick Specs**: Icons with bedrooms, bathrooms, area
-- **Amenities List**: Checkmarked features
-- **Full Description**: Expandable text section
-- **Location Map**: Interactive mini-map
-- **Contact CTA**: Prominent WhatsApp button at bottom
+#### Enhanced Modal Content Sections - Zillow Style
 
-#### Modal Visual Specifications
+**Full-Width Hero Gallery Section (Top)**
+- **Hero Image**: Large, prominent main image spanning full modal width
+- **Aspect Ratio**: 16:9 or similar for optimal viewing
+- **Navigation**: Left/right arrows with smooth transitions
+- **Gallery Controls**: Image counter and fullscreen toggle overlay
+- **Thumbnails Strip**: Horizontal scrolling thumbnails below hero
+- **Image Quality**: Progressive loading with blur-to-sharp effect
+
+**Split Content Section (Bottom)**
+
+**Property Information Panel (Left - 75%)**
+- **Header Block**: Price, badge, and location in prominent card
+- **Quick Stats**: Bedrooms, bathrooms, area in clean grid layout
+- **Amenities Grid**: Key features in 2-column layout with checkmarks
+- **Description**: Full description with expandable "Read more"
+- **Interactive Map**: Larger map section with location pin
+- **Travel Times**: Input field for destination calculations (like Zillow)
+- **Additional Details**: Property facts, listing info, etc.
+
+**Sticky Action Bar (Right - 25%)**
+- **Price Summary**: Current price and status at top
+- **Primary CTA**: WhatsApp contact button (prominent)
+- **Secondary Actions**: Call now, send message buttons
+- **Sticky Behavior**: Follows user scroll on longer content
+- **Fixed Position**: Always visible during property browsing
+- **Visual Hierarchy**: Primary action stands out with gradient/color
+
+**Key Design Principles**
+- **Images First**: Hero gallery dominates the top portion
+- **Information Flow**: Natural top-to-bottom, left-to-right reading
+- **Action Accessibility**: Contact options always visible
+- **Content Hierarchy**: Price and key stats prominently displayed
+- **Responsive Adaptation**: Maintains usability across all devices
+
+#### Enhanced Modal Visual Specifications
 ```css
+/* Enhanced Modal Overlay */
 .property-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(2px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease;
+  animation: fadeInOverlay 0.3s ease;
+  padding: 2.5vh 2.5vw;
 }
 
+/* Enhanced Modal Container */
 .property-modal {
   background: white;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 1200px;
-  height: 90vh;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 1400px;
+  height: 95vh;
   display: grid;
-  grid-template-columns: 60% 40%;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+  animation: modalBounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Desktop Layout (1024px+) - Zillow Style */
+@media (min-width: 1024px) {
+  .property-modal {
+    grid-template-rows: auto auto 1fr;
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content-split {
+    display: grid;
+    grid-template-columns: 75% 25%;
+    gap: 24px;
+  }
+}
+
+/* Tablet Layout (768-1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .property-modal {
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr;
+    height: 90vh;
+  }
+}
+
+/* Mobile Layout (320-767px) */
+@media (max-width: 767px) {
+  .property-modal {
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr;
+    height: 95vh;
+    margin: 0;
+    border-radius: 16px;
+  }
+
+  .property-modal-overlay {
+    padding: 1vh 1vw;
+  }
+}
+
+/* Enhanced Gallery Section */
 .modal-gallery {
   background: #000;
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
+.hero-image-container {
+  flex: 1;
+  position: relative;
+  min-height: 400px;
+  background: #000;
+}
+
+.hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.hero-image:hover {
+  transform: scale(1.02);
+}
+
+.image-controls {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  padding: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.image-controls:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.image-controls.prev { left: 16px; }
+.image-controls.next { right: 16px; }
+
+.image-counter {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.fullscreen-toggle {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.thumbnail-strip {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.thumbnail {
+  min-width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.thumbnail.active {
+  border-color: #2563EB;
+  transform: scale(1.05);
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Enhanced Info Section */
 .modal-info {
   padding: 32px;
   overflow-y: auto;
   background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.whatsapp-cta {
-  position: sticky;
-  bottom: 0;
-  background: white;
-  padding: 20px 0;
-  border-top: 1px solid #E5E7EB;
+/* Mobile Info Section */
+@media (max-width: 767px) {
+  .modal-info {
+    padding: 20px;
+    gap: 20px;
+  }
 }
 
-.whatsapp-button {
-  width: 100%;
-  padding: 16px;
-  background: #25D366;
-  color: white;
-  border-radius: 12px;
+.price-block {
+  background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.price-main {
+  font-size: 32px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.price-period {
+  font-size: 16px;
+  color: #6B7280;
+}
+
+.property-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.location-block {
+  text-align: center;
+  margin: 16px 0;
+}
+
+.property-title {
   font-size: 18px;
   font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.property-location {
+  font-size: 16px;
+  color: #6B7280;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.stat-card {
+  background: #F9FAFB;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.amenities-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.amenity-check {
+  width: 16px;
+  height: 16px;
+  color: #10B981;
+}
+
+.expand-button {
+  color: #2563EB;
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.description-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.mini-map {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  background: #F3F4F6;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.whatsapp-button:hover {
-  background: #1EBE5A;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+.mini-map:hover {
+  background: #E5E7EB;
 }
 
-@keyframes modalSlideUp {
+/* Zillow-Style Action Sidebar */
+.sticky-action-bar {
+  position: sticky;
+  top: 20px;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: fit-content;
+}
+
+.action-bar-price {
+  text-align: center;
+  padding: 16px;
+  background: #F9FAFB;
+  border-radius: 12px;
+}
+
+.action-bar-price-main {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.action-bar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  color: #92400E;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Primary Action Button */
+.whatsapp-cta-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #25D366 0%, #1EBE5A 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.whatsapp-cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+}
+
+/* Secondary Action Buttons */
+.secondary-action-button {
+  width: 100%;
+  padding: 14px;
+  background: white;
+  color: #2563EB;
+  border: 2px solid #2563EB;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-action-button:hover {
+  background: #2563EB;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Property Information Panel */
+.property-info-panel {
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.property-header-card {
+  background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #E5E7EB;
+}
+
+.property-title-main {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.property-location-main {
+  font-size: 18px;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.enhanced-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin: 32px 0;
+}
+
+.enhanced-stat-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.enhanced-stat-card:hover {
+  border-color: #2563EB;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.large-map-section {
+  margin: 32px 0;
+}
+
+.interactive-map {
+  width: 100%;
+  height: 300px;
+  border-radius: 16px;
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+}
+
+.travel-times-section {
+  background: #F9FAFB;
+  padding: 24px;
+  border-radius: 16px;
+  margin: 24px 0;
+}
+
+.destination-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #D1D5DB;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.destination-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Animation Keyframes */
+@keyframes fadeInOverlay {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes modalBounceIn {
   from {
     opacity: 0;
     transform: scale(0.95) translateY(20px);
