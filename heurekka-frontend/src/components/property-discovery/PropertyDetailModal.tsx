@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { PropertyDetails, Property, SPANISH_TEXT } from '@/types/property';
 import { validatePhoneNumber, sanitizeText } from '@/lib/security/validation';
+import { PropertyMiniMap } from './PropertyMiniMap';
 import styles from './PropertyDetailModal.module.css';
 
 interface PropertyDetailModalProps {
@@ -215,72 +216,140 @@ Gracias!`;
     }
   };
 
-  // Get icon for amenity
-  const getAmenityIcon = (amenity: string) => {
+  // Get improved icon and label for amenity - More descriptive icons
+  const getAmenityInfo = (amenity: string) => {
     const amenityLower = amenity.toLowerCase();
 
     if (amenityLower.includes('parking') || amenityLower.includes('estacionamiento')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7h3m-3 3h3m-3 3h3m-10 3H5a2 2 0 01-2-2V9a2 2 0 012-2h4m6 8h2a2 2 0 002-2V9a2 2 0 00-2-2h-2" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+          </svg>
+        ),
+        label: 'Estacionamiento'
+      };
     }
 
     if (amenityLower.includes('air') || amenityLower.includes('aire') || amenityLower.includes('conditioning')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M6.59 3.41L5 5l5.5 5.5L9 12l1.5 1.5L16 8l-1.41-1.41L12 9.17 6.59 3.41zM17 6.25l1.41 1.41L16.84 9.23C18.61 10.89 20 13.28 20 16c0 2.76-2.24 5-5 5h-2v2h-2v-2H9c-2.76 0-5-2.24-5-5 0-2.72 1.39-5.11 3.16-6.77L5.59 7.66L4 6.25l2-2L17 6.25zm-2 4.84c-1.22 0-2.44.52-3.29 1.46L11 13.29c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l.71-.71C13.56 13.52 14.22 13.25 15 13.25s1.44.27 1.88.74l.71.71c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41l-.71-.74C17.44 11.61 16.22 11.09 15 11.09z"/>
+          </svg>
+        ),
+        label: 'Aire Acondicionado'
+      };
     }
 
     if (amenityLower.includes('security') || amenityLower.includes('seguridad')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.5C15.4,11.5 16,12.1 16,12.7V16.2C16,16.8 15.4,17.3 14.8,17.3H9.2C8.6,17.3 8,16.8 8,16.2V12.8C8,12.2 8.6,11.6 9.2,11.6V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.5,8.7 10.5,10V11.5H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+          </svg>
+        ),
+        label: 'Seguridad'
+      };
+    }
+
+    if (amenityLower.includes('reception') || amenityLower.includes('recepción') || amenityLower.includes('reception_area')) {
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M21,6H3A1,1 0 0,0 2,7V17A1,1 0 0,0 3,18H21A1,1 0 0,0 22,17V7A1,1 0 0,0 21,6M20,16H4V8H20V16M6,10V14H8V10H6M10,10V14H14V10H10M16,10V14H18V10H16Z"/>
+          </svg>
+        ),
+        label: 'Área de Recepción'
+      };
     }
 
     if (amenityLower.includes('pool') || amenityLower.includes('piscina')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M2,15C3.67,15.17 4.33,16.83 6,17C7.67,16.83 8.33,15.17 10,15C11.67,15.17 12.33,16.83 14,17C15.67,16.83 16.33,15.17 18,15C19.67,15.17 20.33,16.83 22,17V19C20.33,18.83 19.67,17.17 18,17C16.33,17.17 15.67,18.83 14,19C12.33,18.83 11.67,17.17 10,17C8.33,17.17 7.67,18.83 6,19C4.33,18.83 3.67,17.17 2,17V15M18,8A2,2 0 0,1 16,10A2,2 0 0,1 14,8C14,7.45 14.22,6.95 14.59,6.59L16.42,4.76C17,4.95 17.55,5.19 18.08,5.5C18.03,5.83 18,6.15 18,6.5V8M6,18A2,2 0 0,1 4,16A2,2 0 0,1 6,14A2,2 0 0,1 8,16A2,2 0 0,1 6,18Z"/>
+          </svg>
+        ),
+        label: 'Piscina'
+      };
     }
 
     if (amenityLower.includes('gym') || amenityLower.includes('gimnasio') || amenityLower.includes('fitness')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.57,14.86L22,13.43L20.57,12L17,15.57L8.43,7L12,3.43L10.57,2L9.14,3.43L7.71,2L5.57,4.14L4.14,2.71L2.71,4.14L4.14,5.57L2,7.71L3.43,9.14L5.57,7L14.14,15.57L10.57,19.14L12,20.57L13.43,19.14L14.86,20.57L17,18.43L18.43,19.86L19.86,18.43L18.43,17L20.57,14.86Z"/>
+          </svg>
+        ),
+        label: 'Gimnasio'
+      };
     }
 
     if (amenityLower.includes('wifi') || amenityLower.includes('internet')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12,21L15.6,17.42C14.63,16.44 13.38,15.9 12,15.9C10.62,15.9 9.37,16.44 8.4,17.42L12,21M12,3C7.95,3 4.21,4.34 1.2,6.6L3,8.4C5.5,6.82 8.62,6 12,6C15.38,6 18.5,6.82 21,8.4L22.8,6.6C19.79,4.34 16.05,3 12,3M12,9C9.3,9 6.81,9.89 4.8,11.4L6.6,13.2C8.1,12.29 9.97,11.85 12,11.85C14.03,11.85 15.9,12.29 17.4,13.2L19.2,11.4C17.19,9.89 14.7,9 12,9Z"/>
+          </svg>
+        ),
+        label: 'WiFi'
+      };
     }
 
     if (amenityLower.includes('elevator') || amenityLower.includes('ascensor')) {
-      return (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V20H17V4H7M8,6H16V8H8V6M12,9L15,12H13V15H11V12H9L12,9Z"/>
+          </svg>
+        ),
+        label: 'Ascensor'
+      };
+    }
+
+    if (amenityLower.includes('balcony') || amenityLower.includes('balcón')) {
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M10,10V15H8V10H10M16,10V15H14V10H16M22,8V10H20V17H22V19H2V17H4V10H2V8H22Z"/>
+          </svg>
+        ),
+        label: 'Balcón'
+      };
+    }
+
+    if (amenityLower.includes('garden') || amenityLower.includes('jardín') || amenityLower.includes('jardin')) {
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C10,20 12,18 12,16C12,13 10,12 9,12C8,12 8,11 8,10C8,8 9,8 10,8C12,8 14,9 16,11C20,6.68 17.5,5 17,8Z"/>
+          </svg>
+        ),
+        label: 'Jardín'
+      };
+    }
+
+    if (amenityLower.includes('laundry') || amenityLower.includes('lavandería')) {
+      return {
+        icon: (
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M18,2.01L6,2C4.89,2 4,2.89 4,4V20C4,21.11 4.89,22 6,22H18C19.11,22 20,21.11 20,20V4C20,2.89 19.11,2.01 18,2.01M18,20H6V4H18V20M7,6A1,1 0 0,0 8,7A1,1 0 0,0 9,6A1,1 0 0,0 8,5A1,1 0 0,0 7,6M10.5,6A1,1 0 0,0 11.5,7A1,1 0 0,0 12.5,6A1,1 0 0,0 11.5,5A1,1 0 0,0 10.5,6M12,19A6,6 0 0,1 6,13A6,6 0 0,1 12,7A6,6 0 0,1 18,13A6,6 0 0,1 12,19M12,17A4,4 0 0,0 16,13A4,4 0 0,0 12,9A4,4 0 0,0 8,13A4,4 0 0,0 12,17Z"/>
+          </svg>
+        ),
+        label: 'Lavandería'
+      };
     }
 
     // Default icon for unlisted amenities
-    return (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    );
+    return {
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"/>
+        </svg>
+      ),
+      label: amenity
+    };
   };
 
   // Close modal on backdrop click
@@ -534,25 +603,43 @@ Gracias!`;
                         </div>
                       )}
 
-                      {/* Amenities */}
+                      {/* Amenities - Improved Design */}
                       {property.amenities && property.amenities.length > 0 && (
                         <div>
-                          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                            {property.amenities.slice(0, amenitiesExpanded ? undefined : 6).map((amenity, index) => (
-                              <div key={index} className="flex flex-col items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                                <div className="text-gray-600 mb-2">
-                                  {getAmenityIcon(amenity)}
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Comodidades incluidas</h4>
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            {property.amenities.slice(0, amenitiesExpanded ? undefined : 6).map((amenity, index) => {
+                              const amenityInfo = getAmenityInfo(amenity);
+                              return (
+                                <div key={index} className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors duration-200 border border-gray-100">
+                                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                    {amenityInfo.icon}
+                                  </div>
+                                  <span className="text-sm font-medium text-gray-900">{amenityInfo.label}</span>
                                 </div>
-                                <span className="text-sm text-gray-800 font-medium text-center">{amenity}</span>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                           {property.amenities.length > 6 && (
                             <button
                               onClick={() => setAmenitiesExpanded(!amenitiesExpanded)}
-                              className={`${styles.expandButton} expand-button mt-3`}
+                              className="mt-4 text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1 transition-colors duration-200"
                             >
-                              {amenitiesExpanded ? 'Ver menos' : `Ver todas las amenidades (${property.amenities.length})`}
+                              {amenitiesExpanded ? (
+                                <>
+                                  Ver menos
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                  </svg>
+                                </>
+                              ) : (
+                                <>
+                                  Ver todas las comodidades ({property.amenities.length})
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </>
+                              )}
                             </button>
                           )}
                         </div>
@@ -569,15 +656,55 @@ Gracias!`;
                       </svg>
                       Ubicación y Área
                     </h3>
-                    <div className={`${styles.interactiveMap} ${styles.miniMap} interactive-map mini-map`}>
-                      <div className="text-center">
-                        <svg className="w-12 h-12 mx-auto  text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+
+                    {/* Mini Map Component */}
+                    <div className="mt-4">
+                      {property.coordinates &&
+                       typeof property.coordinates.lat === 'number' &&
+                       typeof property.coordinates.lng === 'number' &&
+                       !isNaN(property.coordinates.lat) &&
+                       !isNaN(property.coordinates.lng) &&
+                       property.coordinates.lat >= -90 && property.coordinates.lat <= 90 &&
+                       property.coordinates.lng >= -180 && property.coordinates.lng <= 180 ? (
+                        <PropertyMiniMap
+                          coordinates={property.coordinates}
+                          address={property.address || `${property.neighborhood}, ${property.city}`}
+                          height="240px"
+                          className="w-full shadow-sm"
+                        />
+                      ) : (
+                        // Fallback for missing coordinates
+                        <div className="flex items-center justify-center bg-gray-100 rounded-lg h-60">
+                          <div className="text-center">
+                            <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <p className="text-sm text-gray-500 mb-1">Mapa no disponible</p>
+                            <p className="text-xs text-gray-400">{property.neighborhood}, {property.city}</p>
+                            <button
+                              onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(`${property.neighborhood}, ${property.city}`)}`)}
+                              className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
+                            >
+                              Ver en Google Maps
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Neighborhood Info */}
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h3M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-                        <p className="text-sm text-gray-500">Mapa interactivo</p>
-                        <p className="text-xs text-gray-400">{property.neighborhood}, {property.city}</p>
+                        <span className="font-medium text-gray-900">Área</span>
                       </div>
+                      <p className="text-sm text-gray-700">{property.neighborhood}, {property.city}</p>
+                      {property.area && (
+                        <p className="text-xs text-gray-500 mt-1">Superficie: {property.area} m²</p>
+                      )}
                     </div>
                   </div>
 

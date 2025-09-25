@@ -11,6 +11,7 @@ export { SplitContainer } from './SplitContainer';
 export { PropertyCardsPanel } from './PropertyCardsPanel';
 export { PropertyCard } from '@/components/ui/property-card';
 export { MapPanel } from './MapPanel';
+export { PropertyMiniMap } from './PropertyMiniMap';
 export { PropertyDetailModal } from './PropertyDetailModal';
 export { ViewToggle } from './ViewToggle';
 

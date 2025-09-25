@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { PropertyDetails, UsePropertyModalResult, PropertyType } from '@/types/property';
-import { propertyService } from '@/lib/api/propertyService';
+import { trpc } from '@/lib/trpc';
+import { transformBackendProperty } from '@/lib/transformers/property';
 
 /**
  * Hook for managing property detail modal state
@@ -12,6 +13,9 @@ export function usePropertyModal(): UsePropertyModalResult {
   const [property, setProperty] = useState<PropertyDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get tRPC utils for imperative queries
+  const utils = trpc.useUtils();
 
   // Mock property details fallback
   const getMockPropertyDetails = (id: string): PropertyDetails => ({
@@ -84,13 +88,37 @@ export function usePropertyModal(): UsePropertyModalResult {
       setProperty(null);
 
       try {
-        // Try to load from backend API first
-        const propertyDetails = await propertyService.getPropertyDetails(id);
-        setProperty(propertyDetails);
-        
+        // Try to load from backend using correct tRPC endpoint
+        console.log('🔍 Loading property details via tRPC getById for ID:', id);
+        const response = await utils.property.getById.fetch({
+          id: id
+        });
+
+        console.log('📋 Full tRPC getById response:', response);
+        console.log('📋 Response keys:', Object.keys(response || {}));
+
+        if (response && response.id) {
+          console.log('✅ Property loaded via tRPC getById:', response);
+
+          // Use the same transformer as property discovery
+          const backendProperty = response;
+          const transformedProperty = transformBackendProperty(backendProperty);
+
+          console.log('🔄 Transformed property coordinates:', transformedProperty.coordinates);
+          setProperty(transformedProperty as PropertyDetails);
+        } else {
+          console.error('❌ tRPC getById failed - no property ID found:', {
+            hasResponse: !!response,
+            hasId: !!response?.id,
+            responseKeys: Object.keys(response || {}),
+            fullResponse: response
+          });
+          throw new Error('Property not found in tRPC getById response');
+        }
+
       } catch (apiError) {
-        console.warn('API call failed, using mock data:', apiError);
-        
+        console.warn('tRPC API call failed, using mock data:', apiError);
+
         // Fallback to mock data
         await new Promise(resolve => setTimeout(resolve, 600));
         const mockPropertyDetails = getMockPropertyDetails(id);

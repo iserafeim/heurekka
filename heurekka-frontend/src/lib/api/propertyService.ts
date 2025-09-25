@@ -62,12 +62,84 @@ export class PropertyService {
       propertyType: property.propertyType || property.type || 'apartment',
       // Ensure price is a number
       price: typeof property.price === 'object' ? property.price.amount : property.price,
-      // Ensure coordinates exist
-      coordinates: property.coordinates || { lat: 0, lng: 0 },
+      // Ensure coordinates exist - use address-based fallback for known locations
+      coordinates: property.coordinates || this.getCoordinatesFromAddress(property.address, property.neighborhood, property.city),
       // Ensure amenities is an array
       amenities: Array.isArray(property.amenities) ? property.amenities : [],
     };
   }
+
+  /**
+   * Normalize Spanish accents and special characters for address matching
+   */
+  private normalizeText(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD') // Decompose accented characters
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+      .replace(/[ñ]/g, 'n') // Replace ñ with n
+      .trim();
+  }
+
+  /**
+   * Get coordinates from address for known Honduras locations
+   */
+  private getCoordinatesFromAddress(address?: string, neighborhood?: string, city?: string): { lat: number; lng: number } {
+    const fullAddress = [address, neighborhood, city].filter(Boolean).join(', ');
+    const normalizedAddress = this.normalizeText(fullAddress);
+
+    console.log('🔍 Address lookup:', {
+      original: fullAddress,
+      normalized: normalizedAddress,
+      parts: { address, neighborhood, city }
+    });
+
+    // Known coordinates for Honduras locations (normalized keys)
+    const knownLocations: Record<string, { lat: number; lng: number }> = {
+      // Tegucigalpa areas - multiple variations
+      'boulevard morazan': { lat: 14.0910, lng: -87.2063 },
+      'blvd morazan': { lat: 14.0910, lng: -87.2063 },
+      'morazan': { lat: 14.0910, lng: -87.2063 },
+      'colonia palmira': { lat: 14.0823, lng: -87.1921 },
+      'palmira': { lat: 14.0823, lng: -87.1921 },
+      'colonia tepeyac': { lat: 14.1056, lng: -87.1989 },
+      'tepeyac': { lat: 14.1056, lng: -87.1989 },
+      'centro historico': { lat: 14.0723, lng: -87.1921 },
+      'comayaguela': { lat: 14.0610, lng: -87.1921 },
+      'residencial las mercedes': { lat: 14.1100, lng: -87.1800 },
+      'las mercedes': { lat: 14.1100, lng: -87.1800 },
+      'colonia kennedy': { lat: 14.0950, lng: -87.1750 },
+      'kennedy': { lat: 14.0950, lng: -87.1750 },
+
+      // San Pedro Sula areas
+      'barrio rio de piedras': { lat: 15.5077, lng: -88.0251 },
+      'rio de piedras': { lat: 15.5077, lng: -88.0251 },
+      'colonia trejo': { lat: 15.5200, lng: -88.0300 },
+      'trejo': { lat: 15.5200, lng: -88.0300 },
+      'centro san pedro sula': { lat: 15.5041, lng: -88.0250 },
+
+      // General city fallbacks
+      'tegucigalpa': { lat: 14.0723, lng: -87.1921 },
+      'san pedro sula': { lat: 15.5041, lng: -88.0250 },
+      'la ceiba': { lat: 15.7835, lng: -86.7823 },
+      'choluteca': { lat: 13.3099, lng: -87.1912 },
+    };
+
+    console.log('🗂️ Checking against known locations...');
+
+    // Try to find a match for the specific address
+    for (const [key, coords] of Object.entries(knownLocations)) {
+      if (normalizedAddress.includes(key)) {
+        console.log(`✅ Found match! "${key}" -> coordinates:`, coords);
+        return coords;
+      }
+    }
+
+    // Default fallback to Tegucigalpa center
+    console.warn(`❌ No coordinates found for address: "${fullAddress}" (normalized: "${normalizedAddress}"), using Tegucigalpa center`);
+    return { lat: 14.0723, lng: -87.1921 };
+  }
+
   /**
    * Search properties with filters
    */

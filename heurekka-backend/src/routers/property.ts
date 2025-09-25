@@ -187,13 +187,20 @@ export const propertyRouter = router({
   getById: publicProcedure
     .input(propertyIdSchema)
     .query(async ({ input, ctx }) => {
-      const propertyService = new PropertyService();
-      
+      const { supabaseService } = await import('../services/supabase');
+
       try {
-        const property = await propertyService.getPropertyById(input.id, {
-          userId: ctx.user?.id,
-          isAuthenticated: !!ctx.user
+        // Use the same service as search to ensure consistency
+        const searchResults = await supabaseService.searchProperties({
+          query: '',
+          filters: {
+            propertyId: input.id // Filter by specific property ID
+          },
+          page: 1,
+          limit: 1
         });
+
+        const property = searchResults.properties.length > 0 ? searchResults.properties[0] : null;
         
         if (!property) {
           throw new TRPCError({
@@ -211,7 +218,11 @@ export const propertyRouter = router({
               ...property.landlord,
               phone: undefined,
             },
-            address: property.neighborhood ? `${property.neighborhood}, Tegucigalpa` : 'Tegucigalpa',
+            // Keep the original address format to preserve coordinate lookup
+            // Only modify the address display if it doesn't have coordinates or if it's truly sensitive
+            address: property.coordinates && property.coordinates.lat !== 0 && property.coordinates.lng !== 0
+              ? property.address // Preserve original address if coordinates exist
+              : property.neighborhood ? `${property.neighborhood}, Tegucigalpa` : 'Tegucigalpa',
           };
         }
         

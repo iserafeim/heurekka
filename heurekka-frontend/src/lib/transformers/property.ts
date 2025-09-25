@@ -68,6 +68,90 @@ interface BackendProperty {
 }
 
 /**
+ * Normalize Spanish accents and special characters for address matching
+ */
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+    .replace(/[ñ]/g, 'n') // Replace ñ with n
+    .trim();
+}
+
+/**
+ * Get coordinates from address for known Honduras locations
+ */
+function getCoordinatesFromProperty(backendProperty: BackendProperty): { lat: number; lng: number } {
+  // If coordinates exist and are not (0,0), use them
+  if (backendProperty.coordinates?.lat && backendProperty.coordinates?.lng &&
+      backendProperty.coordinates.lat !== 0 && backendProperty.coordinates.lng !== 0) {
+    return {
+      lat: backendProperty.coordinates.lat,
+      lng: backendProperty.coordinates.lng
+    };
+  }
+
+  // Extract address components for lookup - avoid duplication
+  const address = typeof backendProperty.address === 'string' ? backendProperty.address : '';
+
+  // Only use neighborhood/city if address doesn't already contain them
+  const neighborhood = typeof backendProperty.address === 'object' ? backendProperty.address?.neighborhood : backendProperty.neighborhood;
+  const city = typeof backendProperty.address === 'object' ? backendProperty.address?.city : backendProperty.city;
+
+  // Use address if it's complete, otherwise build from parts
+  const fullAddress = address || [neighborhood, city].filter(Boolean).join(', ');
+  const normalizedAddress = normalizeText(fullAddress);
+
+  console.log('🔍 Coordinate lookup in transformer:', {
+    original: fullAddress,
+    normalized: normalizedAddress,
+    backendCoords: backendProperty.coordinates
+  });
+
+  // Known coordinates for Honduras locations (normalized keys)
+  const knownLocations: Record<string, { lat: number; lng: number }> = {
+    // Tegucigalpa areas - multiple variations
+    'boulevard morazan': { lat: 14.0910, lng: -87.2063 },
+    'blvd morazan': { lat: 14.0910, lng: -87.2063 },
+    'morazan': { lat: 14.0910, lng: -87.2063 },
+    'san carlos': { lat: 14.0850, lng: -87.1950 },
+    'colonia palmira': { lat: 14.0823, lng: -87.1921 },
+    'palmira': { lat: 14.0823, lng: -87.1921 },
+    'colonia tepeyac': { lat: 14.1056, lng: -87.1989 },
+    'tepeyac': { lat: 14.1056, lng: -87.1989 },
+    'centro historico': { lat: 14.0723, lng: -87.1921 },
+    'comayaguela': { lat: 14.0610, lng: -87.1921 },
+    'residencial las mercedes': { lat: 14.1100, lng: -87.1800 },
+    'las mercedes': { lat: 14.1100, lng: -87.1800 },
+    'colonia kennedy': { lat: 14.0950, lng: -87.1750 },
+    'kennedy': { lat: 14.0950, lng: -87.1750 },
+
+    // San Pedro Sula areas
+    'barrio rio de piedras': { lat: 15.5077, lng: -88.0251 },
+    'rio de piedras': { lat: 15.5077, lng: -88.0251 },
+    'colonia trejo': { lat: 15.5200, lng: -88.0300 },
+    'trejo': { lat: 15.5200, lng: -88.0300 },
+
+    // General city fallbacks
+    'tegucigalpa': { lat: 14.0723, lng: -87.1921 },
+    'san pedro sula': { lat: 15.5041, lng: -88.0250 }
+  };
+
+  // Try to find a match for the specific address
+  for (const [key, coords] of Object.entries(knownLocations)) {
+    if (normalizedAddress.includes(key)) {
+      console.log(`✅ Found address match! "${key}" -> coordinates:`, coords);
+      return coords;
+    }
+  }
+
+  // Default fallback to Tegucigalpa center
+  console.warn(`❌ No coordinates found for address: "${fullAddress}" (normalized: "${normalizedAddress}"), using Tegucigalpa center`);
+  return { lat: 14.0723, lng: -87.1921 };
+}
+
+/**
  * Transform backend property response to frontend Property type
  */
 export function transformBackendProperty(backendProperty: BackendProperty): Property {
@@ -116,20 +200,26 @@ export function transformBackendProperty(backendProperty: BackendProperty): Prop
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  // Build address string
-  const buildAddressString = (address: BackendProperty['address']): string => {
+  // Build address string - handle both object and string formats
+  const buildAddressString = (address: BackendProperty['address'] | string): string => {
+    // If address is already a string, use it directly
+    if (typeof address === 'string') {
+      return address || 'Dirección no disponible';
+    }
+
+    // If address is an object, build from parts
     const parts = [];
-    if (address.street) parts.push(address.street);
-    if (address.neighborhood) parts.push(address.neighborhood);
-    if (address.city) parts.push(address.city);
+    if (address?.street) parts.push(address.street);
+    if (address?.neighborhood) parts.push(address.neighborhood);
+    if (address?.city) parts.push(address.city);
     return parts.join(', ') || 'Dirección no disponible';
   };
 
   return {
     id: backendProperty.id,
     address: buildAddressString(backendProperty.address),
-    neighborhood: backendProperty.address.neighborhood || 'Sin especificar',
-    city: backendProperty.address.city || 'Tegucigalpa',
+    neighborhood: (typeof backendProperty.address === 'object' ? backendProperty.address?.neighborhood : backendProperty.neighborhood) || 'Sin especificar',
+    city: (typeof backendProperty.address === 'object' ? backendProperty.address?.city : backendProperty.city) || 'Tegucigalpa',
     price: typeof backendProperty.price.amount === 'string'
       ? parseFloat(backendProperty.price.amount)
       : backendProperty.price.amount,
@@ -145,10 +235,7 @@ export function transformBackendProperty(backendProperty: BackendProperty): Prop
       // Transform amenity keys to Spanish display names
       amenity.replace(/_/g, ' ').toLowerCase()
     ),
-    coordinates: {
-      lat: backendProperty.coordinates.lat || 14.0723, // Default to Tegucigalpa center
-      lng: backendProperty.coordinates.lng || -87.1921
-    },
+    coordinates: getCoordinatesFromProperty(backendProperty),
     landlord: {
       id: backendProperty.landlord.id,
       name: backendProperty.landlord.name,

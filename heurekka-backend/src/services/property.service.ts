@@ -666,6 +666,95 @@ export class PropertyService {
     }
   }
 
+  /**
+   * Get valid coordinates, using address-based lookup when coordinates are (0,0)
+   */
+  private getValidCoordinates(lat: number, lng: number, rawData: any): { lat: number; lng: number } {
+    // First try to use coordinates directly extracted from SQL (lng, lat fields)
+    const location = rawData.property_locations?.[0] || rawData.property_locations;
+    const sqlLat = location?.lat;
+    const sqlLng = location?.lng;
+
+    if (sqlLat && sqlLng && sqlLat !== 0 && sqlLng !== 0) {
+      console.log('✅ Using SQL-extracted coordinates:', { lat: sqlLat, lng: sqlLng });
+      return { lat: sqlLat, lng: sqlLng };
+    }
+
+    // Fallback: If PostGIS coordinates exist and are not (0,0), use them
+    if (lat && lng && lat !== 0 && lng !== 0) {
+      console.log('✅ Using PostGIS coordinates:', { lat, lng });
+      return { lat, lng };
+    }
+
+    // Use same address-based lookup as frontend transformer
+    const neighborhood = location?.neighborhood || '';
+    const city = location?.city || '';
+    const streetAddress = location?.street_address || location?.formatted_address || '';
+
+    // Build address string similar to frontend
+    const fullAddress = streetAddress || [neighborhood, city].filter(Boolean).join(', ');
+    const normalizedAddress = this.normalizeText(fullAddress);
+
+    console.log('🔍 Backend coordinate lookup:', {
+      original: fullAddress,
+      normalized: normalizedAddress,
+      dbCoords: { lat, lng }
+    });
+
+    // Known coordinates for Honduras locations (same as frontend)
+    const knownLocations: Record<string, { lat: number; lng: number }> = {
+      // Tegucigalpa areas
+      'boulevard morazan': { lat: 14.0910, lng: -87.2063 },
+      'blvd morazan': { lat: 14.0910, lng: -87.2063 },
+      'morazan': { lat: 14.0910, lng: -87.2063 },
+      'san carlos': { lat: 14.0850, lng: -87.1950 },
+      'colonia palmira': { lat: 14.0823, lng: -87.1921 },
+      'palmira': { lat: 14.0823, lng: -87.1921 },
+      'colonia tepeyac': { lat: 14.1056, lng: -87.1989 },
+      'tepeyac': { lat: 14.1056, lng: -87.1989 },
+      'centro historico': { lat: 14.0723, lng: -87.1921 },
+      'comayaguela': { lat: 14.0610, lng: -87.1921 },
+      'residencial las mercedes': { lat: 14.1100, lng: -87.1800 },
+      'las mercedes': { lat: 14.1100, lng: -87.1800 },
+      'colonia kennedy': { lat: 14.0950, lng: -87.1750 },
+      'kennedy': { lat: 14.0950, lng: -87.1750 },
+
+      // San Pedro Sula areas
+      'barrio rio de piedras': { lat: 15.5077, lng: -88.0251 },
+      'rio de piedras': { lat: 15.5077, lng: -88.0251 },
+      'colonia trejo': { lat: 15.5200, lng: -88.0300 },
+      'trejo': { lat: 15.5200, lng: -88.0300 },
+
+      // General city fallbacks
+      'tegucigalpa': { lat: 14.0723, lng: -87.1921 },
+      'san pedro sula': { lat: 15.5041, lng: -88.0250 }
+    };
+
+    // Try to find a match for the specific address
+    for (const [key, coords] of Object.entries(knownLocations)) {
+      if (normalizedAddress.includes(key)) {
+        console.log(`✅ Backend found address match! "${key}" -> coordinates:`, coords);
+        return coords;
+      }
+    }
+
+    // Default fallback to Tegucigalpa center
+    console.warn(`❌ Backend no coordinates found for address: "${fullAddress}", using Tegucigalpa center`);
+    return { lat: 14.0723, lng: -87.1921 };
+  }
+
+  /**
+   * Normalize Spanish accents and special characters for address matching
+   */
+  private normalizeText(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD') // Decompose accented characters
+      .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+      .replace(/[ñ]/g, 'n') // Replace ñ with n
+      .trim();
+  }
+
   // Data transformation methods
   private transformPropertyData = (rawData: any, isAuthenticated: boolean = false): Property => {
     const location = rawData.property_locations?.[0] || rawData.property_locations;
@@ -681,10 +770,11 @@ export class PropertyService {
         ? (location?.formatted_address || location?.street_address || '')
         : (location?.neighborhood ? `${location.neighborhood}, Tegucigalpa` : 'Tegucigalpa'),
       neighborhood: location?.neighborhood || '',
-      coordinates: {
-        lat: location?.coordinates?.coordinates?.[1] ?? 0,
-        lng: location?.coordinates?.coordinates?.[0] ?? 0,
-      },
+      coordinates: this.getValidCoordinates(
+        location?.coordinates?.coordinates?.[1] ?? 0,
+        location?.coordinates?.coordinates?.[0] ?? 0,
+        rawData
+      ),
       price: {
         amount: rawData.price_amount,
         currency: rawData.currency || 'HNL',

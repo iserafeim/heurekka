@@ -136,6 +136,11 @@ class SupabaseService {
         // Note: Actual PostGIS integration would require custom RPC functions
       }
 
+      // Apply property ID filter (for getting specific property by ID)
+      if (filters?.propertyId) {
+        baseQuery = baseQuery.eq('id', filters.propertyId);
+      }
+
       // Apply price filters
       if (filters?.priceMin) {
         baseQuery = baseQuery.gte('price_amount', filters.priceMin);
