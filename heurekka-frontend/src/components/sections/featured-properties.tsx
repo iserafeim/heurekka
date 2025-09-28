@@ -4,11 +4,12 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PropertyCard } from '@/components/ui/property-card'
 import { Button } from '@/components/ui/button'
+import { useFeaturedProperties } from '@/hooks/useFeaturedProperties'
 import type { Property } from '@/types/homepage'
 
 
-// This will be loaded from the API client
-const mockProperties: Property[] = [
+// Fallback mock properties (only used if API fails)
+const fallbackProperties: Property[] = [
   {
     id: '1',
     title: 'Apartamento moderno en Colonia Palmira',
@@ -147,16 +148,24 @@ const mockProperties: Property[] = [
 ]
 
 interface FeaturedPropertiesProps {
-  properties?: Property[]
   onPropertyContact?: (propertyId: string) => void
   onPropertyFavorite?: (propertyId: string, isFavorited: boolean) => void
+  criteria?: 'recent' | 'popular' | 'verified' | 'highest_rated'
+  limit?: number
 }
 
 export function FeaturedProperties({
-  properties = mockProperties,
   onPropertyContact,
-  onPropertyFavorite
+  onPropertyFavorite,
+  criteria = 'recent',
+  limit = 6
 }: FeaturedPropertiesProps) {
+  // Use real API data
+  const { properties: apiProperties, loading, error } = useFeaturedProperties({ criteria, limit })
+
+  // Use API properties or fallback to mock data if there's an error
+  const properties = error ? fallbackProperties.slice(0, limit) : apiProperties
+
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [scrollState, setScrollState] = useState({ canScrollLeft: false, canScrollRight: true })
@@ -278,7 +287,39 @@ export function FeaturedProperties({
     }
   }, [])
 
-  if (properties.length === 0) {
+  // Loading state
+  if (loading && !error) {
+    return (
+      <section className="relative pb-16 lg:pb-24 bg-gray-50">
+        <div className="absolute -top-48 left-0 right-0 h-48 bg-gray-50" />
+        <div className="container-wide relative">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex-1 pr-8">
+              <h2 className="text-2xl font-semibold mb-1 leading-tight">
+                Propiedades para ti en Tegucigalpa, Honduras
+              </h2>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Cargando propiedades destacadas...
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-4 sm:gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-none w-[280px] sm:w-[320px] bg-white rounded-xl p-4 animate-pulse">
+                <div className="aspect-[3/2] bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // If no properties after loading
+  if (properties.length === 0 && !loading) {
     return null
   }
 

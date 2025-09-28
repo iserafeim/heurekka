@@ -5,7 +5,7 @@ import { ViewMode, SPANISH_TEXT } from '@/types/property';
 
 interface ViewToggleProps {
   currentView: ViewMode;
-  onViewChange: (view: ViewMode) => void;
+  onViewChange: (view: ViewMode, isManualChange?: boolean) => void;
   isTransitioning?: boolean;
   className?: string;
 }
@@ -55,7 +55,8 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
 
   const handleViewChange = (newView: ViewMode) => {
     if (newView !== currentView && !isTransitioning) {
-      onViewChange(newView);
+      // Explicitly mark this as a manual change (user click)
+      onViewChange(newView, true);
     }
   };
 

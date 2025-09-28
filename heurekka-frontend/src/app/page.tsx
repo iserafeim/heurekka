@@ -75,6 +75,8 @@ export default function HomePage() {
       {/* Featured Properties Section */}
       <Suspense fallback={<SectionSkeleton />}>
         <FeaturedProperties
+          criteria="recent" // Show most recent properties
+          limit={6} // Limit to 6 properties for homepage
           onPropertyContact={(propertyId) => {
             console.log('Contact property:', propertyId)
             // Track analytics event

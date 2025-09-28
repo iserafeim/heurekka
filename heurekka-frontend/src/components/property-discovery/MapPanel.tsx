@@ -199,7 +199,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
 
     // Create tooltip DOM element safely
     const tooltipDiv = document.createElement('div');
-    tooltipDiv.className = 'property-tooltip p-3 max-w-sm';
+    tooltipDiv.className = 'property-tooltip bg-white rounded-xl shadow-lg overflow-hidden max-w-sm border-0';
 
     // Create and append image if valid
     if (properties.image) {
@@ -208,57 +208,56 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         const img = document.createElement('img');
         img.src = validImageUrl;
         img.alt = 'Property image';
-        img.className = 'w-full h-32 object-cover rounded-lg mb-3';
+        img.className = 'w-full h-32 object-cover';
         img.loading = 'lazy';
-        
+
         // Add error handling for broken images
         img.onerror = () => {
           img.style.display = 'none';
         };
-        
+
         tooltipDiv.appendChild(img);
       }
     }
 
     // Create content container
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'space-y-2';
+    contentDiv.className = 'p-3 space-y-2';
 
-    // Price element
+    // Verified badge
+    const badgeDiv = document.createElement('div');
+    badgeDiv.className = 'mb-2';
+    const badge = document.createElement('span');
+    badge.className = 'inline-block px-2 py-1 text-xs font-medium text-green-600 bg-green-50 border border-green-600/30 rounded';
+    badge.textContent = 'Verificado';
+    badgeDiv.appendChild(badge);
+    contentDiv.appendChild(badgeDiv);
+
+    // Price element (without /mes)
     const priceDiv = document.createElement('div');
-    priceDiv.className = 'font-bold text-lg text-gray-900';
-    priceDiv.textContent = `${formatCurrency(properties.price)}/mes`;
+    priceDiv.className = 'font-bold text-xl text-black mb-2';
+    priceDiv.textContent = formatCurrency(properties.price);
     contentDiv.appendChild(priceDiv);
 
-    // Address element
-    const addressDiv = document.createElement('div');
-    addressDiv.className = 'text-sm text-gray-600';
-    addressDiv.textContent = sanitizeText(properties.address || '');
-    contentDiv.appendChild(addressDiv);
-
-    // Property details
+    // Property details line with pipe separators
     const detailsDiv = document.createElement('div');
-    detailsDiv.className = 'flex items-center gap-4 text-sm text-gray-600';
-
-    const bedroomsSpan = document.createElement('span');
-    bedroomsSpan.textContent = `🛏️ ${properties.bedrooms} hab`;
-    detailsDiv.appendChild(bedroomsSpan);
-
-    const bathroomsSpan = document.createElement('span');
-    bathroomsSpan.textContent = `🚿 ${properties.bathrooms} baños`;
-    detailsDiv.appendChild(bathroomsSpan);
-
-    const areaSpan = document.createElement('span');
-    areaSpan.textContent = `📐 ${properties.area} m²`;
-    detailsDiv.appendChild(areaSpan);
-
+    detailsDiv.className = 'text-sm text-neutral-600 mb-2';
+    detailsDiv.textContent = `${properties.bedrooms} hab | ${properties.bathrooms} baños | ${properties.area}m²`;
     contentDiv.appendChild(detailsDiv);
 
-    // Click instruction
-    const clickDiv = document.createElement('div');
-    clickDiv.className = 'text-xs text-blue-600 font-medium mt-2';
-    clickDiv.textContent = 'Click para ver detalles';
-    contentDiv.appendChild(clickDiv);
+    // Location - neighborhood and city only
+    const locationDiv = document.createElement('div');
+    locationDiv.className = 'text-sm text-black font-semibold mb-2';
+    // Use neighborhood and always show Tegucigalpa as city
+    const neighborhood = properties.neighborhood || 'Centro';
+    locationDiv.textContent = `${neighborhood}, Tegucigalpa`;
+    contentDiv.appendChild(locationDiv);
+
+    // Real estate info
+    const realtyDiv = document.createElement('div');
+    realtyDiv.className = 'text-xs text-neutral-500';
+    realtyDiv.textContent = 'HEUREKKA REALTY, Property Owner';
+    contentDiv.appendChild(realtyDiv);
 
     tooltipDiv.appendChild(contentDiv);
 
@@ -333,7 +332,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
           },
           cluster: true,
           clusterMaxZoom: 14,
-          clusterRadius: 50
+          clusterRadius: 25
         });
 
       // Add cluster circles
@@ -464,11 +463,11 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       if (!mapInstance) return;
 
       const source = mapInstance.getSource('properties') as mapboxgl.GeoJSONSource;
-      
+
       // Ensure source exists and all required layers are created
-      if (!source || 
-          !mapInstance.getLayer('unclustered-point') || 
-          !mapInstance.getLayer('clusters') || 
+      if (!source ||
+          !mapInstance.getLayer('unclustered-point') ||
+          !mapInstance.getLayer('clusters') ||
           !mapInstance.getLayer('cluster-count')) {
         console.log('⏳ Waiting for all layers to be created before updating data...');
         setTimeout(updateMapData, 100);
@@ -484,6 +483,8 @@ export const MapPanel: React.FC<MapPanelProps> = ({
               propertyId: property.id,
               price: property.price,
               address: property.address,
+              neighborhood: property.neighborhood,
+              city: property.city,
               bedrooms: property.bedrooms,
               bathrooms: property.bathrooms,
               area: property.area,
@@ -498,11 +499,11 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         };
 
         console.log('🗺️ MapPanel updating with', properties.length, 'properties');
-        console.log('📍 GeoJSON features:', geojsonData.features.map(f => ({ 
-          id: f.properties.propertyId, 
-          coords: f.geometry.coordinates 
+        console.log('📍 GeoJSON features:', geojsonData.features.map(f => ({
+          id: f.properties.propertyId,
+          coords: f.geometry.coordinates
         })));
-        
+
         source.setData(geojsonData);
       } catch (error) {
         console.warn('Error updating map data:', error);
@@ -522,7 +523,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
 
       const sourceExists = mapInstance.getSource('properties');
       const layerExists = mapInstance.getLayer('unclustered-point');
-      
+
       if (!sourceExists || !layerExists) {
         console.log('⏳ Waiting for layers to exist before updating highlight...');
         setTimeout(updatePropertyHighlight, 100);
@@ -530,22 +531,16 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       }
 
       try {
-        // Update marker styles based on hover state
+        // Update marker styles based on hover state - keep all properties visible
         if (hoveredPropertyId) {
-          mapInstance.setFilter('unclustered-point', [
-            'case',
-            ['==', ['get', 'propertyId'], hoveredPropertyId],
-            true,
-            false
-          ]);
-          
+          // Only change visual properties, don't hide other properties
           mapInstance.setPaintProperty('unclustered-point', 'circle-radius', [
             'case',
             ['==', ['get', 'propertyId'], hoveredPropertyId],
             12,
             8
           ]);
-          
+
           mapInstance.setPaintProperty('unclustered-point', 'circle-color', [
             'case',
             ['==', ['get', 'propertyId'], hoveredPropertyId],
@@ -553,7 +548,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
             '#2563eb'
           ]);
         } else {
-          mapInstance.setFilter('unclustered-point', ['!', ['has', 'point_count']]);
+          // Reset to default styles when no property is hovered
           mapInstance.setPaintProperty('unclustered-point', 'circle-radius', 8);
           mapInstance.setPaintProperty('unclustered-point', 'circle-color', '#2563eb');
         }

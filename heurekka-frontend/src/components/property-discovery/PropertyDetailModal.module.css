@@ -51,18 +51,111 @@
   }
 }
 
-/* Mobile Layout (320-767px) */
+/* Mobile Layout (320-767px) - Full Transformation */
 @media (max-width: 767px) {
   .propertyModal {
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto 1fr auto;
     grid-template-columns: 1fr;
-    height: 95vh;
+    height: 100vh;
     margin: 0;
-    border-radius: 16px;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
   .propertyModalOverlay {
-    padding: 1vh 1vw;
+    padding: 0;
+  }
+
+  /* Mobile Modal Class */
+  .mobileModal {
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  /* Mobile Header - Sticky */
+  .mobileHeader {
+    height: 48px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #E5E7EB;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  /* Mobile Content */
+  .mobileContent {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px; /* Space for sticky CTA */
+  }
+
+  /* Mobile Hero Section */
+  .mobileHeroSection {
+    /* Styles for mobile hero image section */
+  }
+
+  /* Mobile Thumbnail Section */
+  .mobileThumbnailSection {
+    background: white;
+    border-bottom: 1px solid #F3F4F6;
+  }
+
+  /* Mobile Content Grid */
+  .mobileContentGrid {
+    padding: 16px;
+    padding-bottom: 80px; /* Space for sticky CTA */
+  }
+
+  /* Mobile Amenities Grid (2×2) */
+  .mobileAmenitiesGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Mobile Map Section */
+  .mobileMapSection {
+    margin: 16px 0;
+  }
+
+  /* Mobile Sticky CTA */
+  .mobileStickyCTA {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #E5E7EB;
+    padding: 12px 16px;
+    z-index: 20;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Touch Optimizations */
+  .mobileAmenitiesGrid > div {
+    min-height: 64px; /* Touch target minimum */
+    min-width: 64px;
+  }
+
+  /* Hide scrollbars on mobile thumbnails */
+  .mobileThumbnailSection > div:first-child {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobileThumbnailSection > div:first-child::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -89,18 +182,30 @@
   gap: 8px;
 }
 
-/* Mobile Layout (up to 767px) */
+/* Mobile Layout (up to 767px) - Enhanced */
 @media (max-width: 767px) {
   .imageGridContainer {
-    padding: 16px;
+    padding: 0; /* Remove padding for full-width mobile hero */
   }
 
   .imageGrid {
-    gap: 8px;
+    gap: 0;
   }
 
   .mainImageContainer {
-    margin-bottom: 12px;
+    margin-bottom: 0;
+  }
+
+  /* Mobile Hero Image */
+  .mobileHeroSection {
+    background: black;
+  }
+
+  /* Mobile Thumbnails */
+  .mobileThumbnailSection {
+    padding: 16px;
+    background: white;
+    border-bottom: 1px solid #F3F4F6;
   }
 }
 
@@ -252,11 +357,70 @@
   gap: 24px;
 }
 
-/* Mobile Info Section */
+/* Mobile Info Section - Enhanced */
 @media (max-width: 767px) {
   .modalInfo {
-    padding: 20px;
-    gap: 20px;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  /* Mobile Content Spacing */
+  .mobileContentGrid {
+    padding: 16px;
+    padding-bottom: 80px;
+  }
+
+  .mobileContentGrid > div {
+    margin-bottom: 16px;
+  }
+
+  /* Mobile Status Badge */
+  .mobileContentGrid .bg-green-100 {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  /* Mobile Price Display */
+  .mobileContentGrid .text-3xl {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  /* Mobile Stats */
+  .mobileContentGrid .text-base {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  /* Mobile Amenities */
+  .mobileAmenitiesGrid > div {
+    padding: 16px;
+    min-height: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .mobileAmenitiesGrid > div:hover {
+    background-color: #EFF6FF;
+    border-color: #BFDBFE;
+  }
+
+  /* Mobile Map */
+  .mobileMapSection .h-40 {
+    height: 160px;
+    border-radius: 8px;
+    overflow: hidden;
   }
 }
 
@@ -445,11 +609,11 @@
   font-weight: 600;
 }
 
-/* Primary Action Button */
-.whatsappCtaButton {
+/* Primary Action Button - Blue Zillow Style */
+.primaryCtaButton {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #25D366 0%, #1EBE5A 100%);
+  background: #2563EB; /* Zillow blue */
   color: white;
   border: none;
   border-radius: 12px;
@@ -461,12 +625,34 @@
   gap: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
-.whatsappCtaButton:hover {
+.primaryCtaButton:hover {
+  background: #1D4ED8;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+}
+
+.primaryCtaButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Mobile Specific Button Styles */
+@media (max-width: 767px) {
+  .primaryCtaButton {
+    padding: 18px;
+    font-size: 17px;
+    border-radius: 10px;
+    min-height: 56px; /* Touch target minimum */
+  }
+
+  .mobileStickyCTA .primaryCtaButton {
+    width: 100%;
+    background: #2563EB; /* Blue, not green */
+    min-height: 56px;
+  }
 }
 
 /* Secondary Action Buttons */
@@ -605,5 +791,58 @@
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+/* Mobile-specific animations */
+@media (max-width: 767px) {
+  @keyframes mobileSlideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .mobileModal {
+    animation: mobileSlideUp 0.3s ease-out;
+  }
+
+  /* Smooth scrolling for mobile content */
+  .mobileContent {
+    scroll-behavior: smooth;
+  }
+
+  /* Touch feedback */
+  .mobileAmenitiesGrid > div:active {
+    transform: scale(0.98);
+    background-color: #DBEAFE;
+  }
+
+  .mobileStickyCTA button:active {
+    transform: scale(0.98);
+  }
+
+  /* Enhanced mobile map styles */
+  .mobileMapSection {
+    margin: 16px 0;
+  }
+
+  .mobileMapSection > div {
+    height: 160px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #F3F4F6;
+  }
+
+  .mobileMapSection button {
+    margin-top: 8px;
+    color: #2563EB;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 }

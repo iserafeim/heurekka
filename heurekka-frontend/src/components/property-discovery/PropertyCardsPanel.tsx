@@ -129,7 +129,7 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
 
   // Results Header Component
   const ResultsHeader = () => (
-    <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+    <div className="pb-6">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between">
         <span className="text-sm text-gray-700">All rentals</span>
@@ -157,18 +157,28 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
 
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between">
-        {/* Results count - Left side */}
-        <div className="text-sm text-gray-900">
-          <span className="font-medium">{totalResults}</span>{' '}
-          {totalResults === 1 ? 'propiedad' : 'propiedades'}{' '}
-          {currentLocation && (
-            <span>en <span className="font-medium">{currentLocation}</span></span>
-          )}
+        {/* Title - Left side */}
+        <div>
+          {/* Dynamic Title */}
+          <h1 className="text-lg font-semibold text-gray-900">
+            {currentLocation ?
+              `${currentLocation} propiedades en alquiler` :
+              'Propiedades en alquiler'
+            }
+          </h1>
         </div>
 
-        {/* Sort dropdown - Right side */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Ordenar:</span>
+        {/* Results count and Sort dropdown - Right side */}
+        <div className="flex items-center gap-4">
+          {/* Results count */}
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">{totalResults}</span>{' '}
+            {totalResults === 1 ? 'propiedad' : 'propiedades'}
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Ordenar:</span>
           <div className="relative">
             <select
               value={sortBy}
@@ -188,6 +198,7 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
               <option value="area_asc">Área ↑</option>
               <option value="area_desc">Área ↓</option>
             </select>
+          </div>
           </div>
         </div>
       </div>
@@ -241,10 +252,7 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
   };
 
   return (
-    <div className={`property-cards-panel flex flex-col h-full ${className}`}>
-      {/* Results Header - Fixed */}
-      <ResultsHeader />
-
+    <div className={`property-cards-panel flex flex-col h-full font-sans ${className}`}>
       {/* Scrollable Content */}
       <div
         ref={containerRef}
@@ -256,6 +264,8 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
         }}
       >
         <div className="p-6">
+          {/* Results Header - Now inside scrollable content */}
+          <ResultsHeader />
           {/* Loading state for initial load */}
           {loading && properties.length === 0 && <LoadingSkeleton />}
 

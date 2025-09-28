@@ -5,7 +5,7 @@ import { ViewMode } from '@/types/property';
 
 interface FloatingViewToggleProps {
   currentView: ViewMode;
-  onToggle: (view: ViewMode) => void;
+  onToggle: (view: ViewMode, isManualChange?: boolean) => void;
   className?: string;
 }
 
@@ -59,7 +59,8 @@ export const FloatingViewToggle: React.FC<FloatingViewToggleProps> = ({
   const { text, icon, targetView, ariaLabel } = getButtonConfig();
 
   const handleClick = () => {
-    onToggle(targetView);
+    // Explicitly mark this as a manual change (user click)
+    onToggle(targetView, true);
   };
 
   return (

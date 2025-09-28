@@ -39,48 +39,32 @@ export class PropertyService {
       } = filters;
 
       // Build base query with selective field projection based on user authentication
+      // Simplified to avoid JOINs with potentially missing tables
       const baseFields = `
         id,
         title,
         description,
         type,
         price_amount,
-        currency,
+        price_currency,
+        price_period,
         bedrooms,
         bathrooms,
-        area_sqm,
+        size_value,
+        size_unit,
         amenities,
         view_count,
-        favorite_count,
-        contact_count,
+        save_count,
         created_at,
         updated_at,
-        property_locations!inner(
-          neighborhood,
-          city,
-          coordinates,
-          formatted_address
-          ${userContext?.isAuthenticated ? ', street_address' : ''}
-        ),
-        property_images(
-          id,
-          image_url,
-          alt_text,
-          is_primary,
-          display_order
-        ),
-        landlords(
-          id,
-          business_name,
-          rating,
-          verification_status
-          ${userContext?.isAuthenticated ? ', whatsapp_number' : ''}
-        )
+        address,
+        location,
+        landlord_id
       `;
       
-      // Add sensitive fields only for authenticated users
-      const sensitiveFields = userContext?.isAuthenticated 
-        ? ', contact_whatsapp, contact_phone, contact_email' 
+      // Add sensitive fields only for authenticated users - these seem to be missing from schema
+      const sensitiveFields = userContext?.isAuthenticated
+        ? '' // TODO: Add contact fields when they exist in schema
         : '';
 
       let query = supabaseService.instance.client

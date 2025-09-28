@@ -14,6 +14,18 @@ export function useViewToggle(initialView: ViewMode = ViewMode.SPLIT) {
   const transitionToView = useCallback(async (newView: ViewMode) => {
     if (newView === currentView || isTransitioning) return;
 
+    // Prevent automatic transitions to map view on mobile
+    // This protects against any scroll-based auto-switching behavior
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobile && newView === ViewMode.MAP && currentView === ViewMode.LIST) {
+      // Allow only explicit user actions (button clicks), not automatic transitions
+      const isUserInitiated = !document.hidden && document.hasFocus();
+      if (!isUserInitiated) {
+        console.log('🚫 Automatic map transition blocked on mobile');
+        return;
+      }
+    }
+
     setIsTransitioning(true);
     setPreviousView(currentView);
 

@@ -145,24 +145,71 @@ export class PropertyService {
    */
   async searchProperties(filters: SearchFilters): Promise<SearchResponse> {
     try {
-      const params: Record<string, any> = {};
-      
-      // Convert filters to query parameters
-      if (filters.location) params.location = filters.location;
-      if (filters.coordinates?.lat) params.lat = filters.coordinates.lat;
-      if (filters.coordinates?.lng) params.lng = filters.coordinates.lng;
-      if (filters.radiusKm) params.radius = filters.radiusKm;
-      if (filters.priceMin) params.priceMin = filters.priceMin;
-      if (filters.priceMax) params.priceMax = filters.priceMax;
-      if (filters.bedrooms?.length) params.bedrooms = filters.bedrooms.join(',');
-      if (filters.propertyTypes?.length) params.propertyTypes = filters.propertyTypes.join(',');
-      if (filters.amenities?.length) params.amenities = filters.amenities.join(',');
-      if (filters.sortBy) params.sortBy = filters.sortBy;
-      if (filters.limit) params.limit = filters.limit;
-      if (filters.cursor) params.cursor = filters.cursor;
+      // Convert frontend filters to backend tRPC format
+      const searchInput = {
+        location: filters.location || '',
+        coordinates: filters.coordinates,
+        priceMin: filters.priceMin || 0,
+        priceMax: filters.priceMax || 100000,
+        bedrooms: filters.bedrooms || [],
+        propertyTypes: filters.propertyTypes || [],
+        amenities: filters.amenities || [],
+        sortBy: filters.sortBy || 'relevancia',
+        radiusKm: filters.radiusKm || 5,
+        cursor: filters.cursor,
+        limit: filters.limit || 24,
+      };
 
-      const response = await httpClient.get<SearchResponse>('/properties/search', params);
-      return response;
+      // Call tRPC endpoint directly
+      const baseUrl = process.env.NEXT_PUBLIC_TRPC_URL?.replace('/trpc', '') || 'http://localhost:3001';
+      const input = encodeURIComponent(JSON.stringify({"0": {"json": searchInput}}));
+      const url = `${baseUrl}/trpc/property.search?batch=1&input=${input}`;
+
+      console.log('🔍 Calling tRPC property search:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error('tRPC Response not OK:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ tRPC property search response:', data);
+
+      // Extract the result from tRPC batch response format
+      const result = Array.isArray(data) ? data[0] : data;
+
+      // Check for tRPC errors
+      if (result?.error) {
+        console.error('tRPC Error:', result.error);
+        throw new Error(result.error?.json?.message || 'Error en la respuesta del servidor');
+      }
+
+      const searchResults = result?.result?.data?.json;
+
+      if (!searchResults) {
+        console.warn('No search results found in tRPC response');
+        return { properties: [], total: 0, hasMore: false };
+      }
+
+      // Transform backend results to frontend format
+      const transformedResults: SearchResponse = {
+        properties: (searchResults.properties || []).map((property: any) => this.transformPropertyDetails(property)),
+        total: searchResults.total || 0,
+        hasMore: searchResults.hasMore || false,
+        cursor: searchResults.cursor
+      };
+
+      console.log(`✅ Transformed ${transformedResults.properties.length} properties`);
+      return transformedResults;
     } catch (error) {
       console.error('Property search error:', {
         message: error instanceof Error ? error.message : (error as any)?.message || 'Unknown error',

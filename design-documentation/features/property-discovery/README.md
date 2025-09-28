@@ -331,62 +331,71 @@ Explore Page
 └─────────────────────────────────────────────────────────┘
 ```
 
-#### Enhanced Modal Layout - Mobile (320-767px)
+#### Enhanced Modal Layout - Mobile (320-767px) - Zillow Style Adapted
 ```
 ┌─────────────────────────┐
-│    Property Modal       │
-│  ╳                     │
+│ ← Property Details   ╳  │ Compact Header
 ├─────────────────────────┤
 │                         │
 │  ┌─────────────────────┐ │
 │  │                     │ │
-│  │    FULL-SCREEN      │ │
-│  │    HERO IMAGE       │ │
-│  │    [320×240px]      │ │
+│  │   HERO IMAGE        │ │
+│  │   FULL-WIDTH        │ │
+│  │   [320×240px]       │ │
 │  │                     │ │
-│  │  ◀  1/15 fotos  ▶   │ │
+│  │  ◀  1/15  ▶         │ │ Navigation
 │  │                     │ │
 │  └─────────────────────┘ │
 │                         │
-│  ┌─┐┌─┐┌─┐┌─┐┌─┐ +10   │
-│  │1││2││3││4││5│ más    │
-│  └─┘└─┘└─┘└─┘└─┘       │
-│  ──── THUMBNAILS ────   │
+│  ┌─┐┌─┐┌─┐┌─┐ +11 más  │ Horizontal
+│  │●││○││○││○│ [Ver todas]│ Scroll
+│  └─┘└─┘└─┘└─┘          │
 │                         │
 │  ┌─────────────────────┐ │
-│  │   L.12,000/mes      │ │
-│  │   💎 Premium        │ │
+│  │ 🟢 EN RENTA         │ │ Status Badge
 │  └─────────────────────┘ │
+│                         │
+│  L.12,000/mes           │ Large Price
+│  0 hab • 2 baños • 60m²│ Compact Stats
 │                         │
 │  Boulevard Morazán      │
-│  Tegucigalpa           │
+│  Tegucigalpa, Honduras  │
 │                         │
-│  ┌───┬────┬────┬──────┐ │
-│  │ 0 │ 2  │ 60 │Ameni.│ │
-│  │Hab│Baño│ m² │[Ver+]│ │
-│  └───┴────┴────┴──────┘ │
+│  ─────────────────────  │
 │                         │
-│  🌟 Amenidades          │
-│  ✓ parking             │
-│  ✓ air_conditioning    │
-│  ✓ security            │
-│  [Ver todas]           │
+│  Comodidades           │
+│  ┌────────┐ ┌────────┐ │
+│  │ 🅿️      │ │ ❄️      │ │ Icon Grid
+│  │Parking │ │ A/C    │ │
+│  └────────┘ └────────┘ │
+│  ┌────────┐ ┌────────┐ │
+│  │ 🛡️      │ │ 🏢     │ │
+│  │Security│ │Reception│ │
+│  └────────┘ └────────┘ │
+│  [+4 más comodidades]  │
 │                         │
-│  📝 Descripción         │
+│  ─────────────────────  │
+│                         │
+│  Descripción           │
 │  Moderna oficina en    │
-│  Boulevard Morazán.    │
-│  Ideal para consul-    │
-│  torios médicos...     │
+│  Boulevard Morazán...  │
 │  [Leer más]            │
 │                         │
-│  📍 Ubicación           │
-│  [Mini Map]            │
+│  ─────────────────────  │
 │                         │
+│  Ubicación             │
 │  ┌─────────────────────┐ │
-│  │ 💬 Contactar por    │ │
-│  │    WhatsApp         │ │
+│  │   [Mini Map]        │ │
+│  │       📍            │ │ Green Pin
+│  │  (No popup)         │ │ No Tooltip
 │  └─────────────────────┘ │
+│  Ver en mapa completo > │
 │                         │
+└─────────────────────────┘
+│ ┌─────────────────────┐ │ Sticky Bottom
+│ │ Contactar ahora     │ │ Blue Primary
+│ │ (WhatsApp)          │ │ CTA
+│ └─────────────────────┘ │
 └─────────────────────────┘
 ```
 
@@ -481,18 +490,50 @@ Explore Page
   }
 }
 
-/* Mobile Layout (320-767px) */
+/* Mobile Layout (320-767px) - Zillow Style */
 @media (max-width: 767px) {
   .property-modal {
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto 1fr auto;
     grid-template-columns: 1fr;
-    height: 95vh;
+    height: 100vh;
     margin: 0;
-    border-radius: 16px;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
   .property-modal-overlay {
-    padding: 1vh 1vw;
+    padding: 0;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #E5E7EB;
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .modal-content {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px; /* Space for sticky CTA */
+  }
+
+  .sticky-cta-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #E5E7EB;
+    padding: 12px 16px;
+    z-index: 20;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -759,6 +800,50 @@ Explore Page
   background: #E5E7EB;
 }
 
+/* Map Pin Marker - Green Pin Style */
+.map-pin-marker {
+  width: 40px;
+  height: 48px;
+  position: relative;
+}
+
+.map-pin-marker svg {
+  fill: #059669; /* Green-600 */
+  stroke: white;
+  stroke-width: 1.5px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.map-pin-marker-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 2px solid #059669;
+  border-radius: 50%;
+}
+
+/* Mobile Map Optimizations */
+@media (max-width: 767px) {
+  .mini-map {
+    height: 160px; /* Larger on mobile for better touch */
+    margin: 16px 0;
+  }
+
+  .map-pin-marker {
+    width: 36px;
+    height: 44px;
+  }
+
+  /* No popup/tooltip on mobile */
+  .map-tooltip {
+    display: none;
+  }
+}
+
 /* Zillow-Style Action Sidebar */
 .sticky-action-bar {
   position: sticky;
@@ -800,11 +885,11 @@ Explore Page
   font-weight: 600;
 }
 
-/* Primary Action Button */
-.whatsapp-cta-button {
+/* Primary Action Button - Zillow Style Blue */
+.primary-cta-button {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #25D366 0%, #1EBE5A 100%);
+  background: #2563EB; /* Zillow blue */
   color: white;
   border: none;
   border-radius: 12px;
@@ -816,12 +901,28 @@ Explore Page
   gap: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
-.whatsapp-cta-button:hover {
+.primary-cta-button:hover {
+  background: #1D4ED8;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+}
+
+.primary-cta-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Mobile Specific Button Styles */
+@media (max-width: 767px) {
+  .primary-cta-button {
+    padding: 18px;
+    font-size: 17px;
+    border-radius: 10px;
+    min-height: 56px; /* Touch target minimum */
+  }
 }
 
 /* Secondary Action Buttons */
@@ -1295,11 +1396,42 @@ Show "End of results"
   - Smart property visibility calculation for map sync
 
 ### Mobile Optimizations
-- Reduce map pin detail on mobile
-- Simplified card layout
-- Touch-optimized controls
-- Reduced animation complexity
-- Aggressive image compression
+
+#### Visual & Layout
+- **Simplified card layout** with compact Zillow-style spacing
+- **Full-screen modal** with edge-to-edge design
+- **Sticky header and CTA** for constant access to actions
+- **Horizontal thumbnail scroll** for space efficiency
+- **Icon-based amenities grid** for quick scanning
+
+#### Touch Interactions
+- **Minimum touch targets**: 44×44px for all interactive elements
+- **Swipe gestures**: Left/right for image navigation
+- **Pull-to-dismiss**: Swipe down on header to close modal
+- **Momentum scrolling**: Smooth iOS/Android native feel
+- **Haptic feedback**: On button taps (where supported)
+
+#### Map Optimizations
+- **Green pin marker** (#059669) with no popup/tooltip
+- **Larger map area** (160px height) for better visibility
+- **Touch-friendly zoom controls** with proper spacing
+- **Simplified interactions**: Tap to open full map
+- **No hover states**: Direct tap actions only
+
+#### Performance
+- **Lazy load images** below the fold
+- **Progressive image loading** with blur-up effect
+- **Reduced animation complexity** for 60fps scrolling
+- **Aggressive image compression** with WebP format
+- **Skeleton screens** during content loading
+- **Virtualized lists** for long amenity lists
+
+#### Mobile-Specific Features
+- **Sticky bottom CTA** always visible during scroll
+- **Compact header** with back button and close
+- **Status badges** for quick property status
+- **Inline stats** (beds • baths • area) for space saving
+- **Expandable sections** for description and amenities
 
 ---
 
@@ -1307,14 +1439,19 @@ Show "End of results"
 
 ### Breakpoint Adaptations
 
-#### Mobile (320-767px)
-- **Default**: Full-width vertical list view with large property cards
-- **Layout**: Single column, full-width property cards with detailed information
-- **Toggle**: Floating "Map" button at bottom switches to full-screen map view
-- **Filters**: Horizontal scrolling filter pills below location bar
-- **Search**: Location-based search in top bar
-- **Cards**: Single column, full width with large images and complete property details
-- **Map**: Full screen overlay when "Map" button is tapped, with property previews
+#### Mobile (320-767px) - Zillow-Style Adapted
+- **Modal Design**: Full-screen with edge-to-edge layout, no rounded corners
+- **Header**: Compact sticky header with back navigation and close button
+- **Hero Image**: Full-width image gallery with horizontal swipe navigation
+- **Thumbnails**: Horizontal scrolling strip with active indicator
+- **Content Layout**: Vertical scroll with compact spacing
+- **Status Badge**: Green "EN RENTA" badge for rental properties
+- **Price Display**: Large prominent price with inline compact stats (beds • baths • m²)
+- **Amenities**: 2×2 icon grid with expandable "ver más" option
+- **Map**: Mini-map with green pin marker (#059669), no popup/tooltip
+- **CTA**: Sticky bottom blue button (#2563EB) for WhatsApp contact
+- **Touch Targets**: Minimum 44×44px for all interactive elements
+- **Gestures**: Swipe for images, pull-to-dismiss, momentum scrolling
 
 #### Tablet (768-1023px)
 - **Split View**: 60/40 ratio, 2 columns with partial row visibility in list panel
@@ -1394,6 +1531,80 @@ Show "End of results"
 
 ## Implementation Notes
 
+### Mobile-Specific Implementation
+
+#### Mobile Modal State
+```typescript
+interface MobileModalState {
+  isOpen: boolean;
+  swipeProgress: number; // 0-1 for pull-to-dismiss
+  imageSwipeIndex: number;
+  scrollPosition: number;
+  ctaVisible: boolean;
+  headerCollapsed: boolean;
+}
+```
+
+#### Touch Event Handling
+```typescript
+// Swipe gesture detection
+const handleTouchStart = (e: TouchEvent) => {
+  startY = e.touches[0].clientY;
+  startX = e.touches[0].clientX;
+};
+
+const handleTouchMove = (e: TouchEvent) => {
+  const deltaY = e.touches[0].clientY - startY;
+  const deltaX = e.touches[0].clientX - startX;
+
+  // Pull-to-dismiss (vertical swipe down from header)
+  if (deltaY > 0 && scrollPosition === 0) {
+    setSwipeProgress(Math.min(deltaY / 200, 1));
+  }
+
+  // Image gallery swipe (horizontal)
+  if (Math.abs(deltaX) > Math.abs(deltaY)) {
+    handleImageSwipe(deltaX);
+  }
+};
+```
+
+#### Mobile Performance Optimizations
+```typescript
+// Intersection Observer for lazy loading
+const imageObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        loadImage(entry.target);
+      }
+    });
+  },
+  { rootMargin: '50px' }
+);
+
+// Throttled scroll handler
+const handleScroll = throttle(() => {
+  updateHeaderState();
+  updateCTAVisibility();
+}, 16); // 60fps
+```
+
+#### Mobile Map Configuration
+```typescript
+// Simplified mobile map with green pin
+const mobileMapConfig = {
+  interactive: false, // Static on mobile
+  scrollZoom: false,
+  dragPan: false,
+  markerConfig: {
+    color: '#059669', // Green pin
+    size: 36,
+    showPopup: false // No tooltip on mobile
+  }
+};
+```
+
 ### State Management
 ```typescript
 interface ExploreState {
@@ -1406,6 +1617,7 @@ interface ExploreState {
   isLoading: boolean;
   hasMore: boolean;
   page: number;
+  isMobile: boolean; // Mobile detection
 }
 ```
 

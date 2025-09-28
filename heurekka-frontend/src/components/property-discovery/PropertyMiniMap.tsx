@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { MapPin } from 'lucide-react';
 import { Coordinates } from '@/types/property';
 
 // Import Mapbox CSS
@@ -202,57 +203,28 @@ export const PropertyMiniMap: React.FC<PropertyMiniMapProps> = ({
         map.current.on('click', onMapClick);
       }
 
-      // Create enhanced marker
+      // Create pin marker using Lucide icon
       const markerElement = document.createElement('div');
       markerElement.className = 'property-mini-marker';
       markerElement.innerHTML = `
-        <div style="position: relative;">
-          <!-- Outer ring for prominence -->
-          <div style="
-            width: 40px;
-            height: 40px;
-            background: rgba(37, 99, 235, 0.2);
-            border: 2px solid #2563eb;
-            border-radius: 50%;
-            position: absolute;
-            top: -4px;
-            left: -4px;
-            animation: pulse 2s infinite;
-          "></div>
-          <!-- Main marker -->
-          <div style="
-            width: 32px;
-            height: 32px;
-            background: #2563eb;
-            border: 3px solid white;
-            border-radius: 50%;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            cursor: ${onMapClick ? 'pointer' : 'default'};
-            position: relative;
-            z-index: 1;
-          "></div>
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 48px;
+          position: relative;
+          cursor: ${onMapClick ? 'pointer' : 'default'};
+        ">
+          <svg width="36" height="44" viewBox="0 0 24 24" fill="#059669" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            transform: translateY(-2px);
+          ">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3" fill="white" stroke="#059669" stroke-width="2"></circle>
+          </svg>
         </div>
       `;
-
-      // Add pulsing animation CSS
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes pulse {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          50% {
-            transform: scale(1.1);
-            opacity: 0.7;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-      `;
-      document.head.appendChild(style);
 
       // Add marker (use actual coordinates or fallback center)
       const markerCoords = (coordinates.lat === 0 && coordinates.lng === 0)
@@ -261,47 +233,12 @@ export const PropertyMiniMap: React.FC<PropertyMiniMapProps> = ({
 
       marker.current = new mapboxgl.Marker({
         element: markerElement,
-        anchor: 'center'
+        anchor: 'bottom'
       })
         .setLngLat(markerCoords)
         .addTo(map.current);
 
       console.log('📍 Marker placed at:', markerCoords);
-
-      // Add enhanced popup with address if provided
-      if (address) {
-        const popup = new mapboxgl.Popup({
-          offset: 35,
-          closeButton: false,
-          closeOnClick: false,
-          className: 'property-mini-popup'
-        })
-          .setHTML(`
-            <div style="
-              padding: 12px 16px;
-              font-size: 14px;
-              font-weight: 600;
-              color: #1f2937;
-              background: white;
-              border-radius: 8px;
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-              border: 1px solid #e5e7eb;
-              max-width: 200px;
-              text-align: center;
-            ">
-              <div style="color: #2563eb; font-size: 12px; margin-bottom: 4px;">📍 UBICACIÓN</div>
-              ${address}
-            </div>
-          `);
-
-        marker.current.setPopup(popup);
-        // Show popup automatically after map loads
-        map.current.on('idle', () => {
-          if (popup && !popup.isOpen()) {
-            popup.addTo(map.current!);
-          }
-        });
-      }
 
       } catch (error) {
         console.error('Error initializing map:', error);

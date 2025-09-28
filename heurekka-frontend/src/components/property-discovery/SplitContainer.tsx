@@ -28,10 +28,23 @@ export const SplitContainer: React.FC<SplitContainerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragStartRatio, setDragStartRatio] = useState(ratio.cards);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const dividerRef = useRef<HTMLDivElement>(null);
 
   const [leftChild, rightChild] = children;
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Handle mouse down on divider
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -142,9 +155,9 @@ export const SplitContainer: React.FC<SplitContainerProps> = ({
         {leftChild}
       </div>
 
-      {/* Right Panel - Map (30%) */}
+      {/* Right Panel - Map (30%) - Hidden on mobile */}
       <div
-        className="split-panel-right relative overflow-hidden"
+        className={`split-panel-right relative overflow-hidden ${isMobile ? 'hidden' : 'block'}`}
       >
         {rightChild}
       </div>

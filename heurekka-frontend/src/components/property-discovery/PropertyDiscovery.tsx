@@ -197,7 +197,15 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
   }, []);
 
   // Handle view mode changes
-  const handleViewChange = useCallback((newView: ViewMode) => {
+  const handleViewChange = useCallback((newView: ViewMode, isManualChange: boolean = true) => {
+    // Prevent automatic view changes to map on mobile when scrolling
+    // Only allow manual changes via button clicks
+    const isMobile = window.innerWidth < 768;
+    if (isMobile && newView === ViewMode.MAP && !isManualChange) {
+      console.log('🚫 Automatic map view change prevented on mobile');
+      return;
+    }
+
     setState(prev => ({
       ...prev,
       viewMode: newView
@@ -368,7 +376,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
   };
 
   return (
-    <div className={`property-discovery ${className}`}>
+    <div className={`property-discovery font-sans ${className}`}>
       {/* Mobile Header (320px-767px) */}
       <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="flex items-center justify-between h-14 px-4">
@@ -428,30 +436,21 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
           <div className="absolute right-4 sm:right-6 lg:right-8 flex items-center gap-3">
             <Link href="/iniciar-sesion">
               <Button
-                variant="ghost"
-                size="sm"
-                className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors duration-200"
-              >
-                <span>Iniciar Sesión</span>
-              </Button>
-            </Link>
-            <Link href="/registrarse">
-              <Button
                 size="sm"
                 className="text-sm font-medium transition-colors duration-200"
                 style={{
-                  backgroundColor: '#2563eb',
+                  backgroundColor: '#000000',
                   color: 'white',
                   border: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#1d4ed8'
+                  e.currentTarget.style.backgroundColor = '#374151'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#2563eb'
+                  e.currentTarget.style.backgroundColor = '#000000'
                 }}
               >
-                <span>Registrarse</span>
+                <span>Iniciar Sesión</span>
               </Button>
             </Link>
           </div>

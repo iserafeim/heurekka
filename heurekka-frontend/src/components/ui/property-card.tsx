@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { Heart, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Heart, ChevronLeft, ChevronRight, Bookmark } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -183,7 +183,7 @@ export function PropertyCard({
       maximumFractionDigits: 0,
     })
 
-    return `${formatter.format(price.amount)}/mes`
+    return formatter.format(price.amount)
   }
 
   // Get responsive card height based on variant and view mode
@@ -283,7 +283,7 @@ export function PropertyCard({
   return (
     <Card
       className={cn(
-        "group overflow-hidden border-0 bg-white shadow-sm",
+        "group overflow-hidden border-0 bg-white shadow-sm font-sans",
         "hover:shadow-lg hover:-translate-y-1 transition-all duration-300",
         getCardHeight(variant, viewMode),
         "p-0 gap-0 rounded-xl",
@@ -348,14 +348,14 @@ export function PropertyCard({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/90 hover:bg-white/95 backdrop-blur-sm rounded-full"
+            className="h-8 w-8 bg-transparent hover:bg-transparent border-0 ring-0 outline-none"
             onClick={handleFavoriteClick}
             aria-label={actualIsFavorited ? 'Quitar de favoritos' : 'Agregar a favoritos'}
           >
-            <Heart
+            <Bookmark
               className={cn(
-                "h-4 w-4 transition-colors",
-                actualIsFavorited ? "fill-red-500 text-red-500" : "text-neutral-600"
+                "h-6 w-6 transition-colors stroke-2 stroke-white",
+                actualIsFavorited ? "fill-blue-500 text-white" : "text-white"
               )}
             />
           </Button>
@@ -407,7 +407,7 @@ export function PropertyCard({
         {/* Amenity badge top-left */}
         {normalizedProperty.amenities && normalizedProperty.amenities.length > 0 && (
           <div className="absolute top-3 left-3">
-            <Badge variant="secondary" className="bg-slate-600 text-white hover:bg-slate-700 capitalize">
+            <Badge variant="secondary" className="bg-white text-gray-700 hover:bg-gray-50 capitalize px-3 py-1 font-medium shadow-sm border-0">
               {normalizedProperty.amenities[0]}
             </Badge>
           </div>
@@ -450,7 +450,7 @@ export function PropertyCard({
         {/* Location - neighborhood and city only */}
         <div className="flex-1">
           <div className="text-sm text-black font-semibold truncate">
-            {normalizedProperty.address.neighborhood}, {normalizedProperty.address.city}
+            {normalizedProperty.address.neighborhood}, Tegucigalpa
           </div>
         </div>
 
