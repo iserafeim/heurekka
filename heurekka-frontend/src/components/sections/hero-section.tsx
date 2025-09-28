@@ -8,14 +8,18 @@ import { HeroHeader } from "@/components/header"
 import { Sparkle } from 'lucide-react'
 import { SearchBar } from '@/components/search/search-bar'
 import { ShineBorder } from '@/registry/magicui/shine-border'
+import { useTextShuffle } from '@/hooks/useTextShuffle'
 import type { HeroSectionProps, Suggestion } from '@/types/homepage'
 
-export function HeroSection({ 
+export function HeroSection({
   onSearch
 }: HeroSectionProps) {
   const [searchValue, setSearchValue] = useState('')
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
+
+  // Text shuffle animation
+  const { currentWord, isAnimating } = useTextShuffle(['Busca', 'Encuentra', 'Alquila'], 2500)
 
   // Handle search submission
   const handleSearch = (query: Parameters<typeof onSearch>[0]) => {
@@ -63,25 +67,32 @@ export function HeroSection({
       <HeroHeader />
       <main>
         <section className="before:bg-background border-e-foreground relative overflow-hidden before:absolute before:inset-1 before:h-[calc(100%-8rem)] before:rounded-2xl sm:before:inset-2 md:before:rounded-[2rem] lg:before:h-[calc(100%-14rem)] bg-gradient-to-b from-gray-50 to-white">
-          <div className="py-20 md:py-36">
+          <div className="pt-32 pb-20 md:py-36">
             <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
               <div>
-                <Link
-                  href="#"
-                  className="hover:bg-muted/50 mx-auto flex w-fit items-center justify-center gap-2 rounded-lg py-1 pl-1.5 pr-4 transition-colors duration-200">
-                  <div
-                    aria-hidden
-                    className="bg-primary relative flex size-5 items-center justify-center rounded shadow-sm">
-                    <Sparkle className="size-3 fill-primary-foreground stroke-primary-foreground" />
-                  </div>
-                  <span className="font-medium text-foreground">Presentamos Heurekka</span>
-                </Link>
-                <h1 className="mx-auto mt-8 max-w-4xl text-balance text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl text-gray-900">Renta 10x Más Rápido</h1>
-                <p className="text-gray-600 mx-auto my-6 max-w-2xl text-balance text-lg leading-relaxed">La plataforma inteligente que conecta inquilinos y propietarios en segundos.</p>
+                {/* Mobile title - 2 lines */}
+                <h1 className="mx-auto max-w-full px-4 text-[2.5rem] font-bold tracking-tight text-gray-900 leading-tight md:hidden">
+                  <span className={`inline-block transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                    {currentWord}
+                  </span> 10x<br />
+                  Más Rápido
+                </h1>
 
+                {/* Desktop title - 2 lines */}
+                <h1 className="hidden md:block mx-auto max-w-5xl font-bold tracking-tight text-gray-900 leading-tight" style={{ fontSize: '6.5rem' }}>
+                  <span className={`inline-block transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+                    {currentWord}
+                  </span> 10x<br />
+                  Más Rápido
+                </h1>
+
+                {/* Subtitle */}
+                <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-gray-600">
+                  La plataforma inteligente que conecta inquilinos y propietarios en segundos.
+                </p>
 
                 {/* Search bar integration */}
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-lg mx-auto mt-12">
                   <SearchBar
                     onSearch={handleSearch}
                     value={searchValue}

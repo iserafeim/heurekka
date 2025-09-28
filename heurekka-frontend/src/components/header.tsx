@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Logo } from '@/components/logo'
+import { Logo, LogoIcon } from '@/components/logo'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import React from 'react'
@@ -34,7 +34,13 @@ export const HeroHeader = () => {
                                 href="/"
                                 aria-label="inicio"
                                 className="flex items-center space-x-2">
-                                <Logo />
+                                {/* Desktop: Full logo, Mobile: Icon only */}
+                                <div className="hidden lg:block">
+                                    <Logo />
+                                </div>
+                                <div className="lg:hidden">
+                                    <LogoIcon />
+                                </div>
                             </Link>
                         </div>
 
@@ -84,39 +90,42 @@ export const HeroHeader = () => {
                     </div>
 
                     {/* Mobile Menu */}
-                    <div className="bg-background in-data-[state=active]:block mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border border-border p-6 shadow-lg shadow-black/10 md:flex-nowrap lg:hidden lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none">
-                        <div className="lg:hidden">
-                            <ul className="space-y-6 text-base">
+                    <div className="in-data-[state=active]:block hidden lg:hidden fixed top-20 left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-30">
+                        <div className="p-6 space-y-6">
+                            {/* Navigation Links */}
+                            <ul className="space-y-4">
                                 {menuItems.map((item, index) => (
                                     <li key={index}>
                                         <Link
                                             href={item.href}
-                                            className="text-muted-foreground hover:text-foreground block transition-all duration-300 hover:translate-x-2 hover:scale-105">
+                                            className="text-gray-700 hover:text-gray-900 block text-lg font-medium py-2">
                                             <span>{item.name}</span>
                                         </Link>
                                     </li>
                                 ))}
                             </ul>
-                        </div>
-                        <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                            <Link href="/iniciar-sesion">
-                                <Button
-                                    size="sm"
-                                    className="text-sm font-medium transition-colors duration-200"
-                                    style={{
-                                        backgroundColor: '#000000',
-                                        color: 'white',
-                                        border: 'none'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = '#374151'
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = '#000000'
-                                    }}>
-                                    <span>Iniciar Sesión</span>
-                                </Button>
-                            </Link>
+
+                            {/* Login Button */}
+                            <div className="pt-4 border-t border-gray-200">
+                                <Link href="/iniciar-sesion" className="block">
+                                    <Button
+                                        size="lg"
+                                        className="w-full text-base font-medium transition-colors duration-200"
+                                        style={{
+                                            backgroundColor: '#000000',
+                                            color: 'white',
+                                            border: 'none'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#374151'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#000000'
+                                        }}>
+                                        <span>Iniciar Sesión</span>
+                                    </Button>
+                                </Link>
+                            </div>
                         </div>
                     </div>
             </nav>
