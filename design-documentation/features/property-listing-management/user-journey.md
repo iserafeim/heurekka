@@ -2,19 +2,21 @@
 title: Property Listing Management - User Journey
 description: User journey mapping for property listing creation and management
 feature: property-listing-management
-last-updated: 2025-01-05
-version: 1.0.0
-related-files: 
+last-updated: 2025-09-29
+version: 2.0.0
+related-files:
   - ./README.md
   - ./screen-states.md
   - ./implementation.md
+  - ../user-authentication/landlord-authentication.md
+  - ../landlord-dashboard/README.md
 status: approved
 ---
 
 # Property Listing Management - User Journey
 
 ## Overview
-Complete user journey for landlords creating and managing property listings on the platform.
+Complete user journey for authenticated landlords creating and managing property listings on the platform. This flow begins after successful landlord authentication and profile completion.
 
 ## User Personas
 
@@ -36,15 +38,28 @@ Complete user journey for landlords creating and managing property listings on t
 - **Tech Level**: High, uses multiple tools
 - **Success Criteria**: API access, white-label options
 
+## Prerequisites
+
+### Authentication Requirements
+- **Completed Landlord Authentication**: User must have successfully completed the landlord authentication flow (see `/user-authentication/landlord-authentication.md`)
+- **Verified Landlord Profile**: Basic landlord information must be complete
+- **Active Session**: Valid authentication token with landlord role
+
+### Entry Points
+1. **From Landlord Dashboard**: "Publicar Nueva Propiedad" button
+2. **From Landlord Authentication Success**: Direct redirect after profile completion
+3. **From Navigation Menu**: "Mis Propiedades" → "Agregar Nueva"
+4. **From Empty State**: First-time landlords see prominent CTA
+
 ## Core User Flow
 
 ### Stage 1: Listing Initiation
-1. Access listing creation (button/menu)
-2. Choose property type
-3. Select "I'm the owner" or "I'm an agent"
-4. Enter property address
-5. Verify location on map
-6. Begin details entry
+1. Landlord clicks "Publicar Nueva Propiedad" from dashboard
+2. System verifies landlord authentication status
+3. Choose property type (Apartamento/Casa/Estudio/Habitación)
+4. Enter property address with autocomplete
+5. Verify location on interactive map
+6. Begin property details entry with auto-save enabled
 
 ### Stage 2: Property Information
 1. Specify bedrooms/bathrooms
@@ -190,7 +205,36 @@ Complete user journey for landlords creating and managing property listings on t
 ### "Pricing uncertainty"
 **Solution**: Market analysis, comparables, pricing tool
 
+## Integration with Authentication System
+
+### From Landlord Authentication
+When a user completes landlord authentication and chooses to list their first property:
+
+1. **Authentication Success**: User completes landlord profile
+2. **Immediate Redirect**: System navigates to property listing wizard
+3. **Pre-filled Information**: Owner details auto-populated from landlord profile
+4. **Guided Experience**: First-time tooltips and help bubbles active
+5. **Success Celebration**: Special confirmation after first listing
+
+### Profile Data Carryover
+Information from landlord authentication that pre-fills listing forms:
+- Owner name and contact details
+- Preferred communication method (WhatsApp/Phone/Email)
+- Property management experience level
+- Response time commitment
+
+### Dashboard Integration
+After publishing a listing:
+1. Redirect to landlord dashboard
+2. Show new listing in "Mis Propiedades" section
+3. Display performance metrics (views, contacts)
+4. Provide management tools (edit, pause, boost)
+5. Offer tips for improving listing performance
+
 ## Related Documentation
+- [Landlord Authentication Flow](../user-authentication/landlord-authentication.md)
+- [Landlord Dashboard](../landlord-dashboard/README.md)
+- [User Authentication System](../user-authentication/README.md)
 - [Screen States](./screen-states.md)
 - [Implementation Guide](./implementation.md)
 - [Interactions](./interactions.md)
