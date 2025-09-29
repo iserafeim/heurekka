@@ -138,10 +138,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   // Handle input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = sanitizeSearchQuery(e.target.value);
+    const value = e.target.value;
     setQuery(value);
     setSelectedIndex(-1);
-    
+
     if (value.length < 2) {
       setShowSuggestions(false);
       setSuggestions([]);

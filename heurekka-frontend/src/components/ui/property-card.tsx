@@ -53,6 +53,8 @@ export function PropertyCard({
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
+  const [retryCount, setRetryCount] = useState(0)
 
   // Determine the actual favorited state (supports both prop names)
   const actualIsFavorited = isFavorited || isFavorite;
@@ -62,6 +64,8 @@ export function PropertyCard({
     setCurrentImageIndex(0);
     setImageError(false);
     setImageLoading(true);
+    setFailedImages(new Set());
+    setRetryCount(0);
   }, [property.id]);
 
   // Check if this is a Property Discovery property
@@ -85,9 +89,11 @@ export function PropertyCard({
     }
   };
 
-  // Utility function to ensure image URL is properly formatted
-  const ensureValidImageUrl = (url: string): string => {
-    if (!url || url.trim() === '') return '';
+  // Utility function to ensure image URL is properly formatted with fallbacks
+  const ensureValidImageUrl = (url: string, withFallback: boolean = true): string => {
+    if (!url || url.trim() === '') {
+      return withFallback ? getDefaultImageUrl() : '';
+    }
 
     // If it's already a complete URL, return as-is
     if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -97,15 +103,39 @@ export function PropertyCard({
     // If it's just a photo ID, convert to full Unsplash URL
     if (url.startsWith('photo-')) {
       const cleanId = url.replace(/^photo-/, '');
-      return `https://images.unsplash.com/photo-${cleanId}?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80`;
+      return `https://images.unsplash.com/photo-${cleanId}?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80`;
     }
 
     // If it's some other format, return as-is (might be a relative URL)
     return url;
   };
 
+  // Get a default image URL for fallback
+  const getDefaultImageUrl = (): string => {
+    const defaultImages = [
+      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1560184897-ae75f418493e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+    ];
+    return defaultImages[Math.floor(Math.random() * defaultImages.length)];
+  };
+
+  // Find next working image index
+  const findNextWorkingImage = (startIndex: number): number => {
+    const totalImages = normalizedProperty.images?.length || 0;
+    if (totalImages === 0) return -1;
+
+    for (let i = 0; i < totalImages; i++) {
+      const nextIndex = (startIndex + i) % totalImages;
+      if (!failedImages.has(nextIndex)) {
+        return nextIndex;
+      }
+    }
+    return -1; // All images failed
+  };
+
   // Data transformation to normalize Property Discovery format to Homepage format
-  const normalizeProperty = (property: Property | HomepageProperty): HomepageProperty => {
+  const normalizeProperty = useCallback((property: Property | HomepageProperty): HomepageProperty => {
     // If already homepage format, ensure URLs are valid
     if ('images' in property && Array.isArray(property.images) && property.images[0]?.url) {
       const homepageProperty = property as HomepageProperty;
@@ -172,7 +202,7 @@ export function PropertyCard({
         whatsappEnabled: true
       }
     };
-  };
+  }, []);
 
   // Format price to match homepage style
   const formatPrice = (price: { amount: number; currency: string; period: string }) => {
@@ -203,12 +233,15 @@ export function PropertyCard({
     }
   };
 
+  // Normalize property data
+  const normalizedProperty = normalizeProperty(property);
+
   // Event handlers for Property Discovery compatibility
   const handleMouseEnter = useCallback(() => {
     if (onHover) {
       onHover(normalizedProperty.id);
     }
-  }, [onHover, property]);
+  }, [onHover, normalizedProperty.id]);
 
   const handleMouseLeave = useCallback(() => {
     if (onHover) {
@@ -239,10 +272,8 @@ export function PropertyCard({
         (onFavorite as (propertyId: string) => void)(normalizedProperty.id);
       }
     }
-  }, [onFavorite, property]);
+  }, [onFavorite, normalizedProperty.id]);
 
-  // Normalize property data
-  const normalizedProperty = normalizeProperty(property);
   const currentImage = normalizedProperty.images?.[currentImageIndex] || normalizedProperty.images?.[0];
   const hasMultipleImages = normalizedProperty.images && normalizedProperty.images.length > 1;
 
@@ -299,48 +330,67 @@ export function PropertyCard({
       {/* Image section - rectangular 3:2 aspect ratio */}
       <div className="relative aspect-[3/2] bg-neutral-100">
         {currentImage && currentImage.url && currentImage.url.trim() !== '' && !imageError ? (
-          <Image
-            src={currentImage.url}
-            alt={currentImage.alt || normalizedProperty.title}
-            fill
-            className={cn(
-              "object-cover transition-opacity duration-300",
-              imageLoading ? "opacity-0" : "opacity-100"
+          <>
+            {/* Loading skeleton */}
+            {imageLoading && (
+              <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
             )}
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            loading="lazy"
-            onLoad={() => {
-              setImageLoading(false)
-              setImageError(false)
-            }}
-            onError={() => {
-              console.warn(`Image failed to load: ${currentImage?.url} for property: ${normalizedProperty.title}`)
-              setImageError(true)
-              setImageLoading(false)
 
-              // Enhanced fallback logic: try to find a working image
-              const totalImages = normalizedProperty.images?.length || 0;
+            <Image
+              src={currentImage.url}
+              alt={currentImage.alt || normalizedProperty.title}
+              fill
+              className={cn(
+                "object-cover transition-opacity duration-300",
+                imageLoading ? "opacity-0" : "opacity-100"
+              )}
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              loading="lazy"
+              quality={75}
+              onLoad={() => {
+                setImageLoading(false)
+                setImageError(false)
+              }}
+              onError={() => {
+                console.warn(`Image failed to load: ${currentImage?.url} for property: ${normalizedProperty.title}`)
+                setImageLoading(false)
 
-              // If we have multiple images, try the next one
-              if (totalImages > 1 && currentImageIndex < totalImages - 1) {
-                console.log(`Trying next image (${currentImageIndex + 1}) for property: ${normalizedProperty.title}`)
-                setCurrentImageIndex(prev => prev + 1)
-                setImageError(false) // Reset error state to try loading next image
-                setImageLoading(true)
-              }
-              // If current image fails and it's not the first image, fallback to first image
-              else if (currentImageIndex > 0) {
-                console.log(`Falling back to first image for property: ${normalizedProperty.title}`)
-                setCurrentImageIndex(0)
-                setImageError(false) // Reset error state to try loading first image
-                setImageLoading(true)
-              }
-              // If all else fails, the error state remains and "Sin imagen" will be shown
-            }}
-          />
+                // Mark current image as failed
+                setFailedImages(prev => new Set([...prev, currentImageIndex]))
+
+                // Try to find next working image
+                const nextWorkingIndex = findNextWorkingImage(currentImageIndex + 1)
+
+                if (nextWorkingIndex !== -1 && retryCount < 3) {
+                  console.log(`Trying next working image (${nextWorkingIndex}) for property: ${normalizedProperty.title}`)
+                  setCurrentImageIndex(nextWorkingIndex)
+                  setImageError(false)
+                  setImageLoading(true)
+                  setRetryCount(prev => prev + 1)
+                } else {
+                  // All images failed or too many retries, show error state
+                  console.log(`All images failed or max retries reached for property: ${normalizedProperty.title}`)
+                  setImageError(true)
+                }
+              }}
+            />
+          </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-neutral-100">
-            <span className="text-neutral-400">Sin imagen</span>
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            {imageLoading ? (
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+            ) : (
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-300 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <span className="text-gray-400 text-sm">Sin imagen</span>
+              </div>
+            )}
           </div>
         )}
 

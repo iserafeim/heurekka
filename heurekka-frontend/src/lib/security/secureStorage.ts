@@ -73,18 +73,18 @@ const decrypt = (encryptedData: string): string => {
   try {
     const key = CryptoJS.enc.Utf8.parse(getEncryptionKey());
     const combined = CryptoJS.enc.Base64.parse(encryptedData);
-    
+
     // Extract IV and encrypted data
     const iv = CryptoJS.lib.WordArray.create(
       combined.words.slice(0, ENCRYPTION_CONFIG.ivSize),
       ENCRYPTION_CONFIG.ivSize * 4
     );
-    
+
     const encrypted = CryptoJS.lib.WordArray.create(
       combined.words.slice(ENCRYPTION_CONFIG.ivSize),
       combined.sigBytes - (ENCRYPTION_CONFIG.ivSize * 4)
     );
-    
+
     const decrypted = CryptoJS.AES.decrypt(
       CryptoJS.enc.Base64.stringify(encrypted),
       key,
@@ -94,8 +94,22 @@ const decrypt = (encryptedData: string): string => {
         padding: ENCRYPTION_CONFIG.padding
       }
     );
-    
-    return decrypted.toString(CryptoJS.enc.Utf8);
+
+    // Check if decryption was successful before converting to UTF-8
+    if (decrypted.sigBytes <= 0) {
+      console.warn('Decryption resulted in empty data');
+      return '';
+    }
+
+    const utf8String = decrypted.toString(CryptoJS.enc.Utf8);
+
+    // Validate that the UTF-8 conversion was successful
+    if (!utf8String || utf8String.length === 0) {
+      console.warn('Failed to convert decrypted data to UTF-8');
+      return '';
+    }
+
+    return utf8String;
   } catch (error) {
     console.error('Decryption failed:', error);
     throw new Error('Failed to decrypt data');
@@ -184,7 +198,15 @@ export const secureStorage = {
       }
       
       // Decrypt and parse
-      const decryptedValue = decrypt(encryptedValue);
+      let decryptedValue: string;
+      try {
+        decryptedValue = decrypt(encryptedValue);
+      } catch (decryptError) {
+        console.warn('Failed to decrypt data for key:', key, decryptError);
+        // Clean up corrupted data immediately
+        secureStorage.removeItem(key);
+        return null;
+      }
 
       // Validate decrypted value before parsing
       if (!decryptedValue || decryptedValue.trim() === '') {
@@ -193,7 +215,13 @@ export const secureStorage = {
         return null;
       }
 
-      return JSON.parse(decryptedValue) as T;
+      try {
+        return JSON.parse(decryptedValue) as T;
+      } catch (parseError) {
+        console.warn('Failed to parse decrypted JSON for key:', key, parseError);
+        secureStorage.removeItem(key);
+        return null;
+      }
 
     } catch (error) {
       console.error('Error retrieving encrypted data:', error);
