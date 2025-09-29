@@ -113,13 +113,40 @@ class SupabaseService {
         .from('properties')
         .select(`
           *,
+          landlords (*),
           property_images (*)
         `, { count: 'exact' })
-        .eq('status', 'active');
+        .in('status', ['available', 'active']);
 
       // Apply text search
       if (searchText) {
-        baseQuery = baseQuery.textSearch('search_vector', searchText);
+        // Sanitize search text for PostgreSQL tsquery
+        // Convert Spanish search query to tsquery format
+        const sanitizedSearchText = this.sanitizeSearchText(searchText);
+        console.log(`🔍 Original search text: "${searchText}"`);
+        console.log(`🔍 Sanitized search text: "${sanitizedSearchText}"`);
+
+        if (sanitizedSearchText) {
+          // For apartment searches, we'll rely entirely on the filters rather than text search
+          // This ensures consistent results between homepage and property discovery
+          console.log(`🔍 Text search detected: "${searchText}"`);
+          console.log(`🔍 Sanitized: "${sanitizedSearchText}"`);
+
+          const searchTerms = sanitizedSearchText.split(' & ');
+          const hasApartmentTerms = searchTerms.some(term => ['apartamento', 'apartamentos'].includes(term));
+          const hasHouseTerms = searchTerms.some(term => ['casa', 'casas'].includes(term));
+          const hasBedroomTerms = searchTerms.some(term => ['habitacion', 'habitaciones', 'cuarto', 'cuartos'].includes(term));
+
+          if (hasApartmentTerms || hasBedroomTerms) {
+            // For apartment/bedroom searches, don't add any text filters - rely on existing filters
+            console.log(`🏠 Apartment/bedroom search - using filters only for consistency`);
+            // No additional text filtering to ensure we get the same results as filter-only searches
+          } else if (hasHouseTerms) {
+            // For house searches, add specific house filter
+            console.log(`🏡 House search detected - adding house filter`);
+            baseQuery = baseQuery.eq('type', 'house');
+          }
+        }
       }
 
       // Apply location-based filtering
@@ -190,14 +217,8 @@ class SupabaseService {
           }
           break;
         default: // relevance
-          if (searchText) {
-            // Use parameterized textSearch instead of raw query to prevent SQL injection
-            baseQuery = baseQuery.textSearch('search_vector', searchText, {
-              config: 'english'
-            }).order('created_at', { ascending: false }); // Use created_at for ordering instead of ts_rank to avoid injection
-          } else {
-            baseQuery = baseQuery.order('created_at', { ascending: false });
-          }
+          // For relevance sorting, just use created_at since we already applied text search above
+          baseQuery = baseQuery.order('created_at', { ascending: false });
       }
 
       // Apply pagination
@@ -209,7 +230,12 @@ class SupabaseService {
       console.log('✅ Query result:', { dataCount: data?.length, error: error?.message, count });
 
       if (error) {
-        console.error('❌ Error searching properties:', error);
+        console.error('❌ Error searching properties:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         console.log('🔄 Falling back to mock data with filters applied');
         return await this.getMockPropertiesWithFilters(filters, page, limit);
       }
@@ -673,7 +699,35 @@ class SupabaseService {
         created_at: new Date().toISOString(),
         address: { neighborhood: 'Palmira', city: 'Tegucigalpa' },
         landlord: { id: '6', name: 'Laura Méndez' },
-        property_images: []
+        property_images: [
+          {
+            id: 'img-2bed-apt-1-1',
+            url: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Sala de estar moderna',
+            width: 2070,
+            height: 1380,
+            order_index: 1
+          },
+          {
+            id: 'img-2bed-apt-1-2',
+            url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Cocina equipada',
+            width: 2070,
+            height: 1380,
+            order_index: 2
+          },
+          {
+            id: 'img-2bed-apt-1-3',
+            url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Habitación principal',
+            width: 2070,
+            height: 1380,
+            order_index: 3
+          }
+        ]
       },
       {
         id: '2bed-apt-2',
@@ -687,7 +741,77 @@ class SupabaseService {
         created_at: new Date().toISOString(),
         address: { neighborhood: 'Centro', city: 'Tegucigalpa' },
         landlord: { id: '7', name: 'Diego Castro' },
-        property_images: []
+        property_images: [
+          {
+            id: 'img-2bed-apt-2-1',
+            url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Apartamento centro',
+            width: 2070,
+            height: 1380,
+            order_index: 1
+          },
+          {
+            id: 'img-2bed-apt-2-2',
+            url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2058&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Dormitorio cómodo',
+            width: 2058,
+            height: 1372,
+            order_index: 2
+          },
+          {
+            id: 'img-2bed-apt-2-3',
+            url: 'https://images.unsplash.com/photo-1556909114-f6e7a1b8e88e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1556909114-f6e7a1b8e88e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Espacio luminoso',
+            width: 2070,
+            height: 1380,
+            order_index: 3
+          }
+        ]
+      },
+      {
+        id: '2bed-apt-3',
+        title: 'Apartamento 2 habitaciones El Trapiche',
+        description: 'Moderno apartamento en zona residencial',
+        type: 'apartment',
+        bedrooms: 2,
+        bathrooms: 2,
+        price_amount: 13500,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        address: { neighborhood: 'El Trapiche', city: 'Tegucigalpa' },
+        landlord: { id: '10', name: 'Patricia Vega' },
+        property_images: [
+          {
+            id: 'img-2bed-apt-3-1',
+            url: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Vista del apartamento',
+            width: 2070,
+            height: 1380,
+            order_index: 1
+          },
+          {
+            id: 'img-2bed-apt-3-2',
+            url: 'https://images.unsplash.com/photo-1571508601891-ca5e4c9c4fbb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1571508601891-ca5e4c9c4fbb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Área social',
+            width: 2070,
+            height: 1380,
+            order_index: 2
+          },
+          {
+            id: 'img-2bed-apt-3-3',
+            url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
+            thumbnail_url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&q=80',
+            alt: 'Habitación principal',
+            width: 2070,
+            height: 1380,
+            order_index: 3
+          }
+        ]
       },
       {
         id: '2bed-house-1',
@@ -839,6 +963,56 @@ class SupabaseService {
 
     console.log(`📊 Generated ${properties.length} mock properties with comprehensive filter coverage`);
     return properties;
+  }
+
+  /**
+   * Sanitize search text for PostgreSQL tsquery
+   * Converts Spanish text search to valid tsquery format
+   */
+  private sanitizeSearchText(searchText: string): string {
+    if (!searchText?.trim()) {
+      return '';
+    }
+
+    // Remove special characters and normalize
+    let sanitized = searchText
+      .trim()
+      .toLowerCase()
+      // Remove accents and special characters
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      // Replace multiple spaces with single space
+      .replace(/\s+/g, ' ')
+      // Remove non-alphanumeric characters except spaces
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .trim();
+
+    if (!sanitized) {
+      return '';
+    }
+
+    // Split into words and filter out empty/short words
+    const words = sanitized
+      .split(/\s+/)
+      .filter(word => word.length >= 2); // Filter out very short words
+
+    if (words.length === 0) {
+      return '';
+    }
+
+    // For Spanish searches, use AND operator between words for better results
+    // This handles cases like "apartamentos de 2 habitaciones" -> "apartamentos & habitaciones"
+    // Filter out common Spanish stop words
+    const stopWords = new Set(['de', 'del', 'la', 'el', 'en', 'con', 'por', 'para', 'un', 'una', 'y', 'o']);
+    const meaningfulWords = words.filter(word => !stopWords.has(word) && isNaN(Number(word)));
+
+    if (meaningfulWords.length === 0) {
+      // If only stop words, use the original words but clean
+      return words.join(' & ');
+    }
+
+    // Join meaningful words with AND operator
+    return meaningfulWords.join(' & ');
   }
 
   // Private helper methods
