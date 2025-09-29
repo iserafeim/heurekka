@@ -10,13 +10,16 @@ import { MapPanel } from './MapPanel';
 import { PropertyDetailModal } from './PropertyDetailModal';
 import { ViewToggle } from './ViewToggle';
 import { FloatingViewToggle } from './FloatingMapButton';
+import { MobileLocationSearchModal } from './MobileLocationSearchModal';
 import { LogoIcon } from '@/components/logo';
 import { Button } from '@/components/ui/button';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePropertySearch } from '@/hooks/usePropertySearch';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePropertyModal } from '@/hooks/usePropertyModal';
 import { useSplitViewSync } from '@/hooks/useSplitViewSync';
+import { parseSmartSearch } from '@/utils/smartSearch';
 import { useViewToggle } from '@/hooks/useViewToggle';
 
 interface PropertyDiscoveryProps {
@@ -66,6 +69,12 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Mobile filter modal state
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+
+  // Mobile location search modal state
+  const [isMobileLocationModalOpen, setIsMobileLocationModalOpen] = useState(false);
+
+  // Mobile menu dropdown state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Custom hooks
   const { 
@@ -166,17 +175,60 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
     }
   }, [state.filters, search]);
 
-  // Handle search from SearchBar
-  const handleSearch = useCallback(async (location: string) => {
-    const newFilters = {
+  // Handle search from SearchBar with intelligent parsing
+  // Examples of smart search queries:
+  // - "apartamentos de 2 habitaciones" → filters: propertyTypes: ['apartamento'], bedrooms: [2]
+  // - "casa con 3 cuartos en Tegucigalpa" → filters: propertyTypes: ['casa'], bedrooms: [3], location: 'Tegucigalpa'
+  // - "studio bajo 15000 lempiras" → filters: propertyTypes: ['studio'], priceMax: 15000
+  // - "apartamento amueblado con estacionamiento" → filters: propertyTypes: ['apartamento'], features: ['furnished', 'parking']
+  const handleSearch = useCallback(async (searchQuery: string) => {
+    // Parse the search query intelligently
+    const parsedSearch = parseSmartSearch(searchQuery);
+
+    // Build new filters based on parsed results
+    const newFilters: Partial<SearchFilters> = {
       ...state.filters,
-      location,
-      cursor: undefined // Reset pagination
+      cursor: undefined // Reset pagination when searching
     };
-    
+
+    // Apply location if found
+    if (parsedSearch.location) {
+      newFilters.location = parsedSearch.location;
+    } else if (searchQuery && !parsedSearch.propertyTypes && !parsedSearch.bedrooms && !parsedSearch.minPrice && !parsedSearch.maxPrice) {
+      // If no specific filters found, treat entire query as location
+      newFilters.location = searchQuery;
+    }
+
+    // Apply property types if found
+    if (parsedSearch.propertyTypes && parsedSearch.propertyTypes.length > 0) {
+      newFilters.propertyTypes = parsedSearch.propertyTypes;
+    }
+
+    // Apply bedroom filters if found
+    if (parsedSearch.bedrooms && parsedSearch.bedrooms.length > 0) {
+      newFilters.bedrooms = parsedSearch.bedrooms;
+    }
+
+    // Apply price range if found
+    if (parsedSearch.minPrice !== undefined) {
+      newFilters.priceMin = parsedSearch.minPrice;
+    }
+    if (parsedSearch.maxPrice !== undefined) {
+      newFilters.priceMax = parsedSearch.maxPrice;
+    }
+
+    // Log for debugging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Smart Search Results:', {
+        originalQuery: searchQuery,
+        parsed: parsedSearch,
+        appliedFilters: newFilters
+      });
+    }
+
     setState(prev => ({
       ...prev,
-      filters: newFilters
+      filters: newFilters as SearchFilters
     }));
   }, [state.filters]);
 
@@ -296,6 +348,54 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
     }));
   }, [state.filters]);
 
+  // Handle mobile location modal
+  const handleMobileLocationClick = useCallback(() => {
+    setIsMobileLocationModalOpen(true);
+  }, []);
+
+  const handleMobileLocationClose = useCallback(() => {
+    setIsMobileLocationModalOpen(false);
+  }, []);
+
+  const handleMobileLocationSelect = useCallback((location: string, coordinates?: { lat: number; lng: number }) => {
+    handleSearch(location);
+    setIsMobileLocationModalOpen(false);
+  }, [handleSearch]);
+
+  // Handle mobile menu toggle
+  const handleMobileMenuToggle = useCallback(() => {
+    setIsMobileMenuOpen(prev => !prev);
+  }, []);
+
+  const handleMobileMenuClose = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  // Close mobile menu when clicking outside or on escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isMobileMenuOpen]);
+
   // Render different view modes
   const renderContent = () => {
     switch (currentView) {
@@ -382,33 +482,111 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
   return (
     <div className={`property-discovery font-sans ${className}`}>
       {/* Mobile Header (320px-767px) */}
-      <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="flex items-center justify-between h-14 px-4">
-          {/* Notification Icon */}
-          <button className="p-2 hover:bg-gray-100 rounded-full">
-            <span className="text-lg">🔔</span>
-          </button>
-
-          {/* Brand */}
-          <a
+          {/* Logo - Left */}
+          <Link
             href="/"
-            className="text-lg font-bold text-gray-900 hover:text-blue-600 transition-colors duration-200 cursor-pointer"
             aria-label="Ir a la página principal"
+            className="flex items-center transition-all duration-300 hover:scale-110 transform-gpu"
           >
-            HEUREKKA
-          </a>
+            <LogoIcon />
+          </Link>
 
           {/* Hamburger Menu */}
-          <button className="p-2 hover:bg-gray-100 rounded-full">
-            <span className="text-lg">☰</span>
+          <button
+            onClick={handleMobileMenuToggle}
+            aria-label={isMobileMenuOpen ? 'Cerrar Menú' : 'Abrir Menú'}
+            className="relative z-20 block cursor-pointer p-2.5 transition-all duration-300 hover:scale-110 hover:bg-gray-100 rounded-full"
+            data-state={isMobileMenuOpen ? 'active' : ''}
+          >
+            <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
+            <X className="in-data-[state=active]:rotate-0 in-data-[state=active]:scale-100 in-data-[state=active]:opacity-100 absolute inset-0 m-auto size-6 -rotate-180 scale-0 opacity-0 duration-200" />
           </button>
         </div>
       </div>
 
+      {/* Mobile Dropdown Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-white z-50"
+             data-state="active">
+          <div className="flex flex-col h-full">
+            {/* Header with logo and close button */}
+            <div className="flex items-center justify-between h-14 px-4 border-b border-gray-200">
+              <Link
+                href="/"
+                aria-label="Ir a la página principal"
+                className="flex items-center transition-all duration-300 hover:scale-110 transform-gpu"
+              >
+                <LogoIcon />
+              </Link>
+              <button
+                onClick={handleMobileMenuClose}
+                aria-label="Cerrar Menú"
+                className="relative z-20 block cursor-pointer p-2.5 transition-all duration-300 hover:scale-110 hover:bg-gray-100 rounded-full"
+              >
+                <X className="size-6" />
+              </button>
+            </div>
+
+            {/* Menu content */}
+            <div className="flex-1 p-6 space-y-6">
+            {/* Navigation Links */}
+            <ul className="space-y-4">
+              <li>
+                <Link
+                  href="/publicar"
+                  className="text-gray-700 hover:text-gray-900 block text-lg font-medium py-2"
+                  onClick={handleMobileMenuClose}
+                >
+                  <span>Publicar</span>
+                </Link>
+              </li>
+            </ul>
+
+            {/* Login Button */}
+            <div className="pt-4 border-t border-gray-200">
+              <Link href="/iniciar-sesion" className="block" onClick={handleMobileMenuClose}>
+                <Button
+                  size="lg"
+                  className="w-full text-base font-medium transition-colors duration-200"
+                  style={{
+                    backgroundColor: '#000000',
+                    color: 'white',
+                    border: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#374151'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#000000'
+                  }}
+                >
+                  <span>Iniciar Sesión</span>
+                </Button>
+              </Link>
+            </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Location Bar (Mobile only) */}
-      <div className="md:hidden bg-gray-50 border-b border-gray-200 sticky top-14 z-30">
-        <div className="text-center py-3 px-4">
-          <span className="text-gray-700 font-medium">Tegucigalpa, HN</span>
+      <div className="md:hidden bg-white sticky top-[3.5rem] z-40">
+        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+          <button
+            onClick={handleMobileLocationClick}
+            className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors shadow-sm"
+            aria-label="Buscar ubicación"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span>{state.filters.location || 'Tegucigalpa, HN'}</span>
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -431,7 +609,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
             <SearchBar
               onSearch={handleSearch}
               initialLocation={state.filters.location}
-              placeholder={SPANISH_TEXT.search.placeholder}
+              placeholder="Ej: apartamentos de 2 habitaciones, casa en Tegucigalpa..."
               locale={locale}
             />
           </div>
@@ -462,14 +640,14 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-[106px] md:top-16 z-30">
+      <div className="bg-white border-b border-gray-200 sticky top-[121px] md:top-16 z-30">
         {/* Mobile Layout - Simple */}
         <div className="md:hidden px-4">
           <FilterBar
             filters={state.filters}
             onFiltersChange={handleFiltersChange}
             locale={locale}
-            className="py-4"
+            className="py-3"
             onMobileModalStateChange={setIsMobileModalOpen}
           />
         </div>
@@ -524,8 +702,17 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
         locale={locale}
       />
 
+      {/* Mobile Location Search Modal */}
+      <MobileLocationSearchModal
+        isOpen={isMobileLocationModalOpen}
+        onClose={handleMobileLocationClose}
+        onLocationSelect={handleMobileLocationSelect}
+        currentLocation={state.filters.location}
+        locale={locale}
+      />
+
       {/* Floating View Toggle (Mobile only) - Hidden when mobile modal is open */}
-      {!isMobileModalOpen && (
+      {!isMobileModalOpen && !isMobileLocationModalOpen && (
         <FloatingViewToggle
           currentView={currentView}
           onToggle={handleViewChange}

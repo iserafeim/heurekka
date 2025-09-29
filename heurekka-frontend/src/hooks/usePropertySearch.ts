@@ -111,7 +111,20 @@ export function usePropertySearch(): UsePropertySearchResult {
 
       if (response.success && response.data) {
         console.log('📊 Backend returned properties count:', response.data.properties?.length);
-        console.log('📊 Properties:', response.data.properties?.map(p => ({id: p.id, bedrooms: p.bedrooms, bathrooms: p.bathrooms})));
+        console.log('📊 Full backend response data:', response.data);
+        console.log('📊 Properties details:');
+        response.data.properties?.forEach((p, index) => {
+          console.log(`  Property ${index + 1}:`, {
+            id: p.id,
+            title: p.title,
+            bedrooms: p.bedrooms,
+            bathrooms: p.bathrooms,
+            type: p.type,
+            address: p.address,
+            images: p.images || [],
+            price: p.price
+          });
+        });
 
         // Transform backend properties to frontend format
         const transformedProperties = transformBackendProperties(response.data.properties || []);

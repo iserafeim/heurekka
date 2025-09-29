@@ -299,6 +299,37 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     }).format(amount);
   };
 
+  // Format property types for button display
+  const formatPropertyTypes = (types: PropertyType[]) => {
+    if (types.length === 0) return 'Type';
+
+    // Map property types to Spanish labels
+    const typeLabels: Record<PropertyType, string> = {
+      [PropertyType.APARTMENT]: 'Apartment',
+      [PropertyType.HOUSE]: 'House',
+      [PropertyType.ROOM]: 'Room',
+      [PropertyType.OFFICE]: 'Townhouse'
+    };
+
+    if (types.length === 1) {
+      return typeLabels[types[0]];
+    } else {
+      return `${typeLabels[types[0]]} +${types.length - 1}`;
+    }
+  };
+
+  // Format pets filter for button display
+  const formatPetsFilter = (petsAllowed: boolean) => {
+    if (!petsAllowed) return 'Pets';
+    return 'Dogs';
+  };
+
+  // Format deals filter for button display
+  const formatDealsFilter = (hasDeals: boolean) => {
+    if (!hasDeals) return 'Deals';
+    return 'Rent special';
+  };
+
   // Get active filter count
   const getActiveFilterCount = () => {
     let count = 0;
@@ -366,7 +397,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            <span>Type</span>
+            <span>{formatPropertyTypes(filters.propertyTypes)}</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -381,7 +412,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            <span>Pets</span>
+            <span>{formatPetsFilter(filters.petsAllowed || false)}</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -396,7 +427,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 : 'bg-white border-gray-300 text-gray-700'
             }`}
           >
-            <span>Deals</span>
+            <span>{formatDealsFilter(filters.hasDeals || false)}</span>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -428,10 +459,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.bedrooms
                   ? (filters.bedrooms.length > 0 || (filters.bathrooms && filters.bathrooms.length > 0)
-                      ? 'bg-blue-100 border-blue-400 text-blue-700'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-gray-200 text-gray-700 border-gray-300')
                   : (filters.bedrooms.length > 0 || (filters.bathrooms && filters.bathrooms.length > 0)
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
               }`}
               aria-expanded={dropdowns.bedrooms}
@@ -589,10 +620,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.price
                   ? (filters.priceMin > 0 || filters.priceMax < 100000
-                      ? 'bg-blue-100 border-blue-400 text-blue-700'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-gray-200 text-gray-700 border-gray-300')
                   : (filters.priceMin > 0 || filters.priceMax < 100000
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
               }`}
               aria-expanded={dropdowns.price}
@@ -700,19 +731,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.propertyType
                   ? (filters.propertyTypes.length > 0
-                      ? 'bg-blue-100 border-blue-400 text-blue-700'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-gray-200 text-gray-700 border-gray-300')
                   : (filters.propertyTypes.length > 0
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
               }`}
               aria-expanded={dropdowns.propertyType}
               aria-haspopup="true"
             >
-              {filters.propertyTypes.length > 0
-                ? `${filters.propertyTypes.length} tipo(s)`
-                : 'Type'
-              }
+              {formatPropertyTypes(filters.propertyTypes)}
               <svg className="ml-2 w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -784,16 +812,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.pets
                   ? (filters.petsAllowed
-                      ? 'bg-blue-100 border-blue-400 text-blue-700'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-gray-200 text-gray-700 border-gray-300')
                   : (filters.petsAllowed
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
               }`}
               aria-expanded={dropdowns.pets}
               aria-haspopup="true"
             >
-              Pets
+              {formatPetsFilter(filters.petsAllowed || false)}
               <svg className="ml-2 w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -859,16 +887,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               className={`px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium transition-all duration-200 hover:border-gray-400 focus:outline-none focus:ring-0 focus:border-gray-400 ${
                 dropdowns.deals
                   ? (filters.hasDeals
-                      ? 'bg-blue-100 border-blue-400 text-blue-700'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-gray-200 text-gray-700 border-gray-300')
                   : (filters.hasDeals
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 active:bg-blue-100 active:border-blue-400'
+                      ? 'bg-white border-gray-900 text-gray-900'
                       : 'bg-white text-gray-700 border-gray-300 active:bg-gray-200')
               }`}
               aria-expanded={dropdowns.deals}
               aria-haspopup="true"
             >
-              Deals
+              {formatDealsFilter(filters.hasDeals || false)}
               <svg className="ml-2 w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>

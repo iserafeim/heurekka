@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Search, X, MapPin, Clock, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { parseSmartSearch } from '@/utils/smartSearch'
 import type { SearchBarProps, Suggestion } from '@/types/homepage'
 
 interface SearchSuggestionsProps {
@@ -82,9 +83,33 @@ export function SearchBar({
     setIsSubmitting(true)
     
     try {
+      // Parse the search query intelligently
+      const parsedSearch = parseSmartSearch(value.trim())
+
+      // Build SearchQuery with intelligent filters
       const query = {
         text: value.trim(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        filters: {
+          ...(parsedSearch.propertyTypes?.length && { propertyTypes: parsedSearch.propertyTypes }),
+          ...(parsedSearch.bedrooms?.length && { bedrooms: parsedSearch.bedrooms }),
+          ...(parsedSearch.minPrice !== undefined && { priceMin: parsedSearch.minPrice }),
+          ...(parsedSearch.maxPrice !== undefined && { priceMax: parsedSearch.maxPrice })
+        }
+      }
+
+      // Add location to text if detected but preserve original text
+      if (parsedSearch.location) {
+        query.text = parsedSearch.location
+      }
+
+      // Log for debugging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Homepage Smart Search:', {
+          originalText: value.trim(),
+          parsed: parsedSearch,
+          searchQuery: query
+        })
       }
 
       await onSearch(query)
