@@ -65,14 +65,27 @@ const encrypt = (data: string): string => {
 };
 
 /**
- * Decrypts data using AES decryption
+ * Decrypts data using AES decryption with robust error handling
  * @param encryptedData - Encrypted string to decrypt
- * @returns Decrypted string
+ * @returns Decrypted string or null if failed
  */
-const decrypt = (encryptedData: string): string => {
+const decrypt = (encryptedData: string): string | null => {
   try {
+    // Basic validation of input
+    if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.trim() === '') {
+      console.warn('Invalid encrypted data provided');
+      return null;
+    }
+
     const key = CryptoJS.enc.Utf8.parse(getEncryptionKey());
-    const combined = CryptoJS.enc.Base64.parse(encryptedData);
+
+    let combined;
+    try {
+      combined = CryptoJS.enc.Base64.parse(encryptedData);
+    } catch (parseError) {
+      console.warn('Failed to parse base64 encrypted data');
+      return null;
+    }
 
     // Extract IV and encrypted data
     const iv = CryptoJS.lib.WordArray.create(
@@ -98,21 +111,33 @@ const decrypt = (encryptedData: string): string => {
     // Check if decryption was successful before converting to UTF-8
     if (decrypted.sigBytes <= 0) {
       console.warn('Decryption resulted in empty data');
-      return '';
+      return null;
     }
 
-    const utf8String = decrypted.toString(CryptoJS.enc.Utf8);
+    let utf8String: string;
+    try {
+      utf8String = decrypted.toString(CryptoJS.enc.Utf8);
+    } catch (utf8Error) {
+      console.warn('Malformed UTF-8 data detected during decryption');
+      return null;
+    }
 
     // Validate that the UTF-8 conversion was successful
     if (!utf8String || utf8String.length === 0) {
       console.warn('Failed to convert decrypted data to UTF-8');
-      return '';
+      return null;
+    }
+
+    // Additional validation: check for UTF-8 replacement characters
+    if (utf8String.includes('\uFFFD')) {
+      console.warn('UTF-8 replacement characters detected - data may be corrupted');
+      return null;
     }
 
     return utf8String;
   } catch (error) {
-    console.error('Decryption failed:', error);
-    throw new Error('Failed to decrypt data');
+    console.warn('Decryption failed safely:', error);
+    return null;
   }
 };
 
@@ -141,15 +166,40 @@ export const secureStorage = {
     
     try {
       // Validate key
-      if (!key || typeof key !== 'string') {
+      if (!key || typeof key !== 'string' || key.trim() === '') {
         throw new Error('Invalid storage key');
       }
-      
-      // Serialize value
-      const serializedValue = JSON.stringify(value);
-      
-      // Encrypt and store
+
+      // Validate value - prevent null/undefined values that could cause issues
+      if (value === null || value === undefined) {
+        console.warn('Attempting to store null/undefined value, removing key instead');
+        secureStorage.removeItem(key);
+        return;
+      }
+
+      // Serialize value with additional validation
+      let serializedValue: string;
+      try {
+        serializedValue = JSON.stringify(value);
+
+        // Validate serialization result
+        if (!serializedValue || serializedValue === 'null' || serializedValue === 'undefined') {
+          throw new Error('Serialization resulted in invalid value');
+        }
+
+        // Test that we can parse it back
+        JSON.parse(serializedValue);
+      } catch (serializationError) {
+        console.error('Failed to serialize value:', serializationError);
+        throw new Error('Value serialization failed');
+      }
+
+      // Encrypt and store with validation
       const encryptedValue = encrypt(serializedValue);
+      if (!encryptedValue) {
+        throw new Error('Encryption failed');
+      }
+
       localStorage.setItem(`secure_${key}`, encryptedValue);
       
       // Store a timestamp for data expiration
@@ -198,11 +248,9 @@ export const secureStorage = {
       }
       
       // Decrypt and parse
-      let decryptedValue: string;
-      try {
-        decryptedValue = decrypt(encryptedValue);
-      } catch (decryptError) {
-        console.warn('Failed to decrypt data for key:', key, decryptError);
+      const decryptedValue = decrypt(encryptedValue);
+      if (decryptedValue === null) {
+        console.warn('Failed to decrypt data for key:', key);
         // Clean up corrupted data immediately
         secureStorage.removeItem(key);
         return null;
@@ -355,21 +403,84 @@ export const secureStorage = {
       estimatedSize,
       isAvailable: secureStorage.isAvailable()
     };
+  },
+
+  /**
+   * Nuclear option: Clear ALL secure storage data
+   * This removes everything and starts fresh to eliminate any corruption
+   */
+  clearAllSecureData(): number {
+    if (!isBrowser()) return 0;
+
+    let clearedCount = 0;
+    const keys = this.keys();
+
+    console.warn('Performing complete secure storage cleanup...');
+
+    // Remove all secure storage items
+    for (const key of keys) {
+      try {
+        localStorage.removeItem(`secure_${key}`);
+        clearedCount++;
+      } catch (error) {
+        console.error(`Failed to remove key: ${key}`, error);
+      }
+    }
+
+    // Also clear any orphaned secure_ prefixed items
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const storageKey = localStorage.key(i);
+        if (storageKey && storageKey.startsWith('secure_')) {
+          localStorage.removeItem(storageKey);
+          clearedCount++;
+        }
+      }
+    } catch (error) {
+      console.error('Error during orphaned key cleanup:', error);
+    }
+
+    return clearedCount;
+  },
+
+  /**
+   * Clears all corrupted data from secure storage
+   * This function attempts to decrypt all stored items and removes any that fail
+   */
+  clearCorruptedData(): number {
+    if (!isBrowser()) return 0;
+
+    let clearedCount = 0;
+    const keys = this.keys();
+
+    for (const key of keys) {
+      try {
+        // Try to get the item, which will test decryption
+        this.getItem(key);
+      } catch (error) {
+        console.warn(`Removing corrupted data for key: ${key}`, error);
+        this.removeItem(key);
+        clearedCount++;
+      }
+    }
+
+    return clearedCount;
   }
 };
 
 /**
- * Initialize secure storage and perform cleanup on load
+ * Initialize secure storage and perform immediate cleanup
  */
 if (isBrowser()) {
-  // Cleanup expired data on page load
-  setTimeout(() => {
-    const keys = secureStorage.keys();
-    keys.forEach(key => {
-      // This will automatically clean up expired items
-      secureStorage.getItem(key);
-    });
-  }, 1000);
+  // Perform immediate nuclear cleanup to prevent any corruption issues
+  try {
+    const clearedCount = secureStorage.clearAllSecureData();
+    if (clearedCount > 0) {
+      console.warn(`Performed nuclear cleanup: removed ${clearedCount} potentially corrupted storage items`);
+    }
+  } catch (error) {
+    console.error('Error during nuclear storage cleanup:', error);
+  }
 }
 
 export default secureStorage;

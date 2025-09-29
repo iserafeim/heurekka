@@ -41,6 +41,12 @@ export const useRecentSearches = () => {
         }
       } catch (error) {
         console.error('Error loading recent searches:', error);
+        // Clear corrupted data
+        try {
+          secureStorage.removeItem(STORAGE_KEY);
+        } catch (removeError) {
+          console.error('Error removing corrupted data:', removeError);
+        }
         setRecentSearches([]);
       } finally {
         setLoading(false);
