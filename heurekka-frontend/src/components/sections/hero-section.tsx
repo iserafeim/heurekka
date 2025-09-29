@@ -4,6 +4,7 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 import { HeroHeader } from "@/components/header"
 import { Sparkle } from 'lucide-react'
 import { SearchBar } from '@/components/search/search-bar'
@@ -72,17 +73,35 @@ export function HeroSection({
               <div>
                 {/* Mobile title - 2 lines */}
                 <h1 className="mx-auto max-w-full px-4 text-[2.5rem] font-bold tracking-tight text-gray-900 leading-tight md:hidden">
-                  <span className={`inline-block transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
-                    {currentWord}
-                  </span> 10x<br />
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={currentWord}
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="inline-block"
+                    >
+                      {currentWord}
+                    </motion.span>
+                  </AnimatePresence> 10x<br />
                   Más Rápido
                 </h1>
 
                 {/* Desktop title - 2 lines */}
                 <h1 className="hidden md:block mx-auto max-w-5xl font-bold tracking-tight text-gray-900 leading-tight" style={{ fontSize: '6.5rem' }}>
-                  <span className={`inline-block transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
-                    {currentWord}
-                  </span> 10x<br />
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={currentWord}
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="inline-block"
+                    >
+                      {currentWord}
+                    </motion.span>
+                  </AnimatePresence> 10x<br />
                   Más Rápido
                 </h1>
 

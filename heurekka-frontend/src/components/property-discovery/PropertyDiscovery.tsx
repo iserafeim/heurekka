@@ -118,6 +118,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Initial search on mount
   useEffect(() => {
+    console.log('🎯 PropertyDiscovery - Initial search on mount, filters:', state.filters);
     search(state.filters);
   }, []); // Only run on mount
 
@@ -250,13 +251,14 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Handle map bounds change
   const handleMapBoundsChange = useCallback((bounds: any) => {
+    console.log('🌍 Map bounds changed, triggering search with new bounds:', bounds);
     // Update filters with new bounds for map-based search
     const newFilters = {
       ...state.filters,
       bounds,
       cursor: undefined
     };
-    
+
     setState(prev => ({
       ...prev,
       filters: newFilters
@@ -326,6 +328,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
               onMarkerClick={handlePropertyClick}
               onMarkerHover={handleMapMarkerHover}
               onBoundsChange={handleMapBoundsChange}
+              loading={searchLoading}
               className="h-full"
             />
           </SplitContainer>
@@ -364,6 +367,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
               onMarkerClick={handlePropertyClick}
               onMarkerHover={handleMapMarkerHover}
               onBoundsChange={handleMapBoundsChange}
+              loading={searchLoading}
               fullscreen={true}
               className="h-full"
             />

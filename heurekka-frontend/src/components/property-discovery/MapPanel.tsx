@@ -37,10 +37,13 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   fullscreen = false,
   className = ''
 }) => {
+  console.log('🗺️ MapPanel render - Properties count:', properties.length, 'Fullscreen:', fullscreen);
+
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const popup = useRef<mapboxgl.Popup | null>(null);
+  const currentPopupPropertyId = useRef<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -121,6 +124,7 @@ export const MapPanel: React.FC<MapPanelProps> = ({
         if (map.current) {
           const bounds = map.current.getBounds();
           if (bounds) {
+            console.log('🗺️ MapPanel moveend - Calling onBoundsChange');
             onBoundsChangeRef.current({
               north: bounds.getNorth(),
               south: bounds.getSouth(),
@@ -176,8 +180,8 @@ export const MapPanel: React.FC<MapPanelProps> = ({
   }, [center.lat, center.lng, zoom]); // Only re-initialize when center or zoom props change
 
   // Show property tooltip
-  const showPropertyTooltip = useCallback((e: mapboxgl.MapMouseEvent, properties: any) => {
-    if (!map.current) return;
+  const showPropertyTooltip = useCallback((e: mapboxgl.MapMouseEvent, markerProperties: any, fromClick: boolean = false) => {
+    if (!map.current || !fromClick) return;
 
     // Remove existing tooltip
     if (popup.current) {
@@ -186,6 +190,21 @@ export const MapPanel: React.FC<MapPanelProps> = ({
     }
 
     const coordinates = (e.lngLat as mapboxgl.LngLatLike);
+
+    // Find the complete property data from the properties array
+    console.log('🔍 Popup Debug - Properties array length:', properties.length);
+    console.log('🔍 Popup Debug - Looking for propertyId:', markerProperties.propertyId);
+    const fullPropertyData = properties.find(p => p.id === markerProperties.propertyId);
+    console.log('🔍 Popup Debug - Found fullPropertyData:', !!fullPropertyData);
+    console.log('🔍 Popup Debug - FullPropertyData images:', fullPropertyData?.images?.length || 0);
+
+    const allImages = fullPropertyData?.images || [markerProperties.image].filter(Boolean);
+    const hasMultipleImages = allImages.length > 1;
+    console.log('🔍 Popup Debug - AllImages length:', allImages.length, 'hasMultipleImages:', hasMultipleImages);
+    let currentImageIndex = 0;
+
+    // Store the property ID for later auto-refresh
+    currentPopupPropertyId.current = markerProperties.propertyId;
     
     // Format currency
     const formatCurrency = (amount: number) => {
@@ -201,23 +220,102 @@ export const MapPanel: React.FC<MapPanelProps> = ({
     const tooltipDiv = document.createElement('div');
     tooltipDiv.className = 'property-tooltip bg-white rounded-xl shadow-lg overflow-hidden max-w-sm border-0';
 
-    // Create and append image if valid
-    if (properties.image) {
-      const validImageUrl = validateUrl(properties.image);
-      if (validImageUrl) {
-        const img = document.createElement('img');
-        img.src = validImageUrl;
-        img.alt = 'Property image';
-        img.className = 'w-full h-32 object-cover';
-        img.loading = 'lazy';
+    // Create image slider container
+    if (allImages.length > 0) {
+      // Create main image container
+      const imageContainer = document.createElement('div');
+      imageContainer.className = 'relative w-full h-32 overflow-hidden group';
 
-        // Add error handling for broken images
-        img.onerror = () => {
-          img.style.display = 'none';
+      // Create main image element
+      const img = document.createElement('img');
+      img.className = 'w-full h-32 object-cover';
+      img.loading = 'lazy';
+
+      // Create dots array for later use
+      const dots: HTMLElement[] = [];
+
+      // Function to update dots
+      const updateDots = (activeIndex: number) => {
+        dots.forEach((dot, index) => {
+          if (index === activeIndex) {
+            dot.className = 'w-2 h-2 rounded-full bg-white shadow-lg transition-all duration-200';
+          } else {
+            dot.className = 'w-2 h-2 rounded-full bg-white/50 hover:bg-white/75 transition-all duration-200';
+          }
+        });
+      };
+
+      // Function to update image
+      const updateImage = (index: number) => {
+        const imageUrl = typeof allImages[index] === 'string' ? allImages[index] : allImages[index]?.url;
+        if (imageUrl) {
+          const validImageUrl = validateUrl(imageUrl);
+          if (validImageUrl) {
+            img.src = validImageUrl;
+            img.alt = `Property image ${index + 1}`;
+            currentImageIndex = index;
+          }
+        }
+      };
+
+      // Initialize with first image
+      updateImage(0);
+      imageContainer.appendChild(img);
+
+      // Add navigation buttons if multiple images
+      if (hasMultipleImages) {
+        // Previous button
+        const prevButton = document.createElement('button');
+        prevButton.className = 'absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+        prevButton.innerHTML = '‹';
+        prevButton.onclick = (e) => {
+          e.stopPropagation();
+          const newIndex = currentImageIndex > 0 ? currentImageIndex - 1 : allImages.length - 1;
+          updateImage(newIndex);
+          updateDots(newIndex);
         };
 
-        tooltipDiv.appendChild(img);
+        // Next button
+        const nextButton = document.createElement('button');
+        nextButton.className = 'absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+        nextButton.innerHTML = '›';
+        nextButton.onclick = (e) => {
+          e.stopPropagation();
+          const newIndex = currentImageIndex < allImages.length - 1 ? currentImageIndex + 1 : 0;
+          updateImage(newIndex);
+          updateDots(newIndex);
+        };
+
+        imageContainer.appendChild(prevButton);
+        imageContainer.appendChild(nextButton);
+
+        // Add dots indicators
+        const dotsContainer = document.createElement('div');
+        dotsContainer.className = 'absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1';
+
+        // Create dots
+        allImages.forEach((_, index) => {
+          const dot = document.createElement('button');
+          dot.onclick = (e) => {
+            e.stopPropagation();
+            updateImage(index);
+            updateDots(index);
+          };
+          dots.push(dot);
+          dotsContainer.appendChild(dot);
+        });
+
+        // Initialize dots
+        updateDots(0);
+        imageContainer.appendChild(dotsContainer);
       }
+
+      // Add error handling for broken images
+      img.onerror = () => {
+        img.style.display = 'none';
+      };
+
+      tooltipDiv.appendChild(imageContainer);
     }
 
     // Create content container
@@ -236,20 +334,20 @@ export const MapPanel: React.FC<MapPanelProps> = ({
     // Price element (without /mes)
     const priceDiv = document.createElement('div');
     priceDiv.className = 'font-bold text-xl text-black mb-2';
-    priceDiv.textContent = formatCurrency(properties.price);
+    priceDiv.textContent = formatCurrency(markerProperties.price);
     contentDiv.appendChild(priceDiv);
 
     // Property details line with pipe separators
     const detailsDiv = document.createElement('div');
     detailsDiv.className = 'text-sm text-neutral-600 mb-2';
-    detailsDiv.textContent = `${properties.bedrooms} hab | ${properties.bathrooms} baños | ${properties.area}m²`;
+    detailsDiv.textContent = `${markerProperties.bedrooms} hab | ${markerProperties.bathrooms} baños | ${markerProperties.area}m²`;
     contentDiv.appendChild(detailsDiv);
 
     // Location - neighborhood and city only
     const locationDiv = document.createElement('div');
     locationDiv.className = 'text-sm text-black font-semibold mb-2';
     // Use neighborhood and always show Tegucigalpa as city
-    const neighborhood = properties.neighborhood || 'Centro';
+    const neighborhood = markerProperties.neighborhood || 'Centro';
     locationDiv.textContent = `${neighborhood}, Tegucigalpa`;
     contentDiv.appendChild(locationDiv);
 
@@ -259,17 +357,43 @@ export const MapPanel: React.FC<MapPanelProps> = ({
     realtyDiv.textContent = 'HEUREKKA REALTY, Property Owner';
     contentDiv.appendChild(realtyDiv);
 
+    // Close button
+    const closeButton = document.createElement('button');
+    closeButton.className = 'absolute top-2 right-2 w-6 h-6 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200';
+    closeButton.innerHTML = '×';
+    closeButton.onclick = (e) => {
+      e.stopPropagation();
+      hideTooltip();
+    };
+
     tooltipDiv.appendChild(contentDiv);
+    tooltipDiv.appendChild(closeButton);
+    tooltipDiv.style.position = 'relative';
 
     popup.current = new mapboxgl.Popup({
       closeButton: false,
       closeOnClick: false,
-      offset: 15
+      closeOnMove: false,
+      offset: 15,
+      className: 'custom-popup-transparent'
     })
       .setLngLat(coordinates)
       .setDOMContent(tooltipDiv)
       .addTo(map.current);
-  }, []);
+
+    // Force remove any default styles that might have been applied
+    const popupElement = popup.current.getElement();
+    if (popupElement) {
+      const content = popupElement.querySelector('.mapboxgl-popup-content');
+      if (content) {
+        (content as HTMLElement).style.background = 'transparent';
+        (content as HTMLElement).style.boxShadow = 'none';
+        (content as HTMLElement).style.border = 'none';
+        (content as HTMLElement).style.padding = '0';
+        (content as HTMLElement).style.margin = '0';
+      }
+    }
+  }, [properties]);
 
   // Hide tooltip
   const hideTooltip = useCallback(() => {
@@ -277,7 +401,10 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       popup.current.remove();
       popup.current = null;
     }
-  }, []);
+    // Clear popup property ID and hover state when closing popup
+    currentPopupPropertyId.current = null;
+    onMarkerHover(null);
+  }, [onMarkerHover]);
 
   // Setup clustering directly (bypasses mapLoaded check for immediate setup)
   const setupClusteringDirectly = useCallback(() => {
@@ -416,27 +543,19 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       mapInstance.on('click', 'unclustered-point', (e) => {
         const feature = e.features?.[0];
         if (feature?.properties?.propertyId) {
-          const property = properties.find(p => p.id === feature.properties?.propertyId);
-          if (property) {
-            onMarkerClick(property);
-          }
+          // Show tooltip on click
+          showPropertyTooltip(e, feature.properties, true);
+          onMarkerHover(feature.properties.propertyId);
         }
       });
 
-      // Mouse events for hover effects
-      mapInstance.on('mouseenter', 'unclustered-point', (e) => {
+      // Mouse events for hover effects (just cursor, no tooltip)
+      mapInstance.on('mouseenter', 'unclustered-point', () => {
         mapInstance.getCanvas().style.cursor = 'pointer';
-        const feature = e.features?.[0];
-        if (feature?.properties?.propertyId) {
-          onMarkerHover(feature.properties.propertyId);
-          showPropertyTooltip(e, feature.properties);
-        }
       });
 
       mapInstance.on('mouseleave', 'unclustered-point', () => {
         mapInstance.getCanvas().style.cursor = '';
-        onMarkerHover(null);
-        hideTooltip();
       });
 
       mapInstance.on('mouseenter', 'clusters', () => {
@@ -451,6 +570,35 @@ export const MapPanel: React.FC<MapPanelProps> = ({
       console.error('Error setting up map clustering:', error);
     }
   }, [onMarkerClick, onMarkerHover]);
+
+  // Update event listeners when showPropertyTooltip changes to fix stale closure
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    const mapInstance = map.current;
+
+    // Check if unclustered-point layer exists
+    if (!mapInstance.getLayer('unclustered-point')) {
+      console.log('⏳ Waiting for unclustered-point layer before updating event listeners...');
+      return;
+    }
+
+    console.log('🔄 Updating event listeners with current showPropertyTooltip...');
+
+    // Remove old click listener
+    mapInstance.off('click', 'unclustered-point');
+
+    // Add new click listener with current showPropertyTooltip
+    mapInstance.on('click', 'unclustered-point', (e) => {
+      const feature = e.features?.[0];
+      if (feature?.properties?.propertyId) {
+        console.log('🎯 Click event with current properties array length:', properties.length);
+        showPropertyTooltip(e, feature.properties, true);
+        onMarkerHover(feature.properties.propertyId);
+      }
+    });
+
+  }, [showPropertyTooltip, mapLoaded, properties.length, onMarkerHover]);
 
   // Note: Clustering setup is now handled directly in the map 'load' event
 
@@ -512,6 +660,40 @@ export const MapPanel: React.FC<MapPanelProps> = ({
 
     updateMapData();
   }, [properties, mapLoaded]);
+
+  // Auto-refresh popup when properties data loads
+  useEffect(() => {
+    if (!popup.current || !currentPopupPropertyId.current || !map.current) return;
+
+    // Check if we now have data for the currently open property
+    const propertyData = properties.find(p => p.id === currentPopupPropertyId.current);
+
+    if (propertyData && propertyData.images && propertyData.images.length > 1) {
+      console.log('🔄 Properties data loaded, refreshing popup with complete image data');
+
+      // Store current popup coordinates
+      const currentLngLat = popup.current.getLngLat();
+
+      // Create synthetic marker properties for the refresh
+      const syntheticMarkerProps = {
+        propertyId: propertyData.id,
+        image: propertyData.images[0],
+        price: propertyData.price,
+        bedrooms: propertyData.bedrooms,
+        bathrooms: propertyData.bathrooms,
+        area: propertyData.area,
+        neighborhood: propertyData.neighborhood
+      };
+
+      // Create synthetic event for showPropertyTooltip
+      const syntheticEvent = {
+        lngLat: currentLngLat
+      } as mapboxgl.MapMouseEvent;
+
+      // Recreate the popup with complete data
+      showPropertyTooltip(syntheticEvent, syntheticMarkerProps, true);
+    }
+  }, [properties, showPropertyTooltip]);
 
   // Handle hovered property highlight
   useEffect(() => {

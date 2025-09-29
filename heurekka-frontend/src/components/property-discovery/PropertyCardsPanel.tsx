@@ -263,7 +263,7 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
           scrollbarColor: '#CBD5E0 #F7FAFC'
         }}
       >
-        <div className="p-6">
+        <div className={`p-6 ${hoveredPropertyId ? 'bg-transparent' : ''}`}>
           {/* Results Header - Now inside scrollable content */}
           <ResultsHeader />
           {/* Loading state for initial load */}
@@ -286,7 +286,7 @@ export const PropertyCardsPanel: React.FC<PropertyCardsPanelProps> = ({
                   onClick={handlePropertyClick}
                   viewMode={viewMode}
                   locale={locale}
-                  className="transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                  className="transition-all duration-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]"
                 />
               ))}
             </div>

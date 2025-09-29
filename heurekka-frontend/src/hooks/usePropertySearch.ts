@@ -116,6 +116,7 @@ export function usePropertySearch(): UsePropertySearchResult {
         // Transform backend properties to frontend format
         const transformedProperties = transformBackendProperties(response.data.properties || []);
 
+        console.log('🏠 usePropertySearch - Setting properties from backend, count:', transformedProperties.length);
         setProperties(transformedProperties);
         setTotal(response.data.total || transformedProperties.length);
         // Calculate hasMore based on total properties vs current page
@@ -126,6 +127,7 @@ export function usePropertySearch(): UsePropertySearchResult {
         console.warn('Search API returned no data');
         // Fallback to mock data
         const mockProperties = getMockProperties();
+        console.log('🏠 usePropertySearch - Setting properties from mock fallback, count:', mockProperties.length);
         setProperties(mockProperties);
         setTotal(mockProperties.length);
         setHasMore(false);
@@ -137,6 +139,7 @@ export function usePropertySearch(): UsePropertySearchResult {
 
       // Fallback to mock data for development
       const mockProperties = getMockProperties();
+      console.log('🏠 usePropertySearch - Setting properties from error fallback, count:', mockProperties.length);
       setProperties(mockProperties);
       setTotal(mockProperties.length);
       setHasMore(false);

@@ -283,11 +283,12 @@ export function PropertyCard({
   return (
     <Card
       className={cn(
-        "group overflow-hidden border-0 bg-white shadow-sm font-sans",
-        "hover:shadow-lg hover:-translate-y-1 transition-all duration-300",
+        "group overflow-hidden border-0 shadow-sm font-sans",
+        "hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300",
         getCardHeight(variant, viewMode),
         "p-0 gap-0 rounded-xl",
         isClickable && "cursor-pointer",
+        "bg-white",
         className
       )}
       aria-label={`Propiedad: ${normalizedProperty.title}`}

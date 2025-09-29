@@ -129,6 +129,47 @@
   background: #94a3b8;
 }
 
+/* Map popup styles - Override Mapbox default styles completely */
+.mapboxgl-popup {
+  background: transparent !important;
+  pointer-events: none;
+}
+
+.mapboxgl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: auto;
+}
+
+.mapboxgl-popup-tip {
+  display: none !important;
+}
+
+/* Custom popup class for complete transparency */
+.custom-popup-transparent .mapboxgl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.custom-popup-transparent .mapboxgl-popup-tip {
+  display: none !important;
+}
+
+.property-tooltip {
+  background: white !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
 /* Line clamp utility */
 .line-clamp-2 {
   display: -webkit-box;
