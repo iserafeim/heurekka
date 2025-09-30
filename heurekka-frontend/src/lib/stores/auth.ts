@@ -133,58 +133,66 @@ export const useAuthStore = create<AuthStore>()(
 
         signOut: async () => {
           set({ isLoading: true }, false, 'auth/signOut/start');
-          
+
           try {
             const { error } = await secureAuth.signOut();
-            
-            set({ 
-              user: null, 
-              isAuthenticated: false, 
-              isLoading: false 
+
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false
             }, false, 'auth/signOut/success');
 
-            if (error) {
-              console.warn('Sign out warning:', error);
+            if (error && process.env.NODE_ENV === 'development') {
+              // Only log in development, without sensitive data
+              console.warn('Sign out encountered an issue');
             }
           } catch (error) {
-            console.error('Sign out error:', error);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Sign out error occurred');
+            }
             // Even if there's an error, clear the local state
-            set({ 
-              user: null, 
-              isAuthenticated: false, 
-              isLoading: false 
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false
             }, false, 'auth/signOut/error');
           }
         },
 
         initialize: async () => {
           set({ isLoading: true }, false, 'auth/initialize/start');
-          
+
           try {
             const { session, error } = await secureAuth.getSession();
-            
-            set({ 
-              user: session?.user ?? null, 
+
+            set({
+              user: session?.user ?? null,
               isAuthenticated: !!session?.user,
-              isLoading: false 
+              isLoading: false
             }, false, 'auth/initialize/complete');
 
             // Listen for auth changes with secure manager
             secureAuth.onAuthStateChange((event, session) => {
-              console.log('Auth state changed:', event, session?.user?.id);
-              
-              set({ 
-                user: session?.user ?? null, 
+              if (process.env.NODE_ENV === 'development') {
+                // Only log event type in development, no user data
+                console.log('Auth state changed:', event);
+              }
+
+              set({
+                user: session?.user ?? null,
                 isAuthenticated: !!session?.user,
-                isLoading: false 
+                isLoading: false
               }, false, `auth/stateChange/${event}`);
             });
           } catch (error) {
-            console.error('Auth initialization error:', error);
-            set({ 
-              user: null, 
-              isAuthenticated: false, 
-              isLoading: false 
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Auth initialization encountered an error');
+            }
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false
             }, false, 'auth/initialize/error');
           }
         },

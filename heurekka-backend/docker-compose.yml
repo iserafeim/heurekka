@@ -85,6 +85,7 @@ services:
       - SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2Z2FwbmxmY2Nwa2ljZndtZ3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MjUxNjEsImV4cCI6MjA3MjUwMTE2MX0.FGmwPFGK3g81y0bEszrQPISY4ZvLNc1JNEMj9mtQ0Ac
       - SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2Z2FwbmxmY2Nwa2ljZndtZ3drIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjkyNTE2MSwiZXhwIjoyMDcyNTAxMTYxfQ.GJk7pvqT4ug9o48bAmG2Tc9D52oD_N9GVHRiRREgMNU
       - JWT_SECRET=dev-jwt-secret-change-in-production
+      - ENCRYPTION_KEY=4fbc18ac8751cf03ebce09c71285083cef617d7b50af52ad2ef4accfa0a1dad2
       - CORS_ORIGIN=http://localhost:3000
       - LOG_LEVEL=debug
     ports:

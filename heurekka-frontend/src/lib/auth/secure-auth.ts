@@ -118,24 +118,54 @@ class SecureAuthManager {
   }
 
   /**
+   * Get validated redirect URL for OAuth
+   * Prevents open redirect vulnerabilities
+   */
+  private getValidatedRedirectUrl(): string {
+    const ALLOWED_ORIGINS = [
+      'https://heurekka.com',
+      'https://www.heurekka.com',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+    ];
+
+    const currentOrigin = window.location.origin;
+
+    // Check if current origin is allowed
+    if (!ALLOWED_ORIGINS.includes(currentOrigin)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Current origin not in allowed list, using default');
+      }
+      // Default to production in case of suspicious origin
+      return 'https://heurekka.com/auth/callback';
+    }
+
+    return `${currentOrigin}/auth/callback`;
+  }
+
+  /**
    * Sign in with Google OAuth
    */
   async signInWithGoogle(): Promise<{ error: any }> {
     if (!this.supabase) {
       return { error: 'Supabase not configured' };
     }
-    
+
     try {
+      const redirectUrl = this.getValidatedRedirectUrl();
+
       const { error } = await this.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
         },
       });
 
       return { error };
     } catch (error) {
-      console.error('Google sign in failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Google sign in encountered an error');
+      }
       return { error };
     }
   }
@@ -147,18 +177,22 @@ class SecureAuthManager {
     if (!this.supabase) {
       return { error: 'Supabase not configured' };
     }
-    
+
     try {
+      const redirectUrl = this.getValidatedRedirectUrl();
+
       const { error } = await this.supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
       return { error };
     } catch (error) {
-      console.error('Magic link failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Magic link encountered an error');
+      }
       return { error };
     }
   }

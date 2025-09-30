@@ -13,8 +13,10 @@ import { FloatingViewToggle } from './FloatingMapButton';
 import { MobileLocationSearchModal } from './MobileLocationSearchModal';
 import { LogoIcon } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow';
+import { useAuthStore } from '@/lib/stores/auth';
 import { usePropertySearch } from '@/hooks/usePropertySearch';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePropertyModal } from '@/hooks/usePropertyModal';
@@ -75,6 +77,13 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Mobile menu dropdown state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Login modal state
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Auth state
+  const { isAuthenticated, user, signOut } = useAuthStore();
 
   // Custom hooks
   const { 
@@ -371,6 +380,11 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
     setIsMobileMenuOpen(false);
   }, []);
 
+  const handleLogout = async () => {
+    await signOut();
+    setShowUserMenu(false);
+  };
+
   // Close mobile menu when clicking outside or on escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -544,11 +558,41 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
               </li>
             </ul>
 
-            {/* Login Button */}
+            {/* Auth Section */}
             <div className="pt-4 border-t border-gray-200">
-              <Link href="/iniciar-sesion" className="block" onClick={handleMobileMenuClose}>
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="px-4 py-2 text-sm text-gray-700 font-medium">
+                    {user?.email}
+                  </div>
+                  <Link href="/dashboard" onClick={handleMobileMenuClose} className="block">
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="w-full justify-start text-base">
+                      <User className="h-4 w-4 mr-2" />
+                      Mi Perfil
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() => {
+                      handleLogout();
+                      handleMobileMenuClose();
+                    }}
+                    variant="ghost"
+                    size="lg"
+                    className="w-full justify-start text-base text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Cerrar Sesión
+                  </Button>
+                </div>
+              ) : (
                 <Button
                   size="lg"
+                  onClick={() => {
+                    setShowLoginModal(true);
+                    handleMobileMenuClose();
+                  }}
                   className="w-full text-base font-medium transition-colors duration-200"
                   style={{
                     backgroundColor: '#000000',
@@ -564,7 +608,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
                 >
                   <span>Iniciar Sesión</span>
                 </Button>
-              </Link>
+              )}
             </div>
             </div>
           </div>
@@ -614,11 +658,40 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
             />
           </div>
 
-          {/* Authentication Buttons - Absolute Right */}
+          {/* Authentication Section - Absolute Right */}
           <div className="absolute right-4 sm:right-6 lg:right-8 flex items-center gap-3">
-            <Link href="/iniciar-sesion">
+            {isAuthenticated ? (
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">{user?.email?.split('@')[0]}</span>
+                </Button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <Link href="/dashboard" onClick={() => setShowUserMenu(false)}>
+                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Mi Perfil
+                      </button>
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                      <LogOut className="h-4 w-4" />
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
               <Button
                 size="sm"
+                onClick={() => setShowLoginModal(true)}
                 className="text-sm font-medium transition-colors duration-200"
                 style={{
                   backgroundColor: '#000000',
@@ -634,7 +707,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
               >
                 <span>Iniciar Sesión</span>
               </Button>
-            </Link>
+            )}
           </div>
         </div>
       </div>
@@ -727,7 +800,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
             <span>{state.error}</span>
-            <button 
+            <button
               onClick={() => setState(prev => ({ ...prev, error: null }))}
               className="ml-4 text-red-500 hover:text-red-700"
             >
@@ -736,6 +809,16 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
           </div>
         </div>
       )}
+
+      {/* Login Modal */}
+      <TenantAuthFlow
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => {
+          setShowLoginModal(false);
+          console.log('Login successful from property discovery');
+        }}
+      />
     </div>
   );
 };

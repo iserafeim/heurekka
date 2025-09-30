@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { PropertyDetails, Property, SPANISH_TEXT } from '@/types/property';
 import { validatePhoneNumber, sanitizeText } from '@/lib/security/validation';
 import { PropertyMiniMap } from './PropertyMiniMap';
+import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow';
 import styles from './PropertyDetailModal.module.css';
 
 interface PropertyDetailModalProps {
@@ -35,6 +36,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [touchStart, setTouchStart] = useState({ x: 0, y: 0 });
   const [swipeProgress, setSwipeProgress] = useState(0);
+  const [showTenantAuth, setShowTenantAuth] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const timeStartRef = useRef<number>(Date.now());
@@ -146,9 +148,20 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
     }
   }, [activeImageIndex, property?.images?.length]);
 
-  // Handle WhatsApp contact
+  // Handle WhatsApp contact - Opens auth modal first
   const handleWhatsAppClick = useCallback(() => {
     if (!property) return;
+
+    // Open tenant authentication flow
+    setShowTenantAuth(true);
+  }, [property]);
+
+  // Handle successful authentication - then proceed to WhatsApp
+  const handleAuthSuccess = useCallback(() => {
+    if (!property) return;
+
+    // Close auth modal
+    setShowTenantAuth(false);
 
     // Get and validate phone number
     const phoneNumber = property.contactPhone || property.landlord?.phone || '50400000000';
@@ -1142,6 +1155,22 @@ Gracias!`;
           )}
         </div>
       </div>
+
+      {/* Tenant Authentication Flow */}
+      {property && (
+        <TenantAuthFlow
+          isOpen={showTenantAuth}
+          onClose={() => setShowTenantAuth(false)}
+          propertyId={property.id}
+          propertyDetails={{
+            title: property.address || `${getPropertyTypeLabel(property.propertyType)} en ${property.neighborhood}`,
+            price: property.price,
+            location: `${property.neighborhood}, ${property.city}`,
+            landlordPhone: property.contactPhone || property.landlord?.phone || '50400000000'
+          }}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
     </div>
   );
 };

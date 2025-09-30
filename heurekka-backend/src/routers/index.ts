@@ -2,19 +2,34 @@ import { z } from 'zod';
 import { homepageRouter } from './homepage';
 import { propertyRouter } from './property';
 import { analyticsRouter } from './analytics';
+import { authRouter } from './auth';
+import { tenantProfileRouter } from './tenant-profile';
+import { landlordProfileRouter } from './landlord-profile';
 import type { Context } from '../server';
-import { router, publicProcedure } from '../lib/trpc';
+import { router, publicProcedure, protectedProcedure } from '../lib/trpc';
+
+// Re-export for use in other routers
+export { router, publicProcedure, protectedProcedure };
 
 // Main application router that combines all feature routers
 export const appRouter = router({
   // Homepage/Landing feature routes
   homepage: homepageRouter,
-  
+
   // Property Discovery feature routes
   property: propertyRouter,
-  
+
   // Analytics and tracking routes
   analytics: analyticsRouter,
+
+  // Authentication routes
+  auth: authRouter,
+
+  // Tenant profile routes
+  tenantProfile: tenantProfileRouter,
+
+  // Landlord profile routes
+  landlordProfile: landlordProfileRouter,
   
   // Health check for the entire API
   health: publicProcedure
@@ -30,7 +45,10 @@ export const appRouter = router({
           'property-search',
           'map-clustering',
           'whatsapp-integration',
-          'analytics-tracking'
+          'analytics-tracking',
+          'user-authentication',
+          'tenant-profiles',
+          'landlord-profiles'
         ]
       };
     }),

@@ -1,142 +1,56 @@
 /**
  * Secure Storage Utility
- * Provides encrypted storage for sensitive data in localStorage
- * Prevents sensitive data exposure and GDPR compliance issues
+ * SECURITY NOTE: Client-side encryption is fundamentally insecure as keys
+ * are visible in client code. This utility should ONLY be used for non-sensitive
+ * data. For authentication tokens and sensitive data, rely on:
+ * 1. HttpOnly cookies (managed by backend)
+ * 2. Server-side sessions
+ * 3. Supabase's built-in secure storage
+ *
+ * This utility uses obfuscation (not true encryption) to deter casual inspection,
+ * but offers NO real security against determined attackers.
  */
-
-import CryptoJS from 'crypto-js';
-
-// Configuration
-const ENCRYPTION_CONFIG = {
-  algorithm: 'AES',
-  mode: CryptoJS.mode.CBC,
-  padding: CryptoJS.pad.Pkcs7,
-  keySize: 256 / 32, // 256 bits
-  ivSize: 128 / 32   // 128 bits
-} as const;
-
-// Get encryption key from environment or generate a session key
-const getEncryptionKey = (): string => {
-  // Try to get from environment first (for production)
-  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_ENCRYPTION_KEY) {
-    return process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
-  }
-  
-  // For development/fallback, generate or use session key
-  const sessionKeyName = '__heurekka_session_key__';
-  let sessionKey = '';
-  
-  if (typeof window !== 'undefined') {
-    sessionKey = sessionStorage.getItem(sessionKeyName) || '';
-    
-    if (!sessionKey) {
-      // Generate a new session key
-      sessionKey = CryptoJS.lib.WordArray.random(256/8).toString();
-      sessionStorage.setItem(sessionKeyName, sessionKey);
-    }
-  }
-  
-  return sessionKey || 'fallback-key-for-ssr';
-};
 
 /**
- * Encrypts data using AES encryption
- * @param data - Data to encrypt
- * @returns Encrypted string
+ * Simple obfuscation (NOT encryption) for non-sensitive data
+ * DO NOT use this for passwords, tokens, or sensitive user data
  */
-const encrypt = (data: string): string => {
+
+/**
+ * Simple Base64 encoding for obfuscation (NOT security)
+ * @param data - Data to obfuscate
+ * @returns Obfuscated string
+ */
+const obfuscate = (data: string): string => {
   try {
-    const key = CryptoJS.enc.Utf8.parse(getEncryptionKey());
-    const iv = CryptoJS.lib.WordArray.random(ENCRYPTION_CONFIG.ivSize * 4);
-    
-    const encrypted = CryptoJS.AES.encrypt(data, key, {
-      iv: iv,
-      mode: ENCRYPTION_CONFIG.mode,
-      padding: ENCRYPTION_CONFIG.padding
-    });
-    
-    // Combine IV and encrypted data
-    const combined = iv.concat(encrypted.ciphertext);
-    return CryptoJS.enc.Base64.stringify(combined);
+    if (typeof window === 'undefined') return data;
+    return btoa(encodeURIComponent(data));
   } catch (error) {
-    console.error('Encryption failed:', error);
-    throw new Error('Failed to encrypt data');
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Obfuscation failed:', error);
+    }
+    return data; // Return unobfuscated as fallback
   }
 };
 
 /**
- * Decrypts data using AES decryption with robust error handling
- * @param encryptedData - Encrypted string to decrypt
- * @returns Decrypted string or null if failed
+ * Simple Base64 decoding for deobfuscation (NOT security)
+ * @param obfuscatedData - Obfuscated string to deobfuscate
+ * @returns Deobfuscated string or null if failed
  */
-const decrypt = (encryptedData: string): string | null => {
+const deobfuscate = (obfuscatedData: string): string | null => {
   try {
-    // Basic validation of input
-    if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.trim() === '') {
-      console.warn('Invalid encrypted data provided');
+    if (!obfuscatedData || typeof obfuscatedData !== 'string' || obfuscatedData.trim() === '') {
       return null;
     }
 
-    const key = CryptoJS.enc.Utf8.parse(getEncryptionKey());
+    if (typeof window === 'undefined') return obfuscatedData;
 
-    let combined;
-    try {
-      combined = CryptoJS.enc.Base64.parse(encryptedData);
-    } catch (parseError) {
-      console.warn('Failed to parse base64 encrypted data');
-      return null;
-    }
-
-    // Extract IV and encrypted data
-    const iv = CryptoJS.lib.WordArray.create(
-      combined.words.slice(0, ENCRYPTION_CONFIG.ivSize),
-      ENCRYPTION_CONFIG.ivSize * 4
-    );
-
-    const encrypted = CryptoJS.lib.WordArray.create(
-      combined.words.slice(ENCRYPTION_CONFIG.ivSize),
-      combined.sigBytes - (ENCRYPTION_CONFIG.ivSize * 4)
-    );
-
-    const decrypted = CryptoJS.AES.decrypt(
-      CryptoJS.enc.Base64.stringify(encrypted),
-      key,
-      {
-        iv: iv,
-        mode: ENCRYPTION_CONFIG.mode,
-        padding: ENCRYPTION_CONFIG.padding
-      }
-    );
-
-    // Check if decryption was successful before converting to UTF-8
-    if (decrypted.sigBytes <= 0) {
-      console.warn('Decryption resulted in empty data');
-      return null;
-    }
-
-    let utf8String: string;
-    try {
-      utf8String = decrypted.toString(CryptoJS.enc.Utf8);
-    } catch (utf8Error) {
-      console.warn('Malformed UTF-8 data detected during decryption');
-      return null;
-    }
-
-    // Validate that the UTF-8 conversion was successful
-    if (!utf8String || utf8String.length === 0) {
-      console.warn('Failed to convert decrypted data to UTF-8');
-      return null;
-    }
-
-    // Additional validation: check for UTF-8 replacement characters
-    if (utf8String.includes('\uFFFD')) {
-      console.warn('UTF-8 replacement characters detected - data may be corrupted');
-      return null;
-    }
-
-    return utf8String;
+    return decodeURIComponent(atob(obfuscatedData));
   } catch (error) {
-    console.warn('Decryption failed safely:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Deobfuscation failed:', error);
+    }
     return null;
   }
 };
@@ -150,20 +64,23 @@ const isBrowser = (): boolean => {
 
 /**
  * Secure Storage Interface
- * Drop-in replacement for localStorage with encryption
+ * Drop-in replacement for localStorage with basic obfuscation
+ * WARNING: Do NOT store sensitive data here. Use HttpOnly cookies instead.
  */
 export const secureStorage = {
   /**
-   * Stores encrypted data in localStorage
+   * Stores obfuscated data in localStorage
    * @param key - Storage key
    * @param value - Value to store (will be JSON stringified)
    */
   setItem: <T>(key: string, value: T): void => {
     if (!isBrowser()) {
-      console.warn('secureStorage.setItem called in non-browser environment');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('secureStorage.setItem called in non-browser environment');
+      }
       return;
     }
-    
+
     try {
       // Validate key
       if (!key || typeof key !== 'string' || key.trim() === '') {
@@ -172,180 +89,159 @@ export const secureStorage = {
 
       // Validate value - prevent null/undefined values that could cause issues
       if (value === null || value === undefined) {
-        console.warn('Attempting to store null/undefined value, removing key instead');
         secureStorage.removeItem(key);
         return;
       }
 
-      // Serialize value with additional validation
-      let serializedValue: string;
-      try {
-        serializedValue = JSON.stringify(value);
+      // Serialize value
+      const serializedValue = JSON.stringify(value);
 
-        // Validate serialization result
-        if (!serializedValue || serializedValue === 'null' || serializedValue === 'undefined') {
-          throw new Error('Serialization resulted in invalid value');
-        }
+      // Obfuscate (NOT encrypt) and store
+      const obfuscatedValue = obfuscate(serializedValue);
 
-        // Test that we can parse it back
-        JSON.parse(serializedValue);
-      } catch (serializationError) {
-        console.error('Failed to serialize value:', serializationError);
-        throw new Error('Value serialization failed');
-      }
+      localStorage.setItem(`obf_${key}`, obfuscatedValue);
 
-      // Encrypt and store with validation
-      const encryptedValue = encrypt(serializedValue);
-      if (!encryptedValue) {
-        throw new Error('Encryption failed');
-      }
-
-      localStorage.setItem(`secure_${key}`, encryptedValue);
-      
       // Store a timestamp for data expiration
-      localStorage.setItem(`secure_${key}_timestamp`, Date.now().toString());
-      
+      localStorage.setItem(`obf_${key}_ts`, Date.now().toString());
+
     } catch (error) {
-      console.error('Error storing encrypted data:', error);
-      // Fallback to unencrypted storage for critical data (not recommended for sensitive data)
-      // localStorage.setItem(key, JSON.stringify(value));
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error storing obfuscated data:', error);
+      }
     }
   },
 
   /**
-   * Retrieves and decrypts data from localStorage
+   * Retrieves and deobfuscates data from localStorage
    * @param key - Storage key
-   * @returns Decrypted and parsed value or null if not found/invalid
+   * @returns Deobfuscated and parsed value or null if not found/invalid
    */
   getItem: <T>(key: string): T | null => {
     if (!isBrowser()) {
       return null;
     }
-    
+
     try {
       // Validate key
       if (!key || typeof key !== 'string') {
         return null;
       }
-      
-      // Get encrypted data
-      const encryptedValue = localStorage.getItem(`secure_${key}`);
-      if (!encryptedValue) {
+
+      // Get obfuscated data
+      const obfuscatedValue = localStorage.getItem(`obf_${key}`);
+      if (!obfuscatedValue) {
         return null;
       }
-      
+
       // Check if data has expired (24 hours)
-      const timestamp = localStorage.getItem(`secure_${key}_timestamp`);
+      const timestamp = localStorage.getItem(`obf_${key}_ts`);
       if (timestamp) {
         const age = Date.now() - parseInt(timestamp);
         const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-        
+
         if (age > maxAge) {
           // Data expired, clean up
           secureStorage.removeItem(key);
           return null;
         }
       }
-      
-      // Decrypt and parse
-      const decryptedValue = decrypt(encryptedValue);
-      if (decryptedValue === null) {
-        console.warn('Failed to decrypt data for key:', key);
-        // Clean up corrupted data immediately
-        secureStorage.removeItem(key);
-        return null;
-      }
 
-      // Validate decrypted value before parsing
-      if (!decryptedValue || decryptedValue.trim() === '') {
-        console.warn('Decrypted value is empty, cleaning up corrupted data');
+      // Deobfuscate and parse
+      const deobfuscatedValue = deobfuscate(obfuscatedValue);
+      if (deobfuscatedValue === null) {
+        // Clean up corrupted data
         secureStorage.removeItem(key);
         return null;
       }
 
       try {
-        return JSON.parse(decryptedValue) as T;
+        return JSON.parse(deobfuscatedValue) as T;
       } catch (parseError) {
-        console.warn('Failed to parse decrypted JSON for key:', key, parseError);
         secureStorage.removeItem(key);
         return null;
       }
 
     } catch (error) {
-      console.error('Error retrieving encrypted data:', error);
-      // Clean up corrupted data when decryption fails
-      console.warn('Cleaning up corrupted encrypted data for key:', key);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error retrieving obfuscated data:', error);
+      }
       secureStorage.removeItem(key);
       return null;
     }
   },
 
   /**
-   * Removes encrypted data from localStorage
+   * Removes obfuscated data from localStorage
    * @param key - Storage key
    */
   removeItem: (key: string): void => {
     if (!isBrowser()) {
       return;
     }
-    
+
     try {
-      localStorage.removeItem(`secure_${key}`);
-      localStorage.removeItem(`secure_${key}_timestamp`);
+      localStorage.removeItem(`obf_${key}`);
+      localStorage.removeItem(`obf_${key}_ts`);
     } catch (error) {
-      console.error('Error removing encrypted data:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error removing obfuscated data:', error);
+      }
     }
   },
 
   /**
-   * Clears all secure storage data
+   * Clears all obfuscated storage data
    */
   clear: (): void => {
     if (!isBrowser()) {
       return;
     }
-    
+
     try {
-      // Find all secure storage keys
+      // Find all obfuscated storage keys
       const keysToRemove: string[] = [];
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('secure_')) {
+        if (key && key.startsWith('obf_')) {
           keysToRemove.push(key);
         }
       }
-      
-      // Remove all secure storage items
+
+      // Remove all obfuscated storage items
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      
+
     } catch (error) {
-      console.error('Error clearing secure storage:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error clearing obfuscated storage:', error);
+      }
     }
   },
 
   /**
-   * Gets all secure storage keys
-   * @returns Array of storage keys (without 'secure_' prefix)
+   * Gets all obfuscated storage keys
+   * @returns Array of storage keys (without 'obf_' prefix)
    */
   keys: (): string[] => {
     if (!isBrowser()) {
       return [];
     }
-    
+
     try {
       const keys: string[] = [];
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('secure_') && !key.endsWith('_timestamp')) {
-          keys.push(key.replace('secure_', ''));
+        if (key && key.startsWith('obf_') && !key.endsWith('_ts')) {
+          keys.push(key.replace('obf_', ''));
         }
       }
-      
+
       return keys;
     } catch (error) {
-      console.error('Error getting secure storage keys:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error getting obfuscated storage keys:', error);
+      }
       return [];
     }
   },
@@ -405,81 +301,33 @@ export const secureStorage = {
     };
   },
 
-  /**
-   * Nuclear option: Clear ALL secure storage data
-   * This removes everything and starts fresh to eliminate any corruption
-   */
-  clearAllSecureData(): number {
-    if (!isBrowser()) return 0;
-
-    let clearedCount = 0;
-    const keys = this.keys();
-
-    console.warn('Performing complete secure storage cleanup...');
-
-    // Remove all secure storage items
-    for (const key of keys) {
-      try {
-        localStorage.removeItem(`secure_${key}`);
-        clearedCount++;
-      } catch (error) {
-        console.error(`Failed to remove key: ${key}`, error);
-      }
-    }
-
-    // Also clear any orphaned secure_ prefixed items
-    try {
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const storageKey = localStorage.key(i);
-        if (storageKey && storageKey.startsWith('secure_')) {
-          localStorage.removeItem(storageKey);
-          clearedCount++;
-        }
-      }
-    } catch (error) {
-      console.error('Error during orphaned key cleanup:', error);
-    }
-
-    return clearedCount;
-  },
-
-  /**
-   * Clears all corrupted data from secure storage
-   * This function attempts to decrypt all stored items and removes any that fail
-   */
-  clearCorruptedData(): number {
-    if (!isBrowser()) return 0;
-
-    let clearedCount = 0;
-    const keys = this.keys();
-
-    for (const key of keys) {
-      try {
-        // Try to get the item, which will test decryption
-        this.getItem(key);
-      } catch (error) {
-        console.warn(`Removing corrupted data for key: ${key}`, error);
-        this.removeItem(key);
-        clearedCount++;
-      }
-    }
-
-    return clearedCount;
-  }
 };
 
 /**
- * Initialize secure storage and perform immediate cleanup
+ * Migrate from old secure_ prefix to new obf_ prefix
+ * Clean up any legacy encrypted data
  */
 if (isBrowser()) {
-  // Perform immediate nuclear cleanup to prevent any corruption issues
   try {
-    const clearedCount = secureStorage.clearAllSecureData();
-    if (clearedCount > 0) {
-      console.warn(`Performed nuclear cleanup: removed ${clearedCount} potentially corrupted storage items`);
+    // Clean up old secure_ prefixed items (legacy encryption)
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('secure_')) {
+        keysToRemove.push(key);
+      }
+    }
+
+    if (keysToRemove.length > 0) {
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Cleaned up ${keysToRemove.length} legacy encrypted storage items`);
+      }
     }
   } catch (error) {
-    console.error('Error during nuclear storage cleanup:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error during legacy storage cleanup:', error);
+    }
   }
 }
 
