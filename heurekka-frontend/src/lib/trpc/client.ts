@@ -40,20 +40,27 @@ export const trpc = createTRPCNext<AppRouter>({
           url: getBaseUrl(),
           async headers() {
             const headers: Record<string, string> = {};
-            
+
             // Add authentication headers using secure token retrieval
             if (typeof window !== 'undefined') {
               try {
                 const { secureAuth } = await import('@/lib/auth/secure-auth');
                 const token = await secureAuth.getAccessToken();
+
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('[tRPC] Getting auth token for request:', token ? 'Token found' : 'No token');
+                }
+
                 if (token) {
                   headers.Authorization = `Bearer ${token}`;
+                } else {
+                  console.warn('[tRPC] No access token available for request');
                 }
               } catch (error) {
-                console.warn('Failed to get access token for tRPC request:', error);
+                console.error('[tRPC] Failed to get access token:', error);
               }
             }
-            
+
             return headers;
           },
         }),

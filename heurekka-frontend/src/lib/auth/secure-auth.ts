@@ -219,14 +219,31 @@ class SecureAuthManager {
    */
   async getAccessToken(): Promise<string | null> {
     if (!this.supabase) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[SecureAuth] Supabase client not configured');
+      }
       return null;
     }
-    
+
     try {
-      const { data } = await this.supabase.auth.getSession();
+      const { data, error } = await this.supabase.auth.getSession();
+
+      if (error) {
+        console.error('[SecureAuth] Error getting session for token:', error);
+        return null;
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SecureAuth] Session check:', {
+          hasSession: !!data.session,
+          hasToken: !!data.session?.access_token,
+          tokenPreview: data.session?.access_token?.substring(0, 20)
+        });
+      }
+
       return data.session?.access_token || null;
     } catch (error) {
-      console.error('Failed to get access token:', error);
+      console.error('[SecureAuth] Failed to get access token:', error);
       return null;
     }
   }
