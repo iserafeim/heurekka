@@ -1,10 +1,16 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '../lib/trpc';
 import { getLandlordProfileService } from '../services/landlord-profile.service';
+import { getLandlordVerificationService } from '../services/landlord-verification.service';
+import { getLandlordBadgesService } from '../services/landlord-badges.service';
+import { getStorageService } from '../services/storage.service';
 import { TRPCError } from '@trpc/server';
 
-// Initialize service
+// Initialize services
 const landlordProfileService = getLandlordProfileService();
+const verificationService = getLandlordVerificationService();
+const badgesService = getLandlordBadgesService();
+const storageService = getStorageService();
 
 // Base schemas for different landlord types
 const individualOwnerSchema = z.object({
@@ -263,7 +269,7 @@ export const landlordProfileRouter = router({
     }),
 
   /**
-   * Get landlord properties count
+   * Get landlord properties count (DEPRECATED - use getPortfolioStats instead)
    */
   getPropertiesCount: protectedProcedure
     .query(async ({ ctx }) => {
@@ -284,13 +290,13 @@ export const landlordProfileRouter = router({
           });
         }
 
-        // TODO: Query actual properties count from properties table
-        // For now, return 0
+        const stats = await landlordProfileService.getPortfolioStats(profile.id);
+
         return {
           success: true,
           data: {
-            totalProperties: 0,
-            activeProperties: 0,
+            totalProperties: stats.totalProperties,
+            activeProperties: stats.activeProperties,
             pendingProperties: 0
           }
         };
@@ -303,5 +309,609 @@ export const landlordProfileRouter = router({
           message: 'Error al obtener el conteo de propiedades'
         });
       }
-    })
+    }),
+
+  // ============= ONBOARDING ENDPOINTS =============
+
+  /**
+   * Save onboarding progress
+   */
+  saveOnboardingProgress: protectedProcedure
+    .input(
+      z.object({
+        step: z.number().min(0).max(10),
+        formData: z.record(z.any()),
+        skippedSteps: z.array(z.string()).optional()
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        const result = await landlordProfileService.saveOnboardingProgress(
+          ctx.auth.user.id,
+          input.step,
+          input.formData as any,
+          input.skippedSteps
+        );
+
+        return {
+          success: true,
+          data: result,
+          message: 'Progreso guardado exitosamente'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error saving onboarding progress:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al guardar el progreso'
+        });
+      }
+    }),
+
+  /**
+   * Get onboarding progress
+   */
+  getOnboardingProgress: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const progress = await landlordProfileService.getOnboardingProgress(ctx.auth.user.id);
+
+      return {
+        success: true,
+        data: progress
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al obtener el progreso'
+      });
+    }
+  }),
+
+  /**
+   * Complete onboarding
+   */
+  completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const result = await landlordProfileService.completeOnboarding(ctx.auth.user.id);
+
+      // Check and award initial badges
+      console.log('[CompleteOnboarding] Fetching profile to award badges...');
+      const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+      if (profile) {
+        console.log('[CompleteOnboarding] Profile found, calling checkAndAwardBadges for:', profile.id);
+        const awardedBadges = await badgesService.checkAndAwardBadges(profile.id);
+        console.log('[CompleteOnboarding] Badges awarded:', awardedBadges.length);
+      } else {
+        console.log('[CompleteOnboarding] No profile found, skipping badge check');
+      }
+
+      return {
+        success: true,
+        data: result,
+        message: '¡Bienvenido! Tu perfil ha sido creado exitosamente'
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error('Error completing onboarding:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al completar el onboarding'
+      });
+    }
+  }),
+
+  // ============= PHOTO UPLOAD ENDPOINTS =============
+
+  /**
+   * Upload profile photo (base64)
+   */
+  uploadProfilePhoto: protectedProcedure
+    .input(
+      z.object({
+        base64Image: z.string(),
+        fileName: z.string()
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        // Validate and decode base64
+        const { buffer, mimeType } = storageService.validateAndDecodeBase64Image(
+          input.base64Image
+        );
+
+        // Upload to storage
+        const { url, path } = await storageService.uploadProfilePhoto(
+          ctx.auth.user.id,
+          buffer,
+          mimeType,
+          input.fileName
+        );
+
+        // Update profile with photo URL
+        const profile = await landlordProfileService.updateProfilePhoto(ctx.auth.user.id, url);
+
+        return {
+          success: true,
+          data: {
+            url,
+            path,
+            profile
+          },
+          message: 'Foto de perfil actualizada exitosamente'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error uploading profile photo:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al subir la foto de perfil'
+        });
+      }
+    }),
+
+  // ============= VERIFICATION ENDPOINTS =============
+
+  /**
+   * Request phone verification
+   */
+  requestPhoneVerification: protectedProcedure
+    .input(
+      z.object({
+        phoneNumber: z.string().regex(/^[0-9]{4}-[0-9]{4}$/, 'Formato de teléfono inválido')
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+        if (!profile) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Perfil de arrendador no encontrado'
+          });
+        }
+
+        const result = await verificationService.requestPhoneVerification(
+          profile.id,
+          input.phoneNumber
+        );
+
+        return {
+          success: result.success,
+          data: result,
+          message: result.success
+            ? 'Código de verificación enviado'
+            : 'Debe esperar antes de solicitar un nuevo código'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error requesting phone verification:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al solicitar verificación telefónica'
+        });
+      }
+    }),
+
+  /**
+   * Verify phone code
+   */
+  verifyPhone: protectedProcedure
+    .input(
+      z.object({
+        code: z.string().length(6, 'El código debe tener 6 dígitos')
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+        if (!profile) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Perfil de arrendador no encontrado'
+          });
+        }
+
+        const result = await verificationService.verifyPhone(profile.id, input.code);
+
+        // Award phone verification badge
+        if (result.verified) {
+          await badgesService.checkAndAwardBadges(profile.id);
+        }
+
+        return {
+          success: true,
+          data: result,
+          message: '¡Teléfono verificado exitosamente!'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error verifying phone:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al verificar el teléfono'
+        });
+      }
+    }),
+
+  /**
+   * Request email verification
+   */
+  requestEmailVerification: protectedProcedure
+    .input(
+      z.object({
+        email: z.string().email('Email inválido')
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+        if (!profile) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Perfil de arrendador no encontrado'
+          });
+        }
+
+        const result = await verificationService.requestEmailVerification(profile.id, input.email);
+
+        return {
+          success: true,
+          data: { sent: true },
+          message: 'Email de verificación enviado'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error requesting email verification:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al solicitar verificación de email'
+        });
+      }
+    }),
+
+  /**
+   * Verify email token
+   */
+  verifyEmail: protectedProcedure
+    .input(
+      z.object({
+        token: z.string()
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+        if (!profile) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Perfil de arrendador no encontrado'
+          });
+        }
+
+        const result = await verificationService.verifyEmail(profile.id, input.token);
+
+        // Award email verification badge
+        if (result.verified) {
+          await badgesService.checkAndAwardBadges(profile.id);
+        }
+
+        return {
+          success: true,
+          data: result,
+          message: '¡Email verificado exitosamente!'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Error verifying email:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al verificar el email'
+        });
+      }
+    }),
+
+  /**
+   * Get verification status
+   */
+  getVerificationStatus: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Perfil de arrendador no encontrado'
+        });
+      }
+
+      const status = await verificationService.getVerificationStatus(profile.id);
+
+      return {
+        success: true,
+        data: status
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al obtener estado de verificación'
+      });
+    }
+  }),
+
+  // ============= PORTFOLIO STATS ENDPOINTS =============
+
+  /**
+   * Get portfolio statistics
+   */
+  getPortfolioStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Perfil de arrendador no encontrado'
+        });
+      }
+
+      const stats = await landlordProfileService.getPortfolioStats(profile.id);
+
+      return {
+        success: true,
+        data: stats
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al obtener estadísticas del portfolio'
+      });
+    }
+  }),
+
+  // ============= BADGES ENDPOINTS =============
+
+  /**
+   * Get landlord badges
+   */
+  getBadges: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Perfil de arrendador no encontrado'
+        });
+      }
+
+      const badges = await badgesService.getBadges(profile.id);
+
+      return {
+        success: true,
+        data: badges
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al obtener badges'
+      });
+    }
+  }),
+
+  /**
+   * Get available badges (earned and unearned)
+   */
+  getAvailableBadges: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Perfil de arrendador no encontrado'
+        });
+      }
+
+      const badges = await badgesService.getAvailableBadges(profile.id);
+
+      return {
+        success: true,
+        data: badges
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al obtener badges disponibles'
+      });
+    }
+  }),
+
+  /**
+   * DEBUG ENDPOINT - Verify onboarding data was saved correctly
+   * TODO: Remove this endpoint after verification
+   */
+  debugVerifyOnboarding: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Usuario no autenticado'
+        });
+      }
+
+      const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Perfil de arrendador no encontrado'
+        });
+      }
+
+      // Get portfolio stats
+      const portfolioStats = await landlordProfileService.getPortfolioStats(profile.id);
+
+      // Get badges
+      const badges = await badgesService.getBadges(profile.id);
+
+      return {
+        success: true,
+        data: {
+          profile: {
+            id: profile.id,
+            user_id: profile.userId,
+            landlord_type: profile.landlordType,
+            full_name: profile.fullName,
+            company_name: profile.companyName,
+            profile_completion_percentage: profile.profileCompletionPercentage,
+            is_verified: profile.isVerified,
+            created_at: profile.createdAt
+          },
+          portfolio_stats: portfolioStats ? {
+            id: portfolioStats.id,
+            landlord_id: portfolioStats.landlordId,
+            total_properties: portfolioStats.totalProperties,
+            active_properties: portfolioStats.activeProperties,
+            rented_properties: portfolioStats.rentedProperties,
+            total_views: portfolioStats.totalViews,
+            total_inquiries: portfolioStats.totalInquiries,
+            conversion_rate: portfolioStats.conversionRate,
+            last_calculated_at: portfolioStats.lastCalculatedAt
+          } : null,
+          badges: badges.map(badge => ({
+            id: badge.id,
+            badge_name: badge.badgeName,
+            earned_at: badge.earnedAt,
+            is_active: badge.isActive
+          }))
+        }
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al verificar datos de onboarding'
+      });
+    }
+  })
 });

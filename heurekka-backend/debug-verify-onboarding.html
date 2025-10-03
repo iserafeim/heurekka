@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug - Verificar Onboarding</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border-left: 4px solid #4CAF50;
+    }
+    .section h2 {
+      color: #4CAF50;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+    .data-row {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .data-row:last-child {
+      border-bottom: none;
+    }
+    .label {
+      font-weight: bold;
+      width: 300px;
+      color: #555;
+    }
+    .value {
+      flex: 1;
+      color: #333;
+    }
+    .success {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+    .error {
+      color: #f44336;
+      font-weight: bold;
+    }
+    .warning {
+      color: #ff9800;
+      font-weight: bold;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    .badge-item {
+      background: white;
+      padding: 10px 15px;
+      margin: 5px 0;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Verificación de Datos de Onboarding</h1>
+
+    <button id="verifyBtn" onclick="verifyOnboarding()">Verificar Datos</button>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    async function verifyOnboarding() {
+      const btn = document.getElementById('verifyBtn');
+      const resultsDiv = document.getElementById('results');
+
+      btn.disabled = true;
+      resultsDiv.innerHTML = '<div class="loading">Cargando datos...</div>';
+
+      try {
+        // Get the access token from Supabase
+        const token = localStorage.getItem('sb-xyxpbwfuzwyjnypjzjde-auth-token');
+
+        if (!token) {
+          resultsDiv.innerHTML = '<div class="error">No se encontró token de autenticación. Por favor inicia sesión primero.</div>';
+          btn.disabled = false;
+          return;
+        }
+
+        const tokenData = JSON.parse(token);
+        const accessToken = tokenData?.access_token;
+
+        if (!accessToken) {
+          resultsDiv.innerHTML = '<div class="error">Token de acceso no disponible. Por favor inicia sesión primero.</div>';
+          btn.disabled = false;
+          return;
+        }
+
+        // Call the debug endpoint
+        const response = await fetch('http://localhost:3001/trpc/landlordProfile.debugVerifyOnboarding', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          resultsDiv.innerHTML = `<div class="error">Error: ${data.error.message}</div>`;
+          btn.disabled = false;
+          return;
+        }
+
+        // Display results
+        displayResults(data.result.data);
+
+      } catch (error) {
+        resultsDiv.innerHTML = `<div class="error">Error al verificar datos: ${error.message}</div>`;
+        console.error('Error:', error);
+      }
+
+      btn.disabled = false;
+    }
+
+    function displayResults(data) {
+      const { profile, portfolio_stats, badges } = data;
+
+      let html = '';
+
+      // Profile Section
+      html += '<div class="section">';
+      html += '<h2>✅ Perfil de Landlord</h2>';
+      html += `<div class="data-row"><span class="label">ID:</span><span class="value">${profile.id}</span></div>`;
+      html += `<div class="data-row"><span class="label">User ID:</span><span class="value">${profile.user_id}</span></div>`;
+      html += `<div class="data-row"><span class="label">Tipo de Landlord:</span><span class="value">${profile.landlord_type}</span></div>`;
+      html += `<div class="data-row"><span class="label">Nombre Completo:</span><span class="value">${profile.full_name || 'N/A'}</span></div>`;
+      html += `<div class="data-row"><span class="label">Nombre de Empresa:</span><span class="value">${profile.company_name || 'N/A'}</span></div>`;
+
+      const completionClass = profile.profile_completion_percentage > 0 ? 'success' : 'error';
+      html += `<div class="data-row"><span class="label">% Completitud del Perfil:</span><span class="value ${completionClass}">${profile.profile_completion_percentage}%</span></div>`;
+
+      html += `<div class="data-row"><span class="label">Verificado:</span><span class="value">${profile.is_verified ? 'Sí' : 'No'}</span></div>`;
+      html += `<div class="data-row"><span class="label">Creado:</span><span class="value">${new Date(profile.created_at).toLocaleString()}</span></div>`;
+      html += '</div>';
+
+      // Portfolio Stats Section
+      html += '<div class="section">';
+      html += '<h2>📊 Portfolio Stats</h2>';
+      if (portfolio_stats) {
+        html += `<div class="data-row"><span class="label">ID:</span><span class="value success">${portfolio_stats.id}</span></div>`;
+        html += `<div class="data-row"><span class="label">Landlord ID:</span><span class="value">${portfolio_stats.landlord_id}</span></div>`;
+        html += `<div class="data-row"><span class="label">Total Propiedades:</span><span class="value">${portfolio_stats.total_properties}</span></div>`;
+        html += `<div class="data-row"><span class="label">Propiedades Activas:</span><span class="value">${portfolio_stats.active_properties}</span></div>`;
+        html += `<div class="data-row"><span class="label">Propiedades Alquiladas:</span><span class="value">${portfolio_stats.rented_properties}</span></div>`;
+        html += `<div class="data-row"><span class="label">Total Vistas:</span><span class="value">${portfolio_stats.total_views}</span></div>`;
+        html += `<div class="data-row"><span class="label">Total Consultas:</span><span class="value">${portfolio_stats.total_inquiries}</span></div>`;
+        html += `<div class="data-row"><span class="label">Tasa de Conversión:</span><span class="value">${portfolio_stats.conversion_rate}%</span></div>`;
+        html += `<div class="data-row"><span class="label">Última Actualización:</span><span class="value">${new Date(portfolio_stats.last_calculated_at).toLocaleString()}</span></div>`;
+      } else {
+        html += '<div class="error">❌ No se encontró registro de portfolio_stats</div>';
+      }
+      html += '</div>';
+
+      // Badges Section
+      html += '<div class="section">';
+      html += '<h2>🏆 Badges</h2>';
+      if (badges && badges.length > 0) {
+        badges.forEach(badge => {
+          html += `<div class="badge-item">`;
+          html += `<strong>${badge.badge_name}</strong> `;
+          html += `<span style="color: #666;">(Obtenido: ${new Date(badge.earned_at).toLocaleString()})</span>`;
+          html += `<span style="margin-left: 10px; color: ${badge.is_active ? '#4CAF50' : '#999'};">${badge.is_active ? '✓ Activo' : '✗ Inactivo'}</span>`;
+          html += `</div>`;
+        });
+      } else {
+        html += '<div class="warning">⚠️ No se encontraron badges</div>';
+      }
+      html += '</div>';
+
+      // Verification Summary
+      html += '<div class="section">';
+      html += '<h2>📋 Resumen de Verificación</h2>';
+
+      const checks = [
+        {
+          name: 'Profile Completion Percentage Calculado',
+          passed: profile.profile_completion_percentage > 0,
+          value: `${profile.profile_completion_percentage}%`
+        },
+        {
+          name: 'Portfolio Stats Creado',
+          passed: portfolio_stats !== null,
+          value: portfolio_stats ? 'Sí' : 'No'
+        },
+        {
+          name: 'Badges Otorgados',
+          passed: badges && badges.length > 0,
+          value: badges ? `${badges.length} badge(s)` : '0 badges'
+        }
+      ];
+
+      checks.forEach(check => {
+        const statusClass = check.passed ? 'success' : 'error';
+        const statusIcon = check.passed ? '✓' : '✗';
+        html += `<div class="data-row">`;
+        html += `<span class="label">${check.name}:</span>`;
+        html += `<span class="value ${statusClass}">${statusIcon} ${check.value}</span>`;
+        html += `</div>`;
+      });
+
+      html += '</div>';
+
+      // Raw JSON
+      html += '<div class="section">';
+      html += '<h2>📄 Datos en JSON</h2>';
+      html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+      html += '</div>';
+
+      document.getElementById('results').innerHTML = html;
+    }
+  </script>
+</body>
+</html>

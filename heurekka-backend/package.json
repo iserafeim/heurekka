@@ -4,7 +4,7 @@
   "description": "Heurekka Backend API with tRPC, WebSocket server, and external integrations",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch -r dotenv/config src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest",

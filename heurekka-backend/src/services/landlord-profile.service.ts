@@ -579,6 +579,493 @@ class LandlordProfileService {
   }
 
   /**
+   * Save onboarding progress
+   */
+  async saveOnboardingProgress(
+    userId: string,
+    step: number,
+    formData: Partial<LandlordProfileInput>,
+    skippedSteps?: string[]
+  ): Promise<{ success: boolean; currentStep: number }> {
+    try {
+      // Check if profile exists
+      let profile = await this.getLandlordProfileByUserId(userId);
+
+      if (!profile) {
+        // Create minimal profile if doesn't exist
+        const minimalData: any = {
+          user_id: userId,
+          landlord_type: formData.landlordType || 'individual_owner',
+          onboarding_step: step,
+          onboarding_data: formData,
+          skipped_steps: skippedSteps || []
+        };
+
+        const { data, error } = await this.supabase
+          .from('landlords')
+          .insert(minimalData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating onboarding profile:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Error al guardar progreso de onboarding'
+          });
+        }
+
+        return { success: true, currentStep: step };
+      }
+
+      // Update existing profile
+      const { error } = await this.supabase
+        .from('landlords')
+        .update({
+          onboarding_step: step,
+          onboarding_data: formData,
+          skipped_steps: skippedSteps || [],
+          last_active_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error updating onboarding progress:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al guardar progreso'
+        });
+      }
+
+      return { success: true, currentStep: step };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error('Error saving onboarding progress:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al guardar progreso de onboarding'
+      });
+    }
+  }
+
+  /**
+   * Get onboarding progress
+   */
+  async getOnboardingProgress(userId: string): Promise<{
+    currentStep: number;
+    formData: Partial<LandlordProfileInput>;
+    completionScore: number;
+    skippedSteps: string[];
+  } | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from('landlords')
+        .select('onboarding_step, onboarding_data, profile_completion_percentage, skipped_steps')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return {
+        currentStep: data.onboarding_step || 0,
+        formData: data.onboarding_data || {},
+        completionScore: data.profile_completion_percentage || 0,
+        skippedSteps: data.skipped_steps || []
+      };
+    } catch (error) {
+      console.error('Error getting onboarding progress:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Complete onboarding
+   */
+  async completeOnboarding(userId: string): Promise<{ success: boolean; profileId: string }> {
+    try {
+      const profile = await this.getLandlordProfileByUserId(userId);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Perfil no encontrado'
+        });
+      }
+
+      // Get onboarding data to copy to main columns
+      const { data: landlordData, error: fetchError } = await this.supabase
+        .from('landlords')
+        .select('onboarding_data, landlord_type')
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !landlordData) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al obtener datos de onboarding'
+        });
+      }
+
+      const onboardingData = landlordData.onboarding_data || {};
+      const landlordType = landlordData.landlord_type;
+
+      // Prepare update data based on landlord type
+      const updateData: any = {
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+        last_active_at: new Date().toISOString()
+      };
+
+      // Copy common fields
+      if (onboardingData.fullName) updateData.full_name = onboardingData.fullName;
+      if (onboardingData.phone) updateData.phone = onboardingData.phone;
+      if (onboardingData.whatsappNumber) updateData.whatsapp_number = onboardingData.whatsappNumber;
+
+      // Calculate profile completion percentage
+      let completionScore = 0;
+      const requiredFields: string[] = [];
+      const providedFields: string[] = [];
+
+      // Copy type-specific fields and track required/provided fields
+      if (landlordType === 'individual_owner') {
+        // Required fields for individual owner
+        requiredFields.push('fullName', 'phone', 'whatsappNumber');
+
+        if (onboardingData.fullName) providedFields.push('fullName');
+        if (onboardingData.phone) providedFields.push('phone');
+        if (onboardingData.whatsappNumber) providedFields.push('whatsappNumber');
+
+        if (onboardingData.propertyCountRange) {
+          updateData.property_count_range = onboardingData.propertyCountRange;
+          providedFields.push('propertyCountRange');
+        }
+        if (onboardingData.propertyLocation) {
+          updateData.property_location = onboardingData.propertyLocation;
+          providedFields.push('propertyLocation');
+        }
+        if (onboardingData.rentalReason) {
+          updateData.rental_reason = onboardingData.rentalReason;
+          providedFields.push('rentalReason');
+        }
+      } else if (landlordType === 'real_estate_agent') {
+        // Required fields for real estate agent
+        requiredFields.push('fullName', 'phone', 'whatsappNumber', 'agentType', 'yearsExperience', 'specializations', 'coverageAreas');
+
+        if (onboardingData.fullName) providedFields.push('fullName');
+        if (onboardingData.phone) providedFields.push('phone');
+        if (onboardingData.whatsappNumber) providedFields.push('whatsappNumber');
+
+        if (onboardingData.agentType) {
+          updateData.agent_type = onboardingData.agentType;
+          providedFields.push('agentType');
+        }
+        if (onboardingData.companyName) {
+          updateData.company_name = onboardingData.companyName;
+          providedFields.push('companyName');
+        }
+        if (onboardingData.yearsExperience) {
+          updateData.years_experience = onboardingData.yearsExperience;
+          providedFields.push('yearsExperience');
+        }
+        if (onboardingData.licenseNumber) {
+          updateData.license_number = onboardingData.licenseNumber;
+          providedFields.push('licenseNumber');
+        }
+        if (onboardingData.specializations) {
+          updateData.specializations = onboardingData.specializations;
+          providedFields.push('specializations');
+        }
+        if (onboardingData.coverageAreas) {
+          updateData.coverage_areas = onboardingData.coverageAreas;
+          providedFields.push('coverageAreas');
+        }
+        if (onboardingData.propertiesInManagement) {
+          updateData.properties_in_management = onboardingData.propertiesInManagement;
+          providedFields.push('propertiesInManagement');
+        }
+        if (onboardingData.professionalBio) {
+          updateData.professional_bio = onboardingData.professionalBio;
+          providedFields.push('professionalBio');
+        }
+      } else if (landlordType === 'property_company') {
+        // Required fields for property company
+        requiredFields.push('companyName', 'companyRtn', 'companyType', 'mainPhone', 'whatsappBusiness', 'officeAddress', 'city', 'operationZones', 'portfolioSize');
+
+        if (onboardingData.companyName) {
+          updateData.company_name = onboardingData.companyName;
+          providedFields.push('companyName');
+        }
+        if (onboardingData.companyRtn) {
+          updateData.company_rtn = onboardingData.companyRtn;
+          providedFields.push('companyRtn');
+        }
+        if (onboardingData.companyType) {
+          updateData.company_type = onboardingData.companyType;
+          providedFields.push('companyType');
+        }
+        if (onboardingData.foundedYear) {
+          updateData.founded_year = onboardingData.foundedYear;
+          providedFields.push('foundedYear');
+        }
+        if (onboardingData.mainPhone) {
+          updateData.main_phone = onboardingData.mainPhone;
+          providedFields.push('mainPhone');
+        }
+        if (onboardingData.whatsappBusiness) {
+          updateData.whatsapp_business = onboardingData.whatsappBusiness;
+          providedFields.push('whatsappBusiness');
+        }
+        if (onboardingData.officeAddress) {
+          updateData.office_address = onboardingData.officeAddress;
+          providedFields.push('officeAddress');
+        }
+        if (onboardingData.city) {
+          updateData.city = onboardingData.city;
+          providedFields.push('city');
+        }
+        if (onboardingData.operationZones) {
+          updateData.operation_zones = onboardingData.operationZones;
+          providedFields.push('operationZones');
+        }
+        if (onboardingData.portfolioSize) {
+          updateData.portfolio_size = onboardingData.portfolioSize;
+          providedFields.push('portfolioSize');
+        }
+        if (onboardingData.portfolioTypes) {
+          updateData.portfolio_types = onboardingData.portfolioTypes;
+          providedFields.push('portfolioTypes');
+        }
+        if (onboardingData.companyDescription) {
+          updateData.company_description = onboardingData.companyDescription;
+          providedFields.push('companyDescription');
+        }
+      }
+
+      // Calculate profile completion percentage
+      const requiredCount = requiredFields.length;
+      const requiredProvided = requiredFields.filter(field => providedFields.includes(field)).length;
+      const requiredScore = requiredCount > 0 ? (requiredProvided / requiredCount) * 80 : 0; // 80% weight for required fields
+
+      const optionalProvided = providedFields.length - requiredProvided;
+      const optionalScore = Math.min(20, optionalProvided * 5); // 20% weight for optional fields
+
+      completionScore = Math.min(100, Math.round(requiredScore + optionalScore));
+      updateData.profile_completion_percentage = completionScore;
+
+      console.log('[Profile Completion] Calculation details:', {
+        landlordType,
+        requiredFields,
+        providedFields,
+        requiredCount,
+        requiredProvided,
+        optionalProvided,
+        requiredScore,
+        optionalScore,
+        finalScore: completionScore
+      });
+
+      // Update profile with onboarding data copied to main columns
+      const { error } = await this.supabase
+        .from('landlords')
+        .update(updateData)
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error completing onboarding:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al completar onboarding'
+        });
+      }
+
+      // Update user_accounts to mark has_landlord_profile
+      await this.supabase
+        .from('user_accounts')
+        .update({ has_landlord_profile: true })
+        .eq('user_id', userId);
+
+      // Create initial portfolio_stats record
+      const { error: portfolioError } = await this.supabase
+        .from('portfolio_stats')
+        .insert({
+          landlord_id: profile.id,
+          total_properties: 0,
+          active_properties: 0,
+          rented_properties: 0,
+          inactive_properties: 0,
+          total_views: 0,
+          total_saves: 0,
+          total_inquiries: 0,
+          conversion_rate: 0,
+          total_responses: 0,
+          verified_properties_count: 0,
+          featured_properties_count: 0,
+          last_calculated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (portfolioError && portfolioError.code !== '23505') {
+        // Ignore duplicate key error (already exists), log other errors
+        console.error('Error creating portfolio stats:', portfolioError);
+      }
+
+      // TODO: Trigger welcome notification
+
+      return { success: true, profileId: profile.id };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error('Error completing onboarding:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al completar onboarding'
+      });
+    }
+  }
+
+  /**
+   * Update profile photo URL
+   */
+  async updateProfilePhoto(userId: string, photoUrl: string): Promise<LandlordProfile> {
+    try {
+      const { data, error } = await this.supabase
+        .from('landlords')
+        .update({
+          profile_photo_url: photoUrl,
+          last_active_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating profile photo:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al actualizar foto de perfil'
+        });
+      }
+
+      return this.transformLandlordProfile(data);
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error('Error updating profile photo:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al actualizar foto'
+      });
+    }
+  }
+
+  /**
+   * Get portfolio statistics
+   */
+  async getPortfolioStats(landlordId: string): Promise<{
+    totalProperties: number;
+    activeProperties: number;
+    rentedProperties: number;
+    totalViews: number;
+    totalInquiries: number;
+    conversionRate: number;
+    averageResponseTimeHours: number;
+    responseRate: number;
+  }> {
+    try {
+      // Get data from portfolio_stats table
+      const { data: stats } = await this.supabase
+        .from('portfolio_stats')
+        .select('*')
+        .eq('landlord_id', landlordId)
+        .maybeSingle();
+
+      if (!stats) {
+        // Return zeros if no stats exist yet
+        return {
+          totalProperties: 0,
+          activeProperties: 0,
+          rentedProperties: 0,
+          totalViews: 0,
+          totalInquiries: 0,
+          conversionRate: 0,
+          averageResponseTimeHours: 0,
+          responseRate: 0
+        };
+      }
+
+      return {
+        totalProperties: stats.total_properties || 0,
+        activeProperties: stats.active_properties || 0,
+        rentedProperties: stats.rented_properties || 0,
+        totalViews: stats.total_views || 0,
+        totalInquiries: stats.total_inquiries || 0,
+        conversionRate: stats.conversion_rate || 0,
+        averageResponseTimeHours: stats.average_response_time_hours || 0,
+        responseRate: stats.response_rate || 0
+      };
+    } catch (error) {
+      console.error('Error getting portfolio stats:', error);
+      // Return zeros on error instead of throwing
+      return {
+        totalProperties: 0,
+        activeProperties: 0,
+        rentedProperties: 0,
+        totalViews: 0,
+        totalInquiries: 0,
+        conversionRate: 0,
+        averageResponseTimeHours: 0,
+        responseRate: 0
+      };
+    }
+  }
+
+  /**
+   * Calculate and update portfolio statistics
+   * Should be called when properties are created/updated
+   */
+  async calculatePortfolioStats(landlordId: string): Promise<void> {
+    try {
+      // Get property counts from properties table
+      const { data: properties } = await this.supabase
+        .from('properties')
+        .select('status')
+        .eq('landlord_id', landlordId);
+
+      if (!properties) {
+        return;
+      }
+
+      const totalProperties = properties.length;
+      const activeProperties = properties.filter((p) => p.status === 'active').length;
+      const rentedProperties = properties.filter((p) => p.status === 'rented').length;
+
+      // Update or create portfolio stats
+      const { error } = await this.supabase
+        .from('portfolio_stats')
+        .upsert({
+          landlord_id: landlordId,
+          total_properties: totalProperties,
+          active_properties: activeProperties,
+          rented_properties: rentedProperties,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error updating portfolio stats:', error);
+      }
+    } catch (error) {
+      console.error('Error calculating portfolio stats:', error);
+    }
+  }
+
+  /**
    * Health check
    */
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy' }> {
