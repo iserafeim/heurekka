@@ -15,7 +15,7 @@ export default function OnboardingLayout({
 }) {
   return (
     <OnboardingProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+      <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50">
         {/* Header */}
         <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
@@ -26,14 +26,14 @@ export default function OnboardingLayout({
         </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-8 md:py-12">
-          <div className="max-w-2xl mx-auto">
+        <main className="container mx-auto px-4 py-8 md:py-12 min-h-[calc(100vh-theme(spacing.32))]">
+          <div className="max-w-2xl mx-auto pb-8">
             {children}
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-gray-200 bg-white/80 backdrop-blur-sm mt-auto">
+        <footer className="border-t border-gray-200 bg-white/80 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
               <div className="flex gap-6">

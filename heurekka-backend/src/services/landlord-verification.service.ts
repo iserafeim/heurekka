@@ -85,6 +85,12 @@ class LandlordVerificationService {
             cooldownSeconds: remainingSeconds
           };
         }
+
+        // Delete the old pending verification to avoid unique constraint violation
+        await this.supabase
+          .from('verification_data')
+          .delete()
+          .eq('id', recentVerification.id);
       }
 
       // Generate 6-digit code
@@ -248,6 +254,12 @@ class LandlordVerificationService {
             cooldownSeconds: remainingSeconds
           };
         }
+
+        // Delete the old pending verification to avoid unique constraint violation
+        await this.supabase
+          .from('verification_data')
+          .delete()
+          .eq('id', recentVerification.id);
       }
 
       // Generate 6-digit code

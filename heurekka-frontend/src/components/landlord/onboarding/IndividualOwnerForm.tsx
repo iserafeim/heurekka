@@ -126,12 +126,12 @@ export function IndividualOwnerForm({
         label="¿Cuántas propiedades tienes?"
         error={errors.propertyCountRange?.message}
       >
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {PROPERTY_COUNT_OPTIONS.map(option => (
             <label
               key={option.value}
               className={cn(
-                'flex-1 cursor-pointer rounded-lg border-2 transition-all p-4 text-center',
+                'cursor-pointer rounded-lg border-2 transition-all p-3 sm:p-4 text-center',
                 'hover:border-blue-300',
                 formValues.propertyCountRange === option.value
                   ? 'border-blue-600 bg-blue-50'
@@ -145,7 +145,7 @@ export function IndividualOwnerForm({
                 className="sr-only"
               />
               <span className={cn(
-                'text-lg font-semibold',
+                'text-base sm:text-lg font-semibold',
                 formValues.propertyCountRange === option.value
                   ? 'text-blue-700'
                   : 'text-gray-700'

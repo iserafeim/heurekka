@@ -227,7 +227,7 @@ export default function VerificationPage() {
                     Verificado
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-500">Pendiente de verificación</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Pendiente de verificación</p>
                 )}
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function VerificationPage() {
               <button
                 onClick={handleRequestEmailVerification}
                 disabled={requestEmailVerificationMutation.isPending}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-36 sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {requestEmailVerificationMutation.isPending ? 'Enviando...' : 'Verificar ahora'}
               </button>
@@ -268,7 +268,7 @@ export default function VerificationPage() {
                     Verificado
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-500">Pendiente de verificación</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Pendiente de verificación</p>
                 )}
               </div>
             </div>
@@ -278,7 +278,7 @@ export default function VerificationPage() {
               <button
                 onClick={handleRequestPhoneCode}
                 disabled={requestPhoneVerificationMutation.isPending}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-36 sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {requestPhoneVerificationMutation.isPending ? 'Enviando...' : 'Verificar ahora'}
               </button>
@@ -293,14 +293,14 @@ export default function VerificationPage() {
               <div className="text-4xl">🆔</div>
               <div>
                 <h3 className="font-semibold text-gray-900">Identidad</h3>
-                <p className="text-sm text-gray-500">Obtén el badge verificado</p>
+                <p className="text-xs sm:text-sm text-gray-500">Obtén el badge verificado</p>
               </div>
             </div>
             <button
               onClick={() => toast.info('Próximamente disponible')}
-              className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="w-36 sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-base border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              Comenzar (5 min)
+              Comenzar
             </button>
           </div>
         </div>
@@ -312,14 +312,14 @@ export default function VerificationPage() {
               <div className="text-4xl">📄</div>
               <div>
                 <h3 className="font-semibold text-gray-900">Documentos de Propiedad</h3>
-                <p className="text-sm text-gray-500">Para cuentas premium</p>
+                <p className="text-xs sm:text-sm text-gray-500">Para cuentas premium</p>
               </div>
             </div>
             <button
               onClick={() => toast.info('Requiere cuenta premium')}
-              className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="w-36 sm:w-auto px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-base border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              Más información
+              Ver más
             </button>
           </div>
         </div>

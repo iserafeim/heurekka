@@ -126,10 +126,10 @@ export function EmailVerificationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Verificar Email</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Verificar Email</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Código enviado a <span className="font-medium">{email}</span>
             </p>
           </div>
@@ -142,13 +142,13 @@ export function EmailVerificationModal({
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          <p className="text-gray-600 mb-6 text-center">
+        <div className="p-4 sm:p-6">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 text-center">
             Ingresa el código de 6 dígitos que enviamos a tu email
           </p>
 
           {/* Code Input */}
-          <div className="flex gap-2 justify-center mb-6">
+          <div className="flex gap-1.5 sm:gap-2 justify-center mb-4 sm:mb-6">
             {code.map((digit, index) => (
               <input
                 key={index}
@@ -159,7 +159,7 @@ export function EmailVerificationModal({
                 value={digit}
                 onChange={(e) => handleCodeChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
                 disabled={isVerifying}
               />
             ))}
@@ -167,8 +167,8 @@ export function EmailVerificationModal({
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600 text-center">{error}</p>
+            <div className="mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs sm:text-sm text-red-600 text-center">{error}</p>
             </div>
           )}
 
@@ -176,7 +176,7 @@ export function EmailVerificationModal({
           <button
             onClick={() => handleVerify()}
             disabled={code.join('').length !== 6 || isVerifying}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+            className="w-full py-2.5 sm:py-3 bg-blue-600 text-white rounded-lg text-sm sm:text-base font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-3 sm:mb-4"
           >
             {isVerifying ? 'Verificando...' : 'Verificar'}
           </button>
@@ -186,12 +186,12 @@ export function EmailVerificationModal({
             {canResend ? (
               <button
                 onClick={handleResend}
-                className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                className="text-sm sm:text-base text-blue-600 hover:text-blue-700 font-medium transition-colors"
               >
                 Reenviar código
               </button>
             ) : (
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-xs sm:text-sm">
                 Reenviar código en {countdown}s
               </p>
             )}

@@ -174,32 +174,32 @@ export function PhoneVerificationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-8 relative">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 transition-colors"
           aria-label="Cerrar"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-4">📱</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="text-center mb-4 sm:mb-8">
+          <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">📱</div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             Verificar Teléfono
           </h2>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Enviamos un código de 6 dígitos a<br />
             <span className="font-semibold">{phoneNumber}</span>
           </p>
         </div>
 
         {/* Code inputs */}
-        <div className="flex gap-3 justify-center mb-6" onPaste={handlePaste}>
+        <div className="flex gap-1.5 sm:gap-3 justify-center mb-4 sm:mb-6" onPaste={handlePaste}>
           {code.map((digit, index) => (
             <input
               key={index}
@@ -211,7 +211,7 @@ export function PhoneVerificationModal({
               onChange={e => handleInputChange(index, e.target.value)}
               onKeyDown={e => handleKeyDown(index, e)}
               className={cn(
-                'w-12 h-14 text-center text-2xl font-semibold rounded-lg border-2',
+                'w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold rounded-lg border-2',
                 'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                 'transition-all',
                 error
@@ -227,15 +227,15 @@ export function PhoneVerificationModal({
 
         {/* Error message */}
         {error && (
-          <p className="text-sm text-red-500 text-center mb-4 flex items-center justify-center gap-1">
-            <span className="text-base">⚠</span>
+          <p className="text-xs sm:text-sm text-red-500 text-center mb-3 sm:mb-4 flex items-center justify-center gap-1">
+            <span className="text-sm sm:text-base">⚠</span>
             {error}
           </p>
         )}
 
         {/* Timer */}
-        <div className="text-center mb-6">
-          <p className="text-sm text-gray-600">
+        <div className="text-center mb-4 sm:mb-6">
+          <p className="text-xs sm:text-sm text-gray-600">
             {timeLeft > 0 ? (
               <>
                 Tiempo restante: <span className="font-semibold text-blue-600">{formatTime(timeLeft)}</span>
@@ -256,7 +256,7 @@ export function PhoneVerificationModal({
           onClick={handleResend}
           disabled={resendCooldown > 0 || timeLeft === 0}
           className={cn(
-            'w-full py-3 rounded-lg font-medium transition-colors',
+            'w-full py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-colors',
             resendCooldown > 0 || timeLeft === 0
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-blue-50 text-blue-600 hover:bg-blue-100'

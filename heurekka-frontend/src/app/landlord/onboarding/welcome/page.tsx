@@ -47,7 +47,7 @@ export default function WelcomePage() {
       </p>
 
       {/* Beneficios */}
-      <div className="space-y-4 mb-12 text-left max-w-md w-full">
+      <div className="space-y-4 mb-12 text-left max-w-md md:w-full mx-auto">
         <div className="flex items-start gap-3">
           <div className="text-green-500 text-2xl flex-shrink-0">✓</div>
           <div>
