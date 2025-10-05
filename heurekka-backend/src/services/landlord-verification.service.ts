@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { TRPCError } from '@trpc/server';
 import crypto from 'crypto';
+import { getEmailService } from './email.service';
 
 /**
  * Verification data types
@@ -192,14 +193,21 @@ class LandlordVerificationService {
       await this.updateVerificationStatus(verification.id, 'verified');
 
       // Update landlord profile
-      await this.supabase
+      const { error: updateError } = await this.supabase
         .from('landlords')
         .update({
           phone_verified: true,
-          phone_verified_at: new Date().toISOString(),
           verification_status: 'verified'
         })
         .eq('id', landlordId);
+
+      if (updateError) {
+        console.error('Error updating landlord phone_verified:', updateError);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al actualizar el perfil del arrendador'
+        });
+      }
 
       return {
         success: true,
@@ -218,19 +226,36 @@ class LandlordVerificationService {
   }
 
   /**
-   * Request email verification
+   * Request email verification - generate and send code
    */
   async requestEmailVerification(
     landlordId: string,
     email: string
-  ): Promise<{ success: boolean; token: string }> {
+  ): Promise<{ success: boolean; expiresAt: Date; cooldownSeconds?: number }> {
     try {
-      // Generate unique token
-      const token = crypto.randomBytes(32).toString('hex');
-      const tokenHash = this.hashCode(token);
+      // Check if there's a recent pending verification
+      const recentVerification = await this.getRecentVerification(landlordId, 'email');
 
-      // Calculate expiry (24 hours)
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      if (recentVerification && recentVerification.status === 'pending') {
+        const timeSinceCreation = Date.now() - new Date(recentVerification.createdAt).getTime();
+        const cooldownMs = this.VERIFICATION_CODE_COOLDOWN_SECONDS * 1000;
+
+        if (timeSinceCreation < cooldownMs) {
+          const remainingSeconds = Math.ceil((cooldownMs - timeSinceCreation) / 1000);
+          return {
+            success: false,
+            expiresAt: new Date(recentVerification.codeExpiresAt!),
+            cooldownSeconds: remainingSeconds
+          };
+        }
+      }
+
+      // Generate 6-digit code
+      const verificationCode = this.generateVerificationCode();
+      const codeHash = this.hashCode(verificationCode);
+
+      // Calculate expiry time (5 minutes)
+      const expiresAt = new Date(Date.now() + this.CODE_EXPIRY_MINUTES * 60 * 1000);
 
       // Store verification record
       const { data, error } = await this.supabase
@@ -239,10 +264,10 @@ class LandlordVerificationService {
           landlord_id: landlordId,
           verification_type: 'email',
           status: 'pending',
-          verification_code_hash: tokenHash,
+          verification_code_hash: codeHash,
           code_expires_at: expiresAt.toISOString(),
           attempts: 0,
-          max_attempts: 1,
+          max_attempts: this.MAX_VERIFICATION_ATTEMPTS,
           metadata: { email }
         })
         .select()
@@ -256,14 +281,15 @@ class LandlordVerificationService {
         });
       }
 
-      // TODO: Send email with verification link
-      // This is a stub - integrate with email service (SendGrid, AWS SES, etc.)
-      const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}&landlordId=${landlordId}`;
-      console.log(`📧 Email verification link for ${email}: ${verificationLink}`);
+      // Send email with verification code using Resend
+      const emailService = getEmailService();
+      await emailService.sendVerificationCode(email, verificationCode, 'email');
+
+      console.log(`📧 Email verification code sent to ${email} (expires at ${expiresAt})`);
 
       return {
         success: true,
-        token
+        expiresAt
       };
     } catch (error) {
       if (error instanceof TRPCError) {
@@ -278,37 +304,53 @@ class LandlordVerificationService {
   }
 
   /**
-   * Verify email token
+   * Verify email code
    */
-  async verifyEmail(landlordId: string, token: string): Promise<{ success: boolean; verified: boolean }> {
+  async verifyEmail(landlordId: string, code: string): Promise<{ success: boolean; verified: boolean }> {
     try {
-      const tokenHash = this.hashCode(token);
+      // Get pending verification
+      const verification = await this.getRecentVerification(landlordId, 'email');
 
-      // Get verification record
-      const { data: verification, error } = await this.supabase
-        .from('verification_data')
-        .select('*')
-        .eq('landlord_id', landlordId)
-        .eq('verification_type', 'email')
-        .eq('verification_code_hash', tokenHash)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error || !verification) {
+      if (!verification) {
         throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Token de verificación inválido o expirado'
+          code: 'NOT_FOUND',
+          message: 'No se encontró una verificación pendiente'
         });
       }
 
       // Check if expired
-      if (new Date() > new Date(verification.code_expires_at)) {
+      if (new Date() > new Date(verification.codeExpiresAt!)) {
         await this.updateVerificationStatus(verification.id, 'expired');
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'El enlace de verificación ha expirado'
+          message: 'El código ha expirado. Solicite uno nuevo'
+        });
+      }
+
+      // Check attempts
+      if (verification.attempts >= verification.maxAttempts) {
+        await this.updateVerificationStatus(verification.id, 'failed');
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Demasiados intentos fallidos. Solicite un nuevo código'
+        });
+      }
+
+      // Increment attempts
+      await this.incrementVerificationAttempts(verification.id);
+
+      // Verify code
+      const codeHash = this.hashCode(code);
+      const { data: verificationData } = await this.supabase
+        .from('verification_data')
+        .select('verification_code_hash')
+        .eq('id', verification.id)
+        .single();
+
+      if (!verificationData || verificationData.verification_code_hash !== codeHash) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Código incorrecto'
         });
       }
 
@@ -316,13 +358,20 @@ class LandlordVerificationService {
       await this.updateVerificationStatus(verification.id, 'verified');
 
       // Update landlord profile
-      await this.supabase
+      const { error: updateError } = await this.supabase
         .from('landlords')
         .update({
-          email_verified: true,
-          email_verified_at: new Date().toISOString()
+          email_verified: true
         })
         .eq('id', landlordId);
+
+      if (updateError) {
+        console.error('Error updating landlord email_verified:', updateError);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al actualizar el perfil del arrendador'
+        });
+      }
 
       return {
         success: true,
@@ -351,24 +400,29 @@ class LandlordVerificationService {
     verificationLevel: 'basic' | 'verified' | 'premium';
   }> {
     try {
-      // Get landlord data
+      // Get landlord data (only select columns that exist in the table)
       const { data: landlord } = await this.supabase
         .from('landlords')
-        .select('phone_verified, email_verified, identity_verified, business_license_verified')
+        .select('phone_verified, email_verified, is_verified')
         .eq('id', landlordId)
         .single();
 
+      // If landlord doesn't exist yet (during onboarding), return default unverified status
       if (!landlord) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Perfil de arrendador no encontrado'
-        });
+        console.log('[getVerificationStatus] Landlord not found in landlords table, returning defaults for id:', landlordId);
+        return {
+          phoneVerified: false,
+          emailVerified: false,
+          identityVerified: false,
+          documentsVerified: false,
+          verificationLevel: 'basic' as const
+        };
       }
 
       const phoneVerified = landlord.phone_verified || false;
       const emailVerified = landlord.email_verified || false;
-      const identityVerified = landlord.identity_verified || false;
-      const documentsVerified = landlord.business_license_verified || false;
+      const identityVerified = false; // TODO: Add identity_verified column to landlords table
+      const documentsVerified = false; // TODO: Add business_license_verified column to landlords table
 
       // Determine verification level
       let verificationLevel: 'basic' | 'verified' | 'premium' = 'basic';

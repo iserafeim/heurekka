@@ -5,44 +5,164 @@
  * Página de verificación de identidad y teléfono
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/contexts/landlord/OnboardingContext';
 import { ProgressIndicator } from '@/components/landlord/onboarding/ProgressIndicator';
 import { PhoneVerificationModal } from '@/components/landlord/onboarding/PhoneVerificationModal';
+import { EmailVerificationModal } from '@/components/landlord/onboarding/EmailVerificationModal';
+import { useAuthStore } from '@/lib/stores/auth';
+import { trpc } from '@/lib/trpc/react';
 import { toast } from 'sonner';
 
 export default function VerificationPage() {
   const router = useRouter();
   const { state, nextStep, previousStep } = useOnboarding();
+  const { user } = useAuthStore();
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(true); // Assuming email is verified from auth
-  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+
+  // Get verification status from backend
+  const { data: verificationStatus, refetch: refetchVerificationStatus } = trpc.landlordProfile.getVerificationStatus.useQuery(undefined, {
+    enabled: !!user,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: false,
+  });
+
+  const emailVerified = verificationStatus?.data?.emailVerified || false;
+  const phoneVerified = verificationStatus?.data?.phoneVerified || false;
+
+  // Debug: log verification status
+  console.log('Verification Status:', verificationStatus?.data);
+
+  // TRPC mutations for email verification
+  const requestEmailVerificationMutation = trpc.landlordProfile.requestEmailVerification.useMutation();
+  const verifyEmailMutation = trpc.landlordProfile.verifyEmail.useMutation();
+
+  // TRPC mutations for phone verification
+  const requestPhoneVerificationMutation = trpc.landlordProfile.requestPhoneVerification.useMutation();
+  const verifyPhoneMutation = trpc.landlordProfile.verifyPhone.useMutation();
 
   const handlePhoneVerify = async (code: string) => {
-    // Simular verificación (integrar con backend)
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        if (code === '123456') {
-          setPhoneVerified(true);
-          toast.success('Teléfono verificado correctamente');
-          resolve();
-        } else {
-          toast.error('Código incorrecto');
-          reject(new Error('Invalid code'));
-        }
-      }, 1000);
-    });
+    try {
+      const result = await verifyPhoneMutation.mutateAsync({ code });
+
+      if (result.success && result.data?.verified) {
+        await refetchVerificationStatus();
+        toast.success('Teléfono verificado correctamente');
+      } else {
+        throw new Error('Verificación fallida');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Código incorrecto';
+      toast.error(errorMessage);
+      throw error;
+    }
   };
 
   const handleResendCode = async () => {
-    // Simular reenvío de código
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
+    try {
+      const phoneNumber = getPhoneNumber();
+      const result = await requestPhoneVerificationMutation.mutateAsync({
+        phoneNumber
+      });
+
+      if (result.success) {
         toast.success('Código reenviado');
-        resolve();
-      }, 1000);
-    });
+      } else if (result.data?.cooldownSeconds) {
+        toast.error(`Espera ${result.data.cooldownSeconds} segundos antes de solicitar otro código`);
+        throw new Error('Cooldown active');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Error al reenviar código';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const handleRequestPhoneCode = async () => {
+    try {
+      const phoneNumber = getPhoneNumber();
+      const result = await requestPhoneVerificationMutation.mutateAsync({
+        phoneNumber
+      });
+
+      if (result.success) {
+        setShowPhoneModal(true);
+        toast.success('Código enviado por SMS');
+      } else if (result.data?.cooldownSeconds) {
+        toast.error(`Espera ${result.data.cooldownSeconds} segundos antes de solicitar otro código`);
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Error al enviar código';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleRequestEmailVerification = async () => {
+    try {
+      if (!user?.email) {
+        toast.error('No se encontró el email del usuario');
+        return;
+      }
+
+      const result = await requestEmailVerificationMutation.mutateAsync({
+        email: user.email
+      });
+
+      if (result.success) {
+        setShowEmailModal(true);
+        toast.success('Código enviado a tu email');
+      } else if (result.data?.cooldownSeconds) {
+        toast.error(`Espera ${result.data.cooldownSeconds} segundos antes de solicitar otro código`);
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Error al enviar código de verificación';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleEmailVerify = async (code: string) => {
+    try {
+      const result = await verifyEmailMutation.mutateAsync({ code });
+
+      if (result.success && result.data?.verified) {
+        // Refetch verification status to update UI
+        await refetchVerificationStatus();
+        setShowEmailModal(false);
+        toast.success('Email verificado correctamente');
+      } else {
+        throw new Error('Verificación fallida');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Código incorrecto';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const handleResendEmailCode = async () => {
+    try {
+      if (!user?.email) {
+        toast.error('No se encontró el email del usuario');
+        return;
+      }
+
+      const result = await requestEmailVerificationMutation.mutateAsync({
+        email: user.email
+      });
+
+      if (result.success) {
+        toast.success('Código reenviado');
+      } else if (result.data?.cooldownSeconds) {
+        toast.error(`Espera ${result.data.cooldownSeconds} segundos antes de solicitar otro código`);
+        throw new Error('Cooldown active');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Error al reenviar código';
+      toast.error(errorMessage);
+      throw error;
+    }
   };
 
   const handleContinue = () => {
@@ -85,25 +205,43 @@ export default function VerificationPage() {
       {/* Verification Cards */}
       <div className="flex flex-col gap-4">
         {/* Email Verification */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-green-200">
+        <div
+          className={`bg-white rounded-xl shadow-lg p-6 border-2 transition-colors ${
+            emailVerified ? 'border-green-200' : 'border-gray-200'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="text-4xl">✉️</div>
               <div>
                 <h3 className="font-semibold text-gray-900">Email</h3>
-                <p className="text-sm text-green-600 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Verificado
-                </p>
+                {emailVerified ? (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Verificado
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-500">Pendiente de verificación</p>
+                )}
               </div>
             </div>
-            <div className="text-green-500 text-2xl">✓</div>
+            {emailVerified ? (
+              <div className="text-green-500 text-2xl">✓</div>
+            ) : (
+              <button
+                onClick={handleRequestEmailVerification}
+                disabled={requestEmailVerificationMutation.isPending}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {requestEmailVerificationMutation.isPending ? 'Enviando...' : 'Verificar ahora'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -138,10 +276,11 @@ export default function VerificationPage() {
               <div className="text-green-500 text-2xl">✓</div>
             ) : (
               <button
-                onClick={() => setShowPhoneModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                onClick={handleRequestPhoneCode}
+                disabled={requestPhoneVerificationMutation.isPending}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Verificar ahora
+                {requestPhoneVerificationMutation.isPending ? 'Enviando...' : 'Verificar ahora'}
               </button>
             )}
           </div>
@@ -241,6 +380,15 @@ export default function VerificationPage() {
         onVerify={handlePhoneVerify}
         phoneNumber={getPhoneNumber()}
         onResendCode={handleResendCode}
+      />
+
+      {/* Email Verification Modal */}
+      <EmailVerificationModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        onVerify={handleEmailVerify}
+        email={user?.email || ''}
+        onResendCode={handleResendEmailCode}
       />
     </div>
   );

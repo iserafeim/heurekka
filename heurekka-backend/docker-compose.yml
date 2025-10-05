@@ -88,6 +88,7 @@ services:
       - ENCRYPTION_KEY=4fbc18ac8751cf03ebce09c71285083cef617d7b50af52ad2ef4accfa0a1dad2
       - CORS_ORIGIN=http://localhost:3000
       - LOG_LEVEL=debug
+      - RESEND_API_KEY=re_B3rj97Yb_PzHXoBXwjWBjUk1tEaBoSBM7
     ports:
       - "3001:3001"
     volumes:

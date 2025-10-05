@@ -6,6 +6,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { OnboardingProvider } from '@/contexts/landlord/OnboardingContext';
+import { Logo } from '@/components/logo';
 
 export default function OnboardingLayout({
   children,
@@ -16,10 +17,10 @@ export default function OnboardingLayout({
     <OnboardingProvider>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
         {/* Header */}
-        <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+        <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="text-2xl font-bold text-blue-600">Heurekka</div>
+              <Logo />
             </Link>
           </div>
         </header>
@@ -32,7 +33,7 @@ export default function OnboardingLayout({
         </main>
 
         {/* Footer */}
-        <footer className="border-t bg-white/80 backdrop-blur-sm mt-auto">
+        <footer className="border-t border-gray-200 bg-white/80 backdrop-blur-sm mt-auto">
           <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
               <div className="flex gap-6">

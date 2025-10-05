@@ -643,7 +643,7 @@ export const landlordProfileRouter = router({
   verifyEmail: protectedProcedure
     .input(
       z.object({
-        token: z.string()
+        code: z.string().length(6, 'El código debe tener 6 dígitos')
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -664,7 +664,7 @@ export const landlordProfileRouter = router({
           });
         }
 
-        const result = await verificationService.verifyEmail(profile.id, input.token);
+        const result = await verificationService.verifyEmail(profile.id, input.code);
 
         // Award email verification badge
         if (result.verified) {
@@ -700,15 +700,25 @@ export const landlordProfileRouter = router({
         });
       }
 
+      console.log('[getVerificationStatus] Looking for profile with user_id:', ctx.auth.user.id);
       const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
 
       if (!profile) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Perfil de arrendador no encontrado'
-        });
+        console.log('[getVerificationStatus] Profile not found for user_id:', ctx.auth.user.id);
+        // Return default unverified status during onboarding instead of throwing error
+        return {
+          success: true,
+          data: {
+            phoneVerified: false,
+            emailVerified: false,
+            identityVerified: false,
+            documentsVerified: false,
+            verificationLevel: 'basic' as const
+          }
+        };
       }
 
+      console.log('[getVerificationStatus] Found profile:', profile.id);
       const status = await verificationService.getVerificationStatus(profile.id);
 
       return {

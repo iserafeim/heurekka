@@ -9,9 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Primary button - Main CTAs
+        // Primary button - Main CTAs (Design System: #2563EB → #1D4ED8 → #1E40AF)
         primary:
-          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 shadow-sm hover:shadow-md",
+          "bg-[#2563EB] text-white hover:bg-[#1D4ED8] active:bg-[#1E40AF] shadow-sm hover:shadow-[0_4px_6px_rgba(37,99,235,0.2)] hover:-translate-y-px active:translate-y-0 active:shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] focus-visible:border-2 focus-visible:border-[#1D4ED8] focus-visible:shadow-[0_0_0_3px_rgba(37,99,235,0.1)]",
         // WhatsApp button - Communication actions
         whatsapp:
           "bg-[#25D366] text-white hover:bg-[#128C7E] active:bg-[#075E54] shadow-[0_2px_8px_rgba(37,211,102,0.3)] hover:shadow-[0_4px_12px_rgba(37,211,102,0.4)] rounded-full",

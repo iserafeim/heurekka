@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { TRPCError } from '@trpc/server';
+import { getStorageService } from './storage.service';
 
 // Types for landlord profiles
 export type LandlordType = 'individual_owner' | 'real_estate_agent' | 'property_company';
@@ -725,6 +726,40 @@ class LandlordProfileService {
       if (onboardingData.phone) updateData.phone = onboardingData.phone;
       if (onboardingData.whatsappNumber) updateData.whatsapp_number = onboardingData.whatsappNumber;
 
+      // Process profile photo if present
+      if (onboardingData.profilePhotoUrl) {
+        try {
+          const storageService = getStorageService();
+
+          // Check if it's a base64 image
+          if (onboardingData.profilePhotoUrl.startsWith('data:image/')) {
+            console.log('[CompleteOnboarding] Processing base64 profile photo');
+
+            // Validate and decode base64 image
+            const { buffer, mimeType } = storageService.validateAndDecodeBase64Image(onboardingData.profilePhotoUrl);
+
+            // Upload to Supabase Storage
+            const { url } = await storageService.uploadProfilePhoto(
+              userId,
+              buffer,
+              mimeType,
+              'profile-photo.jpg'
+            );
+
+            // Save public URL to profile
+            updateData.profile_photo_url = url;
+            console.log('[CompleteOnboarding] Profile photo uploaded successfully:', url);
+          } else {
+            // If it's already a URL, just copy it
+            updateData.profile_photo_url = onboardingData.profilePhotoUrl;
+            console.log('[CompleteOnboarding] Profile photo URL copied:', onboardingData.profilePhotoUrl);
+          }
+        } catch (error) {
+          console.error('[CompleteOnboarding] Error processing profile photo:', error);
+          // Don't fail onboarding if photo upload fails - just log it
+        }
+      }
+
       // Calculate profile completion percentage
       let completionScore = 0;
       const requiredFields: string[] = [];
@@ -843,6 +878,11 @@ class LandlordProfileService {
           updateData.company_description = onboardingData.companyDescription;
           providedFields.push('companyDescription');
         }
+      }
+
+      // Add profile photo to completion calculation if present
+      if (updateData.profile_photo_url) {
+        providedFields.push('profilePhoto');
       }
 
       // Calculate profile completion percentage
