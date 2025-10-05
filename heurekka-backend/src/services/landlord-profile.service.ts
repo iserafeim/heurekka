@@ -21,7 +21,6 @@ export interface RealEstateAgentInput {
   agentType: 'independent' | 'company_agent';
   companyName?: string;
   yearsExperience: string;
-  licenseNumber?: string;
   specializations: string[];
   coverageAreas: string[];
   propertiesInManagement: string;
@@ -325,7 +324,6 @@ class LandlordProfileService {
           agent_type: input.agentType,
           company_name: input.companyName,
           years_experience: input.yearsExperience,
-          license_number: input.licenseNumber,
           specializations: input.specializations,
           coverage_areas: input.coverageAreas,
           properties_in_management: input.propertiesInManagement,
@@ -553,7 +551,6 @@ class LandlordProfileService {
       companyRtn: data.company_rtn,
       agentType: data.agent_type,
       yearsExperience: data.years_experience,
-      licenseNumber: data.license_number,
       specializations: data.specializations || [],
       coverageAreas: data.coverage_areas || [],
       propertiesInManagement: data.properties_in_management,
@@ -712,17 +709,25 @@ class LandlordProfileService {
       }
 
       const onboardingData = landlordData.onboarding_data || {};
-      const landlordType = landlordData.landlord_type;
+      // Use landlordType from onboarding_data if available, otherwise fall back to landlord_type column
+      // This allows users to change their type during onboarding
+      const landlordType = onboardingData.landlordType || landlordData.landlord_type;
 
       // Prepare update data based on landlord type
       const updateData: any = {
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
-        last_active_at: new Date().toISOString()
+        last_active_at: new Date().toISOString(),
+        landlord_type: landlordType // Update the landlord_type column with the correct value
       };
 
       // Copy common fields
-      if (onboardingData.fullName) updateData.full_name = onboardingData.fullName;
+      // For real_estate_agent, use professionalName instead of fullName
+      if (landlordType === 'real_estate_agent' && onboardingData.professionalName) {
+        updateData.full_name = onboardingData.professionalName;
+      } else if (onboardingData.fullName) {
+        updateData.full_name = onboardingData.fullName;
+      }
       if (onboardingData.phone) updateData.phone = onboardingData.phone;
       if (onboardingData.whatsappNumber) updateData.whatsapp_number = onboardingData.whatsappNumber;
 
@@ -806,10 +811,6 @@ class LandlordProfileService {
           updateData.years_experience = onboardingData.yearsExperience;
           providedFields.push('yearsExperience');
         }
-        if (onboardingData.licenseNumber) {
-          updateData.license_number = onboardingData.licenseNumber;
-          providedFields.push('licenseNumber');
-        }
         if (onboardingData.specializations) {
           updateData.specializations = onboardingData.specializations;
           providedFields.push('specializations');
@@ -828,31 +829,32 @@ class LandlordProfileService {
         }
       } else if (landlordType === 'property_company') {
         // Required fields for property company
-        requiredFields.push('companyName', 'companyRtn', 'companyType', 'mainPhone', 'whatsappBusiness', 'officeAddress', 'city', 'operationZones', 'portfolioSize');
+        requiredFields.push('companyName', 'primaryPhone', 'whatsappBusiness', 'officeAddress', 'city', 'operatingAreas', 'portfolioSize');
 
         if (onboardingData.companyName) {
           updateData.company_name = onboardingData.companyName;
+          updateData.full_name = onboardingData.companyName; // Use company name as full_name
           providedFields.push('companyName');
-        }
-        if (onboardingData.companyRtn) {
-          updateData.company_rtn = onboardingData.companyRtn;
-          providedFields.push('companyRtn');
-        }
-        if (onboardingData.companyType) {
-          updateData.company_type = onboardingData.companyType;
-          providedFields.push('companyType');
         }
         if (onboardingData.foundedYear) {
           updateData.founded_year = onboardingData.foundedYear;
           providedFields.push('foundedYear');
         }
-        if (onboardingData.mainPhone) {
-          updateData.main_phone = onboardingData.mainPhone;
-          providedFields.push('mainPhone');
+        if (onboardingData.primaryPhone) {
+          updateData.phone = onboardingData.primaryPhone; // Map to phone column
+          providedFields.push('primaryPhone');
         }
         if (onboardingData.whatsappBusiness) {
-          updateData.whatsapp_business = onboardingData.whatsappBusiness;
+          updateData.whatsapp_number = onboardingData.whatsappBusiness; // Map to whatsapp_number column
           providedFields.push('whatsappBusiness');
+        }
+        if (onboardingData.contactEmail) {
+          updateData.contact_email = onboardingData.contactEmail;
+          providedFields.push('contactEmail');
+        }
+        if (onboardingData.website) {
+          updateData.website = onboardingData.website;
+          providedFields.push('website');
         }
         if (onboardingData.officeAddress) {
           updateData.office_address = onboardingData.officeAddress;
@@ -862,17 +864,17 @@ class LandlordProfileService {
           updateData.city = onboardingData.city;
           providedFields.push('city');
         }
-        if (onboardingData.operationZones) {
-          updateData.operation_zones = onboardingData.operationZones;
-          providedFields.push('operationZones');
+        if (onboardingData.operatingAreas) {
+          updateData.operating_areas = onboardingData.operatingAreas;
+          providedFields.push('operatingAreas');
         }
         if (onboardingData.portfolioSize) {
           updateData.portfolio_size = onboardingData.portfolioSize;
           providedFields.push('portfolioSize');
         }
-        if (onboardingData.portfolioTypes) {
-          updateData.portfolio_types = onboardingData.portfolioTypes;
-          providedFields.push('portfolioTypes');
+        if (onboardingData.propertyTypes) {
+          updateData.property_types = onboardingData.propertyTypes;
+          providedFields.push('propertyTypes');
         }
         if (onboardingData.companyDescription) {
           updateData.company_description = onboardingData.companyDescription;

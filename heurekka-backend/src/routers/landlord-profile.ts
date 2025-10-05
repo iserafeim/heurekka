@@ -31,7 +31,6 @@ const realEstateAgentSchema = z.object({
   agentType: z.enum(['independent', 'company_agent']),
   companyName: z.string().max(200).optional(),
   yearsExperience: z.enum(['0-2', '3-5', '5-10', '10+']),
-  licenseNumber: z.string().regex(/^AHCI-[0-9]{5}$/, 'Formato de licencia inválido: AHCI-12345').optional(),
   specializations: z.array(z.enum(['residential', 'commercial', 'industrial'])).min(1, 'Seleccione al menos una especialización'),
   coverageAreas: z.array(z.string()).min(1, 'Debe especificar al menos una zona de cobertura').max(10),
   propertiesInManagement: z.enum(['1-5', '5-10', '10-20', '20+']),

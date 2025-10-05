@@ -12,11 +12,9 @@ import { propertyCompanySchema, type PropertyCompanyInput } from '@/schemas/land
 import { FormField } from './FormField';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { RTNInput } from '@/components/ui/rtn-input';
 import { cn } from '@/lib/utils';
 import {
   HONDURAS_CITIES,
-  COMPANY_TYPE_OPTIONS,
   PORTFOLIO_SIZE_OPTIONS,
   PROPERTY_TYPES_OPTIONS,
 } from '@/types/landlord';
@@ -43,8 +41,6 @@ export function PropertyCompanyForm({
     resolver: zodResolver(propertyCompanySchema),
     defaultValues: defaultValues || {
       companyName: '',
-      rtn: '',
-      companyType: '',
       foundedYear: undefined,
       primaryPhone: '',
       whatsappBusiness: '',
@@ -55,8 +51,6 @@ export function PropertyCompanyForm({
       operatingAreas: [],
       portfolioSize: '1-10',
       propertyTypes: [],
-      priceRangeMin: undefined,
-      priceRangeMax: undefined,
       companyLogoUrl: '',
       licenseDocumentUrl: '',
       companyDescription: '',
@@ -102,42 +96,6 @@ export function PropertyCompanyForm({
           placeholder="Inversiones ABC S.A."
           className={cn(errors.companyName && 'border-red-300')}
         />
-      </FormField>
-
-      {/* RTN */}
-      <FormField
-        label="RTN de la Empresa"
-        required
-        error={errors.rtn?.message}
-        helperText="Formato: 0801-1990-123456"
-      >
-        <RTNInput
-          value={watch('rtn')}
-          onChange={(value) => setValue('rtn', value, { shouldValidate: true })}
-          className={cn(errors.rtn && 'border-red-300')}
-        />
-      </FormField>
-
-      {/* Tipo de Empresa */}
-      <FormField
-        label="Tipo de Empresa"
-        required
-        error={errors.companyType?.message}
-      >
-        <select
-          {...register('companyType')}
-          className={cn(
-            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-            errors.companyType ? 'border-red-300' : 'border-gray-300'
-          )}
-        >
-          <option value="">Selecciona el tipo</option>
-          {COMPANY_TYPE_OPTIONS.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
       </FormField>
 
       {/* Año de Fundación */}
@@ -249,7 +207,7 @@ export function PropertyCompanyForm({
         error={errors.operatingAreas?.message}
         helperText="Selecciona entre 1 y 20 ciudades"
       >
-        <div className="max-h-60 overflow-y-auto border rounded-lg p-3 space-y-2">
+        <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
           {HONDURAS_CITIES.map(city => (
             <label
               key={city}
@@ -327,15 +285,16 @@ export function PropertyCompanyForm({
               {PROPERTY_TYPES_OPTIONS.map(option => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-300 hover:bg-gray-50 cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    checked={field.value?.includes(option.value as any)}
+                    checked={(field.value || []).includes(option.value as any)}
                     onChange={(e) => {
+                      const currentValue = field.value || [];
                       const newValue = e.target.checked
-                        ? [...(field.value || []), option.value]
-                        : (field.value || []).filter((v: string) => v !== option.value);
+                        ? [...currentValue, option.value]
+                        : currentValue.filter((v: string) => v !== option.value);
                       field.onChange(newValue);
                     }}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
@@ -347,37 +306,6 @@ export function PropertyCompanyForm({
           )}
         />
       </FormField>
-
-      {/* Rango de Precios */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <FormField
-          label="Precio Mínimo (Lps)"
-          error={errors.priceRangeMin?.message}
-        >
-          <Input
-            type="number"
-            {...register('priceRangeMin', { valueAsNumber: true })}
-            placeholder="10000"
-            min={0}
-            step={1000}
-            className={cn(errors.priceRangeMin && 'border-red-300')}
-          />
-        </FormField>
-
-        <FormField
-          label="Precio Máximo (Lps)"
-          error={errors.priceRangeMax?.message}
-        >
-          <Input
-            type="number"
-            {...register('priceRangeMax', { valueAsNumber: true })}
-            placeholder="500000"
-            min={0}
-            step={1000}
-            className={cn(errors.priceRangeMax && 'border-red-300')}
-          />
-        </FormField>
-      </div>
 
       {/* Descripción de la Empresa */}
       <FormField

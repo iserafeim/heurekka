@@ -35,12 +35,6 @@ export const realEstateAgentSchema = z.object({
     errorMap: () => ({ message: 'Debe seleccionar los años de experiencia' }),
   }),
 
-  licenseNumber: z
-    .string()
-    .regex(/^AHCI-\d{5}$/, 'El formato debe ser AHCI-12345')
-    .optional()
-    .or(z.literal('')),
-
   specializations: z
     .array(z.enum(['residential', 'commercial', 'industrial']))
     .min(1, 'Debe seleccionar al menos una especialización')

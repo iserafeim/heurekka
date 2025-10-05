@@ -9,12 +9,14 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/contexts/landlord/OnboardingContext';
 import { useCompleteOnboarding } from '@/hooks/landlord/useOnboarding';
+import { useBadges } from '@/hooks/landlord/useBadges';
 import { toast } from 'sonner';
 
 export default function CompletePage() {
   const router = useRouter();
   const { state } = useOnboarding();
   const { mutateAsync: completeOnboarding, isPending } = useCompleteOnboarding();
+  const { data: badgesData, isLoading: badgesLoading } = useBadges();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -151,18 +153,19 @@ export default function CompletePage() {
       </div>
 
       {/* Badges ganados */}
-      {state.completionScore >= 80 && (
+      {!badgesLoading && badgesData?.data && badgesData.data.length > 0 && (
         <div className="w-full max-w-md bg-blue-50 rounded-xl p-6 mb-8 border border-blue-200">
           <h3 className="font-semibold text-blue-900 mb-3">Badges ganados:</h3>
           <div className="flex flex-wrap gap-2 justify-center">
-            <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-medium">
-              🎯 Perfil Completo
-            </span>
-            {state.completionScore === 100 && (
-              <span className="px-3 py-1 bg-yellow-500 text-white rounded-full text-sm font-medium">
-                ⭐ Perfil Premium
+            {badgesData.data.map((badge) => (
+              <span
+                key={badge.id}
+                className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-medium"
+                title={badge.badgeDescription}
+              >
+                {badge.badgeIcon} {badge.badgeName}
               </span>
-            )}
+            ))}
           </div>
         </div>
       )}

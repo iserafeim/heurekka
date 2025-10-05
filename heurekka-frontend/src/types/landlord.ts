@@ -167,10 +167,10 @@ export const PROPERTY_COUNT_OPTIONS = [
 
 // Years of Experience Options
 export const YEARS_EXPERIENCE_OPTIONS = [
-  { value: '<1', label: 'Menos de 1 año' },
+  { value: '<1', label: '< 1 año' },
   { value: '1-3', label: '1-3 años' },
   { value: '3-5', label: '3-5 años' },
-  { value: '5+', label: 'Más de 5 años' },
+  { value: '5+', label: '5 años +' },
 ] as const;
 
 // Specializations
@@ -198,7 +198,7 @@ export const PORTFOLIO_SIZE_OPTIONS = [
 
 // Agent Type Options
 export const AGENT_TYPE_OPTIONS = [
-  { value: 'independent', label: 'Independiente' },
+  { value: 'independent', label: 'Agente Independiente' },
   { value: 'agency_agent', label: 'Agente de Empresa' },
 ] as const;
 

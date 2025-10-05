@@ -47,7 +47,6 @@ export function RealEstateAgentForm({
       agentType: 'independent',
       companyName: '',
       yearsOfExperience: '1-3',
-      licenseNumber: '',
       specializations: [],
       coverageAreas: [],
       propertiesManaged: '1-5',
@@ -109,7 +108,7 @@ export function RealEstateAgentForm({
             <label
               key={option.value}
               className={cn(
-                'flex-1 cursor-pointer rounded-lg border-2 transition-all p-4 text-center',
+                'flex-1 cursor-pointer rounded-lg border-2 transition-all p-3 sm:p-4 text-center',
                 'hover:border-blue-300',
                 agentType === option.value
                   ? 'border-blue-600 bg-blue-50'
@@ -123,7 +122,7 @@ export function RealEstateAgentForm({
                 className="sr-only"
               />
               <span className={cn(
-                'font-medium',
+                'text-sm sm:text-base font-medium',
                 agentType === option.value ? 'text-blue-700' : 'text-gray-700'
               )}>
                 {option.label}
@@ -198,7 +197,7 @@ export function RealEstateAgentForm({
                 className="sr-only"
               />
               <span className={cn(
-                'text-sm font-medium',
+                'text-sm sm:text-base font-medium',
                 formValues.yearsOfExperience === option.value
                   ? 'text-blue-700'
                   : 'text-gray-700'
@@ -208,19 +207,6 @@ export function RealEstateAgentForm({
             </label>
           ))}
         </div>
-      </FormField>
-
-      {/* Número de Licencia */}
-      <FormField
-        label="Número de Licencia AHCI"
-        error={errors.licenseNumber?.message}
-        helperText="Formato: AHCI-12345"
-      >
-        <Input
-          {...register('licenseNumber')}
-          placeholder="AHCI-12345"
-          className={cn(errors.licenseNumber && 'border-red-300')}
-        />
       </FormField>
 
       {/* Especializaciones */}
@@ -238,20 +224,21 @@ export function RealEstateAgentForm({
               {SPECIALIZATIONS_OPTIONS.map(option => (
                 <label
                   key={option.value}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-300 hover:bg-gray-50 cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    checked={field.value?.includes(option.value as any)}
+                    checked={(field.value || []).includes(option.value as any)}
                     onChange={(e) => {
+                      const currentValue = field.value || [];
                       const newValue = e.target.checked
-                        ? [...(field.value || []), option.value]
-                        : (field.value || []).filter((v: string) => v !== option.value);
+                        ? [...currentValue, option.value]
+                        : currentValue.filter((v: string) => v !== option.value);
                       field.onChange(newValue);
                     }}
                     className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="font-medium">{option.label}</span>
+                  <span className="text-sm sm:text-base">{option.label}</span>
                 </label>
               ))}
             </div>
@@ -266,7 +253,7 @@ export function RealEstateAgentForm({
         error={errors.coverageAreas?.message}
         helperText="Selecciona entre 1 y 10 ciudades"
       >
-        <div className="max-h-60 overflow-y-auto border rounded-lg p-3 space-y-2">
+        <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
           {HONDURAS_CITIES.map(city => (
             <label
               key={city}
@@ -302,7 +289,7 @@ export function RealEstateAgentForm({
         <select
           {...register('propertiesManaged')}
           className={cn(
-            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base',
             errors.propertiesManaged ? 'border-red-300' : 'border-gray-300'
           )}
         >
@@ -325,7 +312,7 @@ export function RealEstateAgentForm({
           maxLength={300}
           placeholder="Ej: Especializado en propiedades residenciales premium en Tegucigalpa. 5 años de experiencia ayudando a familias a encontrar su hogar ideal."
           className={cn(
-            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none',
+            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm sm:text-base',
             errors.professionalBio ? 'border-red-300' : 'border-gray-300'
           )}
         />

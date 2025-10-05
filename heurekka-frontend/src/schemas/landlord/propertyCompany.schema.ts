@@ -14,9 +14,11 @@ export const propertyCompanySchema = z
     rtn: z
       .string()
       .regex(/^\d{4}-\d{4}-\d{6}$/, 'El RTN debe tener el formato 0801-1990-123456')
-      .refine((val) => val !== '0000-0000-000000', 'Ingrese un RTN válido'),
+      .refine((val) => val !== '0000-0000-000000', 'Ingrese un RTN válido')
+      .optional()
+      .or(z.literal('')),
 
-    companyType: z.string().min(1, 'Debe seleccionar el tipo de empresa'),
+    companyType: z.string().min(1, 'Debe seleccionar el tipo de empresa').optional().or(z.literal('')),
 
     foundedYear: z
       .number()
@@ -69,19 +71,6 @@ export const propertyCompanySchema = z
       .min(1, 'Debe seleccionar al menos un tipo de propiedad')
       .max(4, 'Puede seleccionar hasta 4 tipos de propiedades'),
 
-    priceRangeMin: z
-      .number()
-      .int('El precio debe ser un número entero')
-      .min(0, 'El precio mínimo debe ser mayor o igual a 0')
-      .optional()
-      .nullable(),
-
-    priceRangeMax: z
-      .number()
-      .int('El precio debe ser un número entero')
-      .min(0, 'El precio máximo debe ser mayor o igual a 0')
-      .optional()
-      .nullable(),
 
     companyLogoUrl: z
       .string()
@@ -100,19 +89,6 @@ export const propertyCompanySchema = z
       .max(500, 'La descripción no puede exceder 500 caracteres')
       .optional()
       .or(z.literal('')),
-  })
-  .refine(
-    (data) => {
-      // Validar que priceRangeMax >= priceRangeMin si ambos están presentes
-      if (data.priceRangeMin != null && data.priceRangeMax != null) {
-        return data.priceRangeMax >= data.priceRangeMin;
-      }
-      return true;
-    },
-    {
-      message: 'El precio máximo debe ser mayor o igual al precio mínimo',
-      path: ['priceRangeMax'],
-    }
-  );
+  });
 
 export type PropertyCompanyInput = z.infer<typeof propertyCompanySchema>;
