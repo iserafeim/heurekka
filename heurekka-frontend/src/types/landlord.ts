@@ -121,7 +121,7 @@ export interface LandlordProfile {
 export const LANDLORD_TYPE_OPTIONS = [
   {
     type: 'individual_owner' as const,
-    icon: '👤',
+    icon: '👨‍💼',
     title: 'Propietario Individual',
     description: 'Tengo mis propias propiedades',
     details: [
@@ -133,7 +133,7 @@ export const LANDLORD_TYPE_OPTIONS = [
   },
   {
     type: 'real_estate_agent' as const,
-    icon: '🏢',
+    icon: '👩‍💻',
     title: 'Agente Inmobiliario',
     description: 'Gestiono propiedades de clientes',
     details: [
@@ -145,8 +145,8 @@ export const LANDLORD_TYPE_OPTIONS = [
   },
   {
     type: 'property_company' as const,
-    icon: '🏛',
-    title: 'Empresa de Gestión',
+    icon: '🏢',
+    title: 'Constructora/Inmobiliaria',
     description: 'Administramos múltiples propiedades',
     details: [
       'Gestión empresarial',

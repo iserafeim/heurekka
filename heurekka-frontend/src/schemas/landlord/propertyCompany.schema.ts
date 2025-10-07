@@ -11,15 +11,6 @@ export const propertyCompanySchema = z
       .min(2, 'El nombre de la empresa debe tener al menos 2 caracteres')
       .max(150, 'El nombre de la empresa no puede exceder 150 caracteres'),
 
-    rtn: z
-      .string()
-      .regex(/^\d{4}-\d{4}-\d{6}$/, 'El RTN debe tener el formato 0801-1990-123456')
-      .refine((val) => val !== '0000-0000-000000', 'Ingrese un RTN válido')
-      .optional()
-      .or(z.literal('')),
-
-    companyType: z.string().min(1, 'Debe seleccionar el tipo de empresa').optional().or(z.literal('')),
-
     foundedYear: z
       .number()
       .int('El año debe ser un número entero')

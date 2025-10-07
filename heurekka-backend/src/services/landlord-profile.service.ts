@@ -35,20 +35,19 @@ export interface RealEstateAgentInput {
 
 export interface PropertyCompanyInput {
   companyName: string;
-  companyRtn: string;
-  companyType: string;
   foundedYear?: number;
   mainPhone: string;
+  primaryPhone?: string; // Frontend alias for mainPhone
   whatsappBusiness: string;
   contactEmail?: string;
   website?: string;
   officeAddress: string;
   city: string;
   operationZones: string[];
+  operatingAreas?: string[]; // Frontend alias for operationZones
   portfolioSize: string;
   portfolioTypes: string[];
-  priceRangeMin?: number;
-  priceRangeMax?: number;
+  propertyTypes?: string[]; // Frontend alias for portfolioTypes
   companyLogoUrl?: string;
   licenseDocumentUrl?: string;
   companyDescription?: string;
@@ -354,6 +353,8 @@ class LandlordProfileService {
         phone = input.phone;
       } else if (input.mainPhone) {
         phone = input.mainPhone;
+      } else if (input.primaryPhone) {
+        phone = input.primaryPhone;
       }
 
       console.log('[Auth Sync] Extracted - Name:', fullName, 'Phone:', phone);
@@ -463,21 +464,18 @@ class LandlordProfileService {
           ...baseData,
           business_name: input.companyName,
           company_name: input.companyName,
-          company_rtn: input.companyRtn,
-          company_type: input.companyType,
           founded_year: input.foundedYear,
-          main_phone: input.mainPhone,
+          main_phone: input.mainPhone || input.primaryPhone,
+          phone: input.mainPhone || input.primaryPhone,
           whatsapp_business: input.whatsappBusiness,
           contact_email: input.contactEmail,
           email: input.contactEmail,
           website: input.website,
           office_address: input.officeAddress,
           city: input.city,
-          operation_zones: input.operationZones,
+          operation_zones: input.operationZones || input.operatingAreas,
           portfolio_size: input.portfolioSize,
-          portfolio_types: input.portfolioTypes,
-          price_range_min: input.priceRangeMin,
-          price_range_max: input.priceRangeMax,
+          portfolio_types: input.portfolioTypes || input.propertyTypes,
           company_logo_url: input.companyLogoUrl,
           license_document_url: input.licenseDocumentUrl,
           company_description: input.companyDescription
@@ -1046,6 +1044,7 @@ class LandlordProfileService {
 
         if (onboardingData.companyName) {
           updateData.company_name = onboardingData.companyName;
+          updateData.business_name = onboardingData.companyName;
           updateData.full_name = onboardingData.companyName; // Use company name as full_name
           providedFields.push('companyName');
         }
@@ -1053,12 +1052,14 @@ class LandlordProfileService {
           updateData.founded_year = onboardingData.foundedYear;
           providedFields.push('foundedYear');
         }
-        if (onboardingData.primaryPhone) {
-          updateData.phone = onboardingData.primaryPhone; // Map to phone column
+        // Map primaryPhone or mainPhone to phone column
+        if (onboardingData.primaryPhone || onboardingData.mainPhone) {
+          updateData.phone = onboardingData.primaryPhone || onboardingData.mainPhone;
+          updateData.main_phone = onboardingData.primaryPhone || onboardingData.mainPhone;
           providedFields.push('primaryPhone');
         }
         if (onboardingData.whatsappBusiness) {
-          updateData.whatsapp_number = onboardingData.whatsappBusiness; // Map to whatsapp_number column
+          updateData.whatsapp_number = onboardingData.whatsappBusiness;
           providedFields.push('whatsappBusiness');
         }
         if (onboardingData.contactEmail) {
@@ -1077,16 +1078,18 @@ class LandlordProfileService {
           updateData.city = onboardingData.city;
           providedFields.push('city');
         }
-        if (onboardingData.operatingAreas) {
-          updateData.operating_areas = onboardingData.operatingAreas;
+        // Map operatingAreas or operationZones to operation_zones column
+        if (onboardingData.operatingAreas || onboardingData.operationZones) {
+          updateData.operation_zones = onboardingData.operatingAreas || onboardingData.operationZones;
           providedFields.push('operatingAreas');
         }
         if (onboardingData.portfolioSize) {
           updateData.portfolio_size = onboardingData.portfolioSize;
           providedFields.push('portfolioSize');
         }
-        if (onboardingData.propertyTypes) {
-          updateData.property_types = onboardingData.propertyTypes;
+        // Map propertyTypes or portfolioTypes to portfolio_types column
+        if (onboardingData.propertyTypes || onboardingData.portfolioTypes) {
+          updateData.portfolio_types = onboardingData.propertyTypes || onboardingData.portfolioTypes;
           providedFields.push('propertyTypes');
         }
         if (onboardingData.companyDescription) {
