@@ -230,7 +230,7 @@ class LandlordProfileService {
       // Recalculate completion percentage if needed
       if (Object.keys(input).length > 0) {
         const mergedInput: any = { ...existingProfile, ...input };
-        updateData.profile_completion_percentage = this.calculateProfileCompletion(mergedInput);
+        updateData.profile_completion_percentage = await this.calculateCompletionWithVerifications(userId, mergedInput);
       }
 
       updateData.last_active_at = new Date().toISOString();
@@ -454,6 +454,69 @@ class LandlordProfileService {
   /**
    * Calculate profile completion percentage
    */
+  /**
+   * Update profile completion percentage for a landlord
+   * This should be called after profile updates or verification changes
+   */
+  async updateProfileCompletionPercentage(userId: string): Promise<void> {
+    try {
+      // Get current landlord profile
+      const { data: landlord, error } = await this.supabase
+        .from('landlords')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !landlord) {
+        console.error('Error fetching landlord for completion update:', error);
+        return;
+      }
+
+      // Calculate new completion percentage
+      const newPercentage = await this.calculateCompletionWithVerifications(userId, landlord);
+
+      // Update the percentage in landlords table
+      await this.supabase
+        .from('landlords')
+        .update({ profile_completion_percentage: newPercentage })
+        .eq('user_id', userId);
+
+      // Also update overall_profile_completion in user_accounts
+      await this.supabase
+        .from('user_accounts')
+        .update({ overall_profile_completion: newPercentage })
+        .eq('user_id', userId);
+
+      console.log(`[Profile Completion] Updated for user ${userId}: ${newPercentage}%`);
+    } catch (error) {
+      console.error('Error updating profile completion percentage:', error);
+      // Don't throw - this is not critical
+    }
+  }
+
+  /**
+   * Calculate profile completion including verifications
+   * 70% for profile fields (50% required + 20% optional)
+   * 15% for email verification
+   * 15% for phone verification
+   */
+  private async calculateCompletionWithVerifications(userId: string, input: any): Promise<number> {
+    const baseScore = this.calculateProfileCompletion(input);
+    const basePercentage = (baseScore / 100) * 70; // Scale base to 70%
+
+    // Check verification status
+    const { data: landlord } = await this.supabase
+      .from('landlords')
+      .select('email_verified, phone_verified')
+      .eq('user_id', userId)
+      .single();
+
+    const emailVerificationScore = landlord?.email_verified ? 15 : 0;
+    const phoneVerificationScore = landlord?.phone_verified ? 15 : 0;
+
+    return Math.min(100, Math.round(basePercentage + emailVerificationScore + phoneVerificationScore));
+  }
+
   private calculateProfileCompletion(input: any): number {
     const landlordType = input.landlordType || input.landlord_type;
 
@@ -783,13 +846,13 @@ class LandlordProfileService {
           updateData.property_count_range = onboardingData.propertyCountRange;
           providedFields.push('propertyCountRange');
         }
-        if (onboardingData.propertyLocation) {
-          updateData.property_location = onboardingData.propertyLocation;
-          providedFields.push('propertyLocation');
+        if (onboardingData.primaryLocation) {
+          updateData.property_location = onboardingData.primaryLocation;
+          providedFields.push('primaryLocation');
         }
-        if (onboardingData.rentalReason) {
-          updateData.rental_reason = onboardingData.rentalReason;
-          providedFields.push('rentalReason');
+        if (onboardingData.rentingReason) {
+          updateData.rental_reason = onboardingData.rentingReason;
+          providedFields.push('rentingReason');
         }
       } else if (landlordType === 'real_estate_agent') {
         // Required fields for real estate agent
@@ -888,14 +951,28 @@ class LandlordProfileService {
       }
 
       // Calculate profile completion percentage
+      // 70% for profile fields (50% required + 20% optional)
+      // 15% for email verification
+      // 15% for phone verification
+
       const requiredCount = requiredFields.length;
       const requiredProvided = requiredFields.filter(field => providedFields.includes(field)).length;
-      const requiredScore = requiredCount > 0 ? (requiredProvided / requiredCount) * 80 : 0; // 80% weight for required fields
+      const requiredScore = requiredCount > 0 ? (requiredProvided / requiredCount) * 50 : 0; // 50% weight for required fields
 
       const optionalProvided = providedFields.length - requiredProvided;
       const optionalScore = Math.min(20, optionalProvided * 5); // 20% weight for optional fields
 
-      completionScore = Math.min(100, Math.round(requiredScore + optionalScore));
+      // Check verification status from existing landlord record
+      const { data: existingLandlord } = await this.supabase
+        .from('landlords')
+        .select('email_verified, phone_verified')
+        .eq('user_id', userId)
+        .single();
+
+      const emailVerificationScore = existingLandlord?.email_verified ? 15 : 0;
+      const phoneVerificationScore = existingLandlord?.phone_verified ? 15 : 0;
+
+      completionScore = Math.min(100, Math.round(requiredScore + optionalScore + emailVerificationScore + phoneVerificationScore));
       updateData.profile_completion_percentage = completionScore;
 
       console.log('[Profile Completion] Calculation details:', {
@@ -907,6 +984,8 @@ class LandlordProfileService {
         optionalProvided,
         requiredScore,
         optionalScore,
+        emailVerificationScore,
+        phoneVerificationScore,
         finalScore: completionScore
       });
 
@@ -924,10 +1003,15 @@ class LandlordProfileService {
         });
       }
 
-      // Update user_accounts to mark has_landlord_profile
+      // Update user_accounts to mark has_landlord_profile and sync profile data
       await this.supabase
         .from('user_accounts')
-        .update({ has_landlord_profile: true })
+        .update({
+          has_landlord_profile: true,
+          active_context: 'landlord',
+          overall_profile_completion: completionScore,
+          onboarding_completed: true
+        })
         .eq('user_id', userId);
 
       // Create initial portfolio_stats record

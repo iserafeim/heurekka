@@ -10,6 +10,14 @@
     "@magicuidesign/mcp": {
       "command": "npx",
       "args": ["-y", "@magicuidesign/mcp@latest"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase"],
+      "env": {
+        "SUPABASE_URL": "https://pvgapnlfccpkicfwmgwk.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2Z2FwbmxmY2Nwa2ljZndtZ3drIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjkyNTE2MSwiZXhwIjoyMDcyNTAxMTYxfQ.GJk7pvqT4ug9o48bAmG2Tc9D52oD_N9GVHRiRREgMNU"
+      }
     }
   }
 }

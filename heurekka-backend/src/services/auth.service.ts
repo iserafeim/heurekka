@@ -186,6 +186,23 @@ class AuthService {
         context?.userAgent
       );
 
+      // Ensure user_accounts record exists before sign in
+      // This prevents race conditions with the database trigger
+      const { error: userAccountError } = await this.supabaseAdmin
+        .from('user_accounts')
+        .upsert({
+          user_id: newUser.user.id,
+          auth_methods: input.password ? ['email'] : ['google']
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: true
+        });
+
+      if (userAccountError) {
+        console.error('Error creating user_accounts record:', userAccountError);
+        // Don't fail signup if this fails, the trigger should handle it
+      }
+
       // Sign in the user immediately to get session
       const { data: signInData, error: signInError } = await this.supabase.auth.signInWithPassword({
         email: sanitizedEmail,
@@ -193,11 +210,21 @@ class AuthService {
       });
 
       if (signInError || !signInData.session) {
+        console.error('SignIn error details:', {
+          error: signInError,
+          errorMessage: signInError?.message,
+          errorStatus: signInError?.status,
+          hasSession: !!signInData?.session,
+          userId: newUser.user.id
+        });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Usuario creado pero error al iniciar sesión'
+          message: `Usuario creado pero error al iniciar sesión: ${signInError?.message || 'Sin sesión'}`
         });
       }
+
+      // Sync login data to user_accounts
+      await this.syncLoginData(newUser.user.id);
 
       // Check existing profiles
       const profiles = await this.checkUserProfiles(newUser.user.id);
@@ -312,8 +339,8 @@ class AuthService {
         context?.userAgent
       );
 
-      // Update last login (using RPC to avoid SQL injection)
-      await this.updateLastLogin(data.user.id);
+      // Sync login data to user_accounts
+      await this.syncLoginData(data.user.id);
 
       // Check existing profiles
       const profiles = await this.checkUserProfiles(data.user.id);
@@ -629,6 +656,21 @@ class AuthService {
         });
       }
 
+      // Ensure user_accounts record exists (for OTP signup)
+      const { error: userAccountError } = await this.supabaseAdmin
+        .from('user_accounts')
+        .upsert({
+          user_id: data.user.id,
+          auth_methods: ['email']
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: true
+        });
+
+      if (userAccountError) {
+        console.error('Error creating user_accounts record for OTP user:', userAccountError);
+      }
+
       // Log successful verification
       await this.auditLogger.log({
         event_type: AuditEventType.EMAIL_VERIFIED,
@@ -637,6 +679,9 @@ class AuthService {
         metadata: { email },
         severity: 'low'
       });
+
+      // Sync login data to user_accounts
+      await this.syncLoginData(data.user.id);
 
       // Check existing profiles
       const profiles = await this.checkUserProfiles(data.user.id);
@@ -686,6 +731,21 @@ class AuthService {
         });
       }
 
+      // Ensure user_accounts record exists (for new Google users)
+      const { error: userAccountError } = await this.supabaseAdmin
+        .from('user_accounts')
+        .upsert({
+          user_id: data.user.id,
+          auth_methods: ['google']
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: true
+        });
+
+      if (userAccountError) {
+        console.error('Error creating user_accounts record for Google user:', userAccountError);
+      }
+
       // Update user metadata with intent if provided
       if (input.intent) {
         await this.supabaseAdmin.auth.admin.updateUserById(data.user.id, {
@@ -695,6 +755,9 @@ class AuthService {
           }
         });
       }
+
+      // Sync login data to user_accounts
+      await this.syncLoginData(data.user.id);
 
       const profiles = await this.checkUserProfiles(data.user.id);
 
@@ -722,6 +785,36 @@ class AuthService {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Google authentication failed'
       });
+    }
+  }
+
+  /**
+   * Sync login data to user_accounts after successful sign in
+   */
+  private async syncLoginData(userId: string): Promise<void> {
+    try {
+      // Get current login_count
+      const { data: userAccount } = await this.supabaseAdmin
+        .from('user_accounts')
+        .select('login_count')
+        .eq('user_id', userId)
+        .single();
+
+      const currentCount = userAccount?.login_count || 0;
+      const now = new Date().toISOString();
+
+      // Update with incremented count
+      await this.supabaseAdmin
+        .from('user_accounts')
+        .update({
+          last_login_at: now,
+          login_count: currentCount + 1,
+          last_active_at: now
+        })
+        .eq('user_id', userId);
+    } catch (error) {
+      // Don't fail the login if this fails, just log it
+      console.error('Error syncing login data:', error);
     }
   }
 

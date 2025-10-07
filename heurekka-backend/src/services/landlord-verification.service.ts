@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { TRPCError } from '@trpc/server';
 import crypto from 'crypto';
 import { getEmailService } from './email.service';
+import { getLandlordProfileService } from './landlord-profile.service';
 
 /**
  * Verification data types
@@ -198,6 +199,13 @@ class LandlordVerificationService {
       // Mark as verified
       await this.updateVerificationStatus(verification.id, 'verified');
 
+      // Get landlord user_id
+      const { data: landlord } = await this.supabase
+        .from('landlords')
+        .select('user_id')
+        .eq('id', landlordId)
+        .single();
+
       // Update landlord profile
       const { error: updateError } = await this.supabase
         .from('landlords')
@@ -213,6 +221,12 @@ class LandlordVerificationService {
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error al actualizar el perfil del arrendador'
         });
+      }
+
+      // Update profile completion percentage
+      if (landlord?.user_id) {
+        const profileService = getLandlordProfileService();
+        await profileService.updateProfileCompletionPercentage(landlord.user_id);
       }
 
       return {
@@ -369,6 +383,13 @@ class LandlordVerificationService {
       // Mark as verified
       await this.updateVerificationStatus(verification.id, 'verified');
 
+      // Get landlord user_id
+      const { data: landlord } = await this.supabase
+        .from('landlords')
+        .select('user_id')
+        .eq('id', landlordId)
+        .single();
+
       // Update landlord profile
       const { error: updateError } = await this.supabase
         .from('landlords')
@@ -383,6 +404,12 @@ class LandlordVerificationService {
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error al actualizar el perfil del arrendador'
         });
+      }
+
+      // Update profile completion percentage
+      if (landlord?.user_id) {
+        const profileService = getLandlordProfileService();
+        await profileService.updateProfileCompletionPercentage(landlord.user_id);
       }
 
       return {
@@ -492,7 +519,10 @@ class LandlordVerificationService {
     verificationId: string,
     status: VerificationStatus
   ): Promise<void> {
-    const updateData: any = { status };
+    const updateData: any = {
+      status,
+      verification_status: status === 'verified' ? 'approved' : status
+    };
 
     if (status === 'verified') {
       updateData.verified_at = new Date().toISOString();
