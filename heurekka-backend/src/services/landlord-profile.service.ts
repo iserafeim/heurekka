@@ -16,14 +16,17 @@ export interface IndividualOwnerInput {
 
 export interface RealEstateAgentInput {
   fullName: string;
+  professionalName?: string; // Frontend sends this instead of fullName
   phone: string;
   whatsappNumber: string;
   agentType: 'independent' | 'company_agent';
   companyName?: string;
   yearsExperience: string;
+  yearsOfExperience?: string; // Frontend alias for yearsExperience
   specializations: string[];
   coverageAreas: string[];
   propertiesInManagement: string;
+  propertiesManaged?: string; // Frontend alias for propertiesInManagement
   credentialsUrl?: string;
   socialFacebook?: string;
   socialInstagram?: string;
@@ -337,15 +340,19 @@ class LandlordProfileService {
       let fullName: string | undefined;
       let phone: string | undefined;
 
-      if ('fullName' in input) {
+      // Priority: professionalName > fullName > companyName
+      // For real estate agents, professionalName is the correct field
+      if (input.professionalName) {
+        fullName = input.professionalName;
+      } else if (input.fullName) {
         fullName = input.fullName;
-      } else if ('companyName' in input) {
+      } else if (input.companyName) {
         fullName = input.companyName;
       }
 
-      if ('phone' in input) {
+      if (input.phone) {
         phone = input.phone;
-      } else if ('mainPhone' in input) {
+      } else if (input.mainPhone) {
         phone = input.mainPhone;
       }
 
@@ -767,6 +774,13 @@ class LandlordProfileService {
     skippedSteps?: string[]
   ): Promise<{ success: boolean; currentStep: number }> {
     try {
+      console.log('[SaveOnboardingProgress] Received data:', JSON.stringify({
+        userId,
+        step,
+        formData,
+        skippedSteps
+      }, null, 2));
+
       // Check if profile exists
       let profile = await this.getLandlordProfileByUserId(userId);
 
@@ -890,6 +904,9 @@ class LandlordProfileService {
       }
 
       const onboardingData = landlordData.onboarding_data || {};
+
+      console.log('[CompleteOnboarding] Raw onboarding_data from database:', JSON.stringify(onboardingData, null, 2));
+
       // Use landlordType from onboarding_data if available, otherwise fall back to landlord_type column
       // This allows users to change their type during onboarding
       const landlordType = onboardingData.landlordType || landlordData.landlord_type;
@@ -904,8 +921,20 @@ class LandlordProfileService {
 
       // Copy common fields
       // For real_estate_agent, use professionalName instead of fullName
-      if (landlordType === 'real_estate_agent' && onboardingData.professionalName) {
-        updateData.full_name = onboardingData.professionalName;
+      if (landlordType === 'real_estate_agent') {
+        // Try professionalName first, then fullName, then fall back to existing full_name in DB
+        if (onboardingData.professionalName) {
+          updateData.full_name = onboardingData.professionalName;
+          console.log('[CompleteOnboarding] Using professionalName:', onboardingData.professionalName);
+        } else if (onboardingData.fullName) {
+          updateData.full_name = onboardingData.fullName;
+          console.log('[CompleteOnboarding] Using fullName:', onboardingData.fullName);
+        } else if (profile.full_name) {
+          // Keep existing name if no new one provided
+          console.log('[CompleteOnboarding] Keeping existing full_name from DB:', profile.full_name);
+        } else {
+          console.warn('[CompleteOnboarding] No professionalName, fullName, or existing full_name found!');
+        }
       } else if (onboardingData.fullName) {
         updateData.full_name = onboardingData.fullName;
       }
@@ -976,7 +1005,8 @@ class LandlordProfileService {
         // Required fields for real estate agent
         requiredFields.push('fullName', 'phone', 'whatsappNumber', 'agentType', 'yearsExperience', 'specializations', 'coverageAreas');
 
-        if (onboardingData.fullName) providedFields.push('fullName');
+        // Check for professionalName OR fullName
+        if (onboardingData.professionalName || onboardingData.fullName) providedFields.push('fullName');
         if (onboardingData.phone) providedFields.push('phone');
         if (onboardingData.whatsappNumber) providedFields.push('whatsappNumber');
 
@@ -988,8 +1018,9 @@ class LandlordProfileService {
           updateData.company_name = onboardingData.companyName;
           providedFields.push('companyName');
         }
-        if (onboardingData.yearsExperience) {
-          updateData.years_experience = onboardingData.yearsExperience;
+        // Map yearsOfExperience from frontend to yearsExperience
+        if (onboardingData.yearsExperience || onboardingData.yearsOfExperience) {
+          updateData.years_experience = onboardingData.yearsExperience || onboardingData.yearsOfExperience;
           providedFields.push('yearsExperience');
         }
         if (onboardingData.specializations) {
@@ -1000,8 +1031,9 @@ class LandlordProfileService {
           updateData.coverage_areas = onboardingData.coverageAreas;
           providedFields.push('coverageAreas');
         }
-        if (onboardingData.propertiesInManagement) {
-          updateData.properties_in_management = onboardingData.propertiesInManagement;
+        // Map propertiesManaged from frontend to propertiesInManagement
+        if (onboardingData.propertiesInManagement || onboardingData.propertiesManaged) {
+          updateData.properties_in_management = onboardingData.propertiesInManagement || onboardingData.propertiesManaged;
           providedFields.push('propertiesInManagement');
         }
         if (onboardingData.professionalBio) {

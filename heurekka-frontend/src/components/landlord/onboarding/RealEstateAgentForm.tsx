@@ -50,9 +50,6 @@ export function RealEstateAgentForm({
       specializations: [],
       coverageAreas: [],
       propertiesManaged: '1-5',
-      credentialsUrl: '',
-      facebook: '',
-      instagram: '',
       professionalBio: '',
     },
     mode: 'onChange',
@@ -84,15 +81,15 @@ export function RealEstateAgentForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-      {/* Nombre Profesional */}
+      {/* Nombre Completo */}
       <FormField
-        label="Nombre Profesional"
+        label="Nombre Completo"
         required
         error={errors.professionalName?.message}
       >
         <Input
           {...register('professionalName')}
-          placeholder="Lic. María González"
+          placeholder="María González"
           className={cn(errors.professionalName && 'border-red-300')}
         />
       </FormField>

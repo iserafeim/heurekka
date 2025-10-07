@@ -19,4 +19,12 @@ The frontend (what the user can see) should be written in spanish.
 
 Since the features documentation will be in the future passed on to a front end and back end engineer, everytime I ask you to send something to the backlog using the linear MCP, I want you to remove any lines related to the feature sent to the backlog from the read me files and markdown files within the features directory to avoid confusion.
 
+### Docker
+
+Ten en mente que uso docker para mi backend.
+
+### Supabase MCP
+
+Cuando tengas que usar supabase y ver tablas o revisar el proyecto usa el supabase mcp usando el service rol key en .mcp.json.
+
 

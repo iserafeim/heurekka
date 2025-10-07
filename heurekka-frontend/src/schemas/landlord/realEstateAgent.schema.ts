@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const realEstateAgentSchema = z.object({
   professionalName: z
     .string()
-    .min(2, 'El nombre profesional debe tener al menos 2 caracteres')
+    .min(2, 'El nombre completo debe tener al menos 2 caracteres')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
 
   phone: z
@@ -48,24 +48,6 @@ export const realEstateAgentSchema = z.object({
   propertiesManaged: z.enum(['1-5', '6-10', '11-20', '20+'], {
     errorMap: () => ({ message: 'Debe seleccionar el rango de propiedades en gestión' }),
   }),
-
-  credentialsUrl: z
-    .string()
-    .url('Debe ser una URL válida')
-    .optional()
-    .or(z.literal('')),
-
-  facebook: z
-    .string()
-    .url('Debe ser una URL válida de Facebook')
-    .optional()
-    .or(z.literal('')),
-
-  instagram: z
-    .string()
-    .url('Debe ser una URL válida de Instagram')
-    .optional()
-    .or(z.literal('')),
 
   professionalBio: z
     .string()
