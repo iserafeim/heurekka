@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/contexts/landlord/OnboardingContext';
 import { useCompleteOnboarding } from '@/hooks/landlord/useOnboarding';
 import { useBadges } from '@/hooks/landlord/useBadges';
+import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
 import { toast } from 'sonner';
 
 export default function CompletePage() {
@@ -17,7 +18,11 @@ export default function CompletePage() {
   const { state } = useOnboarding();
   const { mutateAsync: completeOnboarding, isPending } = useCompleteOnboarding();
   const { data: badgesData, isLoading: badgesLoading } = useBadges();
+  const { data: profileData, isLoading: profileLoading } = useLandlordProfile();
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Obtener el porcentaje de completitud del backend
+  const profileCompletionPercentage = profileData?.data?.profileCompletionPercentage || 0;
 
   useEffect(() => {
     // Completar onboarding al montar
@@ -102,7 +107,7 @@ export default function CompletePage() {
 
           <div className="flex items-center justify-between py-2 border-b">
             <span className="text-gray-600">Completitud</span>
-            <span className="font-semibold text-green-600">{state.completionScore}%</span>
+            <span className="font-semibold text-green-600">{profileCompletionPercentage}%</span>
           </div>
 
           <div className="flex items-center justify-between py-2">
@@ -141,12 +146,12 @@ export default function CompletePage() {
                 strokeWidth="8"
                 fill="none"
                 strokeDasharray={`${2 * Math.PI * 56}`}
-                strokeDashoffset={`${2 * Math.PI * 56 * (1 - state.completionScore / 100)}`}
+                strokeDashoffset={`${2 * Math.PI * 56 * (1 - profileCompletionPercentage / 100)}`}
                 className="text-blue-600 transition-all duration-1000"
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold text-gray-900">{state.completionScore}%</span>
+              <span className="text-2xl font-bold text-gray-900">{profileCompletionPercentage}%</span>
             </div>
           </div>
         </div>
