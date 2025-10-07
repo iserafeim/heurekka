@@ -151,14 +151,26 @@ class AuthService {
         });
       }
 
+      // Convert phone to E.164 format for Supabase Auth
+      let e164Phone: string | undefined;
+      if (sanitizedPhone) {
+        const digitsOnly = sanitizedPhone.replace(/\D/g, '');
+        if (digitsOnly.length === 8) {
+          e164Phone = `+504${digitsOnly}`;
+        } else if (digitsOnly.startsWith('504') && digitsOnly.length === 11) {
+          e164Phone = `+${digitsOnly}`;
+        }
+      }
+
       // Create user with admin API and auto-confirm email
       const { data: newUser, error: createError } = await this.supabaseAdmin.auth.admin.createUser({
         email: sanitizedEmail,
         password: input.password,
+        phone: e164Phone, // Set phone in E.164 format for Auth table
         email_confirm: true, // Auto-confirm email, no verification needed
         user_metadata: {
           full_name: sanitizedFullName,
-          phone: sanitizedPhone,
+          phone: sanitizedPhone, // Keep original format in metadata for display
           intent: input.intent || 'tenant'
         }
       });

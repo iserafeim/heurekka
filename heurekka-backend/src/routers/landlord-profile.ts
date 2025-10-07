@@ -922,5 +922,55 @@ export const landlordProfileRouter = router({
         message: 'Error al verificar datos de onboarding'
       });
     }
+  }),
+
+  /**
+   * Sync current user's data to Supabase Auth (manual fix endpoint)
+   */
+  syncAuthData: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.userId;
+
+      // Get landlord profile
+      const profile = await landlordProfileService.getLandlordProfileByUserId(userId);
+
+      if (!profile) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No se encontró perfil de landlord'
+        });
+      }
+
+      // Extract data to sync
+      const landlordData: any = {
+        landlordType: profile.landlordType
+      };
+
+      if (profile.fullName) {
+        landlordData.fullName = profile.fullName;
+      }
+      if (profile.companyName) {
+        landlordData.companyName = profile.companyName;
+      }
+      if (profile.phone) {
+        landlordData.phone = profile.phone;
+      }
+
+      // Use the update method to trigger sync (it calls syncUserAuthData internally)
+      await landlordProfileService.updateLandlordProfile(userId, landlordData);
+
+      return {
+        success: true,
+        message: 'Datos sincronizados correctamente con Supabase Auth'
+      };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al sincronizar datos'
+      });
+    }
   })
 });

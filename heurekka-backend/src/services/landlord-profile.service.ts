@@ -116,6 +116,9 @@ class LandlordProfileService {
       // Validate input based on landlord type
       this.validateLandlordInput(input);
 
+      // Sync user data to Supabase Auth for display in Auth table
+      await this.syncUserAuthData(userId, input);
+
       // Build profile data based on type
       const profileData = this.buildProfileData(userId, input);
 
@@ -224,6 +227,9 @@ class LandlordProfileService {
         });
       }
 
+      // Sync user data to Supabase Auth if name or phone changed
+      await this.syncUserAuthData(userId, input);
+
       // Build update data
       const updateData = this.buildUpdateData(input);
 
@@ -292,6 +298,118 @@ class LandlordProfileService {
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Error al eliminar el perfil'
       });
+    }
+  }
+
+  /**
+   * Convert Honduran phone number to E.164 format
+   */
+  private convertToE164(phone: string): string | null {
+    if (!phone) return null;
+
+    // Remove all non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+
+    // If it already starts with 504, add the +
+    if (digitsOnly.startsWith('504') && digitsOnly.length === 11) {
+      return `+${digitsOnly}`;
+    }
+
+    // If it's 8 digits, add +504
+    if (digitsOnly.length === 8) {
+      return `+504${digitsOnly}`;
+    }
+
+    // If it starts with 504 but has wrong length or other cases, return null
+    console.log(`[Auth Sync] Invalid phone number format: ${phone} (${digitsOnly.length} digits)`);
+    return null;
+  }
+
+  /**
+   * Sync user data to Supabase Auth for display in Auth table
+   */
+  private async syncUserAuthData(userId: string, input: Partial<LandlordProfileInput>): Promise<void> {
+    console.log('[Auth Sync] Starting sync for user:', userId);
+    console.log('[Auth Sync] Input data:', JSON.stringify(input, null, 2));
+
+    try {
+      // Extract fullName and phone based on landlord type
+      let fullName: string | undefined;
+      let phone: string | undefined;
+
+      if ('fullName' in input) {
+        fullName = input.fullName;
+      } else if ('companyName' in input) {
+        fullName = input.companyName;
+      }
+
+      if ('phone' in input) {
+        phone = input.phone;
+      } else if ('mainPhone' in input) {
+        phone = input.mainPhone;
+      }
+
+      console.log('[Auth Sync] Extracted - Name:', fullName, 'Phone:', phone);
+
+      // Only update if we have values to update
+      if (!fullName && !phone) {
+        console.log('[Auth Sync] No data to sync, skipping');
+        return;
+      }
+
+      // Get current user to preserve existing metadata
+      console.log('[Auth Sync] Fetching current user...');
+      const { data: currentUser, error: getUserError } = await this.supabase.auth.admin.getUserById(userId);
+
+      if (getUserError) {
+        console.error('[Auth Sync] Error fetching user:', getUserError);
+        return;
+      }
+
+      if (!currentUser?.user) {
+        console.error('[Auth Sync] User not found:', userId);
+        return;
+      }
+
+      console.log('[Auth Sync] Current user metadata:', currentUser.user.user_metadata);
+      console.log('[Auth Sync] Current user phone:', currentUser.user.phone);
+
+      // Build update object - always update user_metadata if we have fullName
+      const updateData: { user_metadata?: any; phone?: string } = {};
+
+      // Always preserve and update user_metadata if we have a name
+      if (fullName) {
+        updateData.user_metadata = {
+          ...currentUser.user.user_metadata,
+          full_name: fullName
+        };
+      }
+
+      // Convert phone to E.164 format for Supabase Auth
+      if (phone) {
+        const e164Phone = this.convertToE164(phone);
+        if (e164Phone) {
+          updateData.phone = e164Phone;
+          console.log('[Auth Sync] Converted phone to E.164:', e164Phone);
+        } else {
+          console.log('[Auth Sync] Skipping phone update - invalid format');
+        }
+      }
+
+      console.log('[Auth Sync] Update data:', JSON.stringify(updateData, null, 2));
+
+      // Update user in Supabase Auth
+      const { error } = await this.supabase.auth.admin.updateUserById(userId, updateData);
+
+      if (error) {
+        console.error('[Auth Sync] Error updating user:', error);
+        return;
+      }
+
+      console.log(`[Auth Sync] ✅ Successfully updated user ${userId} - Name: ${fullName || 'unchanged'}, Phone: ${updateData.phone || 'unchanged'}`);
+    } catch (error) {
+      // Don't fail the profile creation/update if Auth sync fails
+      console.error('[Auth Sync] Exception:', error);
     }
   }
 
@@ -1039,6 +1157,10 @@ class LandlordProfileService {
         // Ignore duplicate key error (already exists), log other errors
         console.error('Error creating portfolio stats:', portfolioError);
       }
+
+      // Sync user data to Supabase Auth
+      console.log('[CompleteOnboarding] Syncing auth data for user:', userId);
+      await this.syncUserAuthData(userId, onboardingData);
 
       // TODO: Trigger welcome notification
 
