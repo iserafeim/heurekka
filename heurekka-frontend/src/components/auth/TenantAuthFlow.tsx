@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthModal, AuthModalHeader, AuthModalFooter, AuthDivider } from './AuthModal';
 import { FormInput } from './FormInput';
 import { GoogleAuthButton } from './GoogleAuthButton';
@@ -12,6 +13,7 @@ import { validatePassword } from '@/lib/validation/password';
 import { validateEmail, sanitizeEmail } from '@/lib/validation/email';
 import { getCSRFToken } from '@/lib/security/csrf';
 import DOMPurify from 'isomorphic-dompurify';
+import { secureAuth } from '@/lib/auth/secure-auth';
 
 export interface TenantAuthFlowProps {
   isOpen: boolean;
@@ -42,6 +44,7 @@ export function TenantAuthFlow({
   propertyDetails,
   onSuccess
 }: TenantAuthFlowProps) {
+  const router = useRouter();
   const [step, setStep] = useState<AuthStep>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -107,14 +110,51 @@ export function TenantAuthFlow({
       });
 
       if (result.success && result.data) {
-        // Sign up through auth store to handle session
-        await signUp(sanitizedEmail, password);
+        // Backend created the user, now sign in to get the session
+        console.log('[TenantAuth] Backend signup successful, signing in to establish session...');
+        const { error: signInError } = await signIn(sanitizedEmail, password);
 
-        // Close modal and call success callback
+        if (signInError) {
+          console.error('[TenantAuth] Sign in failed after signup:', signInError);
+          setErrors({
+            general: 'Error al iniciar sesión. Por favor, intenta nuevamente.'
+          });
+          return;
+        }
+
+        // Wait for access token to be available with retries
+        console.log('[TenantAuth] Waiting for access token to be available...');
+        let tokenAvailable = false;
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const token = await secureAuth.getAccessToken();
+          console.log(`[TenantAuth] Token check attempt ${i + 1}:`, token ? 'Token found' : 'No token');
+
+          if (token) {
+            tokenAvailable = true;
+            console.log('[TenantAuth] Access token confirmed available');
+            break;
+          }
+        }
+
+        if (!tokenAvailable) {
+          console.error('[TenantAuth] Access token not available after signup');
+          setErrors({
+            general: 'Error al establecer la sesión. Por favor, intenta de nuevo.'
+          });
+          return;
+        }
+
+        // Close modal
+        onClose();
+
+        // Call success callback if provided
         if (onSuccess) {
           onSuccess();
         }
-        onClose();
+
+        // Redirect to tenant profile completion
+        router.push('/tenant/profile/complete');
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Error al crear la cuenta. Por favor, intenta nuevamente.';
@@ -138,15 +178,51 @@ export function TenantAuthFlow({
       });
 
       if (result.success && result.data) {
-        await signIn(sanitizedEmail, password);
+        console.log('[TenantAuth] Backend login successful, signing in to establish session...');
+        const { error: signInError } = await signIn(sanitizedEmail, password);
 
-        // Check if has tenant profile
-        // If yes, go directly to success
-        // If no, go to tenant profile creation
+        if (signInError) {
+          console.error('[TenantAuth] Sign in failed after login:', signInError);
+          setErrors({
+            general: 'Error al iniciar sesión. Por favor, intenta nuevamente.'
+          });
+          return;
+        }
+
+        // Wait for access token to be available with retries
+        console.log('[TenantAuth] Waiting for access token to be available...');
+        let tokenAvailable = false;
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const token = await secureAuth.getAccessToken();
+          console.log(`[TenantAuth] Token check attempt ${i + 1}:`, token ? 'Token found' : 'No token');
+
+          if (token) {
+            tokenAvailable = true;
+            console.log('[TenantAuth] Access token confirmed available');
+            break;
+          }
+        }
+
+        if (!tokenAvailable) {
+          console.error('[TenantAuth] Access token not available after login');
+          setErrors({
+            general: 'Error al establecer la sesión. Por favor, intenta de nuevo.'
+          });
+          return;
+        }
+
+        // Close modal
+        onClose();
+
+        // Call success callback if provided
         if (onSuccess) {
           onSuccess();
         }
-        onClose();
+
+        // Redirect to tenant profile completion
+        // The profile page will handle redirecting to dashboard if already complete
+        router.push('/tenant/profile/complete');
       }
     } catch (error: any) {
       // Generic error message to prevent information leakage

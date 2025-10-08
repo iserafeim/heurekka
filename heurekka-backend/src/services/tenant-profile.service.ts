@@ -47,6 +47,13 @@ export interface UpdateTenantProfileInput extends Partial<TenantProfileInput> {
   profilePhotoUrl?: string;
 }
 
+export interface ProfileCompletionStatus {
+  percentage: number;
+  missingFields: string[];
+  completedFields: string[];
+  nextSteps: string[];
+}
+
 class TenantProfileService {
   private supabase: SupabaseClient;
 
@@ -417,6 +424,150 @@ class TenantProfileService {
       updatedAt: data.updated_at,
       lastActiveAt: data.last_active_at
     };
+  }
+
+  /**
+   * Get profile completion status with detailed breakdown
+   */
+  async getProfileCompletionStatus(userId: string): Promise<ProfileCompletionStatus> {
+    try {
+      const profile = await this.getTenantProfileByUserId(userId);
+
+      if (!profile) {
+        return {
+          percentage: 0,
+          missingFields: ['fullName', 'phone', 'budgetMin', 'budgetMax', 'moveDate', 'preferredAreas'],
+          completedFields: [],
+          nextSteps: [
+            'Completa tu nombre completo',
+            'Agrega tu número de teléfono',
+            'Define tu presupuesto',
+            'Indica tu fecha de mudanza',
+            'Selecciona tus zonas preferidas'
+          ]
+        };
+      }
+
+      const fieldStatus = this.getFieldCompletionStatus(profile);
+      const nextSteps = this.getNextSteps(fieldStatus.missingFields);
+
+      return {
+        percentage: profile.profileCompletionPercentage,
+        missingFields: fieldStatus.missingFields,
+        completedFields: fieldStatus.completedFields,
+        nextSteps
+      };
+    } catch (error) {
+      console.error('Error getting profile completion status:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al obtener el estado del perfil'
+      });
+    }
+  }
+
+  /**
+   * Get field completion status
+   */
+  private getFieldCompletionStatus(profile: TenantProfile): {
+    missingFields: string[];
+    completedFields: string[];
+  } {
+    const allFields = {
+      fullName: profile.fullName,
+      phone: profile.phone,
+      occupation: profile.occupation,
+      budgetMin: profile.budgetMin,
+      budgetMax: profile.budgetMax,
+      moveDate: profile.moveDate,
+      occupants: profile.occupants,
+      preferredAreas: profile.preferredAreas && profile.preferredAreas.length > 0,
+      propertyTypes: profile.propertyTypes && profile.propertyTypes.length > 0,
+      hasPets: profile.hasPets !== undefined
+    };
+
+    const missingFields: string[] = [];
+    const completedFields: string[] = [];
+
+    Object.entries(allFields).forEach(([field, value]) => {
+      if (value) {
+        completedFields.push(field);
+      } else {
+        missingFields.push(field);
+      }
+    });
+
+    return { missingFields, completedFields };
+  }
+
+  /**
+   * Get next steps based on missing fields
+   */
+  private getNextSteps(missingFields: string[]): string[] {
+    const stepMapping: Record<string, string> = {
+      fullName: 'Completa tu nombre completo',
+      phone: 'Agrega tu número de teléfono',
+      occupation: 'Indica tu ocupación',
+      budgetMin: 'Define tu presupuesto mínimo',
+      budgetMax: 'Define tu presupuesto máximo',
+      moveDate: 'Indica tu fecha de mudanza',
+      occupants: 'Especifica cuántas personas vivirán',
+      preferredAreas: 'Selecciona tus zonas preferidas',
+      propertyTypes: 'Elige los tipos de propiedad que buscas',
+      hasPets: 'Indica si tienes mascotas'
+    };
+
+    // Return steps for the most important missing fields (max 3)
+    const priorityFields = ['budgetMin', 'budgetMax', 'moveDate', 'preferredAreas', 'fullName', 'phone'];
+    const priorityMissing = priorityFields.filter(f => missingFields.includes(f));
+
+    return priorityMissing.slice(0, 3).map(field => stepMapping[field] || `Completa ${field}`);
+  }
+
+  /**
+   * Check if profile is complete enough for property contact
+   */
+  async canContactProperties(userId: string): Promise<{
+    canContact: boolean;
+    reason?: string;
+    missingFields?: string[];
+  }> {
+    try {
+      const profile = await this.getTenantProfileByUserId(userId);
+
+      if (!profile) {
+        return {
+          canContact: false,
+          reason: 'Debes crear un perfil antes de contactar propiedades',
+          missingFields: ['fullName', 'phone', 'budgetMin', 'budgetMax']
+        };
+      }
+
+      // Required fields for contact
+      const requiredFields = ['fullName', 'phone', 'budgetMin', 'budgetMax'];
+      const missing: string[] = [];
+
+      if (!profile.fullName) missing.push('fullName');
+      if (!profile.phone) missing.push('phone');
+      if (!profile.budgetMin) missing.push('budgetMin');
+      if (!profile.budgetMax) missing.push('budgetMax');
+
+      if (missing.length > 0) {
+        return {
+          canContact: false,
+          reason: 'Completa los campos requeridos para contactar propiedades',
+          missingFields: missing
+        };
+      }
+
+      return { canContact: true };
+    } catch (error) {
+      console.error('Error checking contact permission:', error);
+      return {
+        canContact: false,
+        reason: 'Error al verificar el perfil'
+      };
+    }
   }
 
   /**

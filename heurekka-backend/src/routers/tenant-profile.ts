@@ -13,7 +13,7 @@ const createTenantProfileSchema = z.object({
   occupation: z.string().max(100).optional(),
   budgetMin: z.number().int().min(1000, 'Presupuesto mínimo debe ser al menos L.1,000').optional(),
   budgetMax: z.number().int().min(1000, 'Presupuesto máximo debe ser al menos L.1,000').optional(),
-  moveDate: z.string().datetime().optional(),
+  moveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido: YYYY-MM-DD').optional(),
   occupants: z.string().max(50).optional(),
   preferredAreas: z.array(z.string()).max(10, 'Máximo 10 zonas preferidas').optional(),
   propertyTypes: z.array(z.enum(['apartment', 'house', 'room'])).optional(),
@@ -41,7 +41,7 @@ const updateTenantProfileSchema = z.object({
   profilePhotoUrl: z.string().url().optional(),
   budgetMin: z.number().int().min(1000).optional(),
   budgetMax: z.number().int().min(1000).optional(),
-  moveDate: z.string().datetime().optional(),
+  moveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido: YYYY-MM-DD').optional(),
   occupants: z.string().max(50).optional(),
   preferredAreas: z.array(z.string()).max(10).optional(),
   propertyTypes: z.array(z.enum(['apartment', 'house', 'room'])).optional(),
@@ -224,6 +224,69 @@ export const tenantProfileRouter = router({
         return {
           success: true,
           data: { exists: false }
+        };
+      }
+    }),
+
+  /**
+   * Get profile completion status with detailed breakdown
+   */
+  getCompletionStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        const status = await tenantProfileService.getProfileCompletionStatus(ctx.auth.user.id);
+
+        return {
+          success: true,
+          data: status
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al obtener el estado del perfil'
+        });
+      }
+    }),
+
+  /**
+   * Check if user can contact properties
+   */
+  canContact: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          return {
+            success: true,
+            data: {
+              canContact: false,
+              reason: 'Usuario no autenticado'
+            }
+          };
+        }
+
+        const result = await tenantProfileService.canContactProperties(ctx.auth.user.id);
+
+        return {
+          success: true,
+          data: result
+        };
+      } catch (error) {
+        return {
+          success: true,
+          data: {
+            canContact: false,
+            reason: 'Error al verificar el perfil'
+          }
         };
       }
     })

@@ -1,0 +1,127 @@
+/**
+ * Edit Saved Search Page
+ * Página para editar una búsqueda guardada existente
+ */
+
+'use client';
+
+import React from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useSavedSearch, useUpdateSavedSearch } from '@/hooks/tenant/useSavedSearches';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { SavedSearchFormFields } from '@/components/tenant/searches/SavedSearchFormFields';
+import type { SavedSearchFormData } from '@/types/tenant';
+
+export default function EditSavedSearchPage() {
+  const router = useRouter();
+  const params = useParams();
+  const searchId = params?.id as string;
+
+  const { data: savedSearch, isLoading: isLoadingSearch } = useSavedSearch(searchId);
+  const updateSearch = useUpdateSavedSearch();
+
+  const handleSubmit = async (data: SavedSearchFormData) => {
+    try {
+      await updateSearch.mutateAsync({ id: searchId, ...data });
+      toast.success('Búsqueda actualizada exitosamente');
+      router.push('/tenant/searches');
+    } catch (error) {
+      toast.error('Error al actualizar la búsqueda');
+    }
+  };
+
+  const handleCancel = () => {
+    router.push('/tenant/searches');
+  };
+
+  // Loading state
+  if (isLoadingSearch) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-gray-600">Cargando búsqueda...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not found state
+  if (!savedSearch) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Búsqueda no encontrada
+          </h1>
+          <p className="text-gray-600 mb-6">
+            La búsqueda que intentas editar no existe o fue eliminada.
+          </p>
+          <Button onClick={() => router.push('/tenant/searches')}>
+            Volver a Búsquedas
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Map saved search data to form data
+  const defaultValues: Partial<SavedSearchFormData> = {
+    name: savedSearch.name,
+    propertyTypes: savedSearch.criteria.propertyTypes || [],
+    locations: savedSearch.criteria.locations || [],
+    budgetMin: savedSearch.criteria.budgetMin || 5000,
+    budgetMax: savedSearch.criteria.budgetMax || 15000,
+    notificationEnabled: savedSearch.notificationEnabled,
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+          <button
+            onClick={() => router.push('/tenant/dashboard')}
+            className="hover:text-gray-900"
+          >
+            Dashboard
+          </button>
+          <span>/</span>
+          <button
+            onClick={() => router.push('/tenant/searches')}
+            className="hover:text-gray-900"
+          >
+            Búsquedas
+          </button>
+          <span>/</span>
+          <span className="text-gray-900">Editar &quot;{savedSearch.name}&quot;</span>
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Button onClick={handleCancel} variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Editar Búsqueda</h1>
+            <p className="text-gray-600 mt-1">
+              Actualiza los criterios de búsqueda &quot;{savedSearch.name}&quot;
+            </p>
+          </div>
+        </div>
+
+        {/* Form */}
+        <SavedSearchFormFields
+          defaultValues={defaultValues}
+          onSubmit={handleSubmit}
+          submitLabel="Actualizar Búsqueda"
+          isLoading={updateSearch.isPending}
+          onCancel={handleCancel}
+        />
+      </div>
+    </div>
+  );
+}

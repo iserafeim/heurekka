@@ -1,10 +1,11 @@
 /**
  * Next.js Middleware for Security and Request Validation
- * Handles rate limiting, CSP, and security headers
+ * Handles rate limiting, CSP, security headers, and auth protection
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 // Rate limiting store (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -85,6 +86,117 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 }
 
 /**
+ * Protect tenant routes - check authentication and profile existence
+ */
+async function protectTenantRoutes(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+
+  // Only protect /tenant/* routes
+  if (!pathname.startsWith('/tenant')) {
+    return null;
+  }
+
+  // Create a Supabase client configured to use cookies
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase environment variables not configured');
+    return null; // Allow access if not configured (development mode)
+  }
+
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: any) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  try {
+    // Check authentication
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    // Not authenticated - redirect to login
+    if (!session) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Skip profile check for the profile completion route itself
+    if (pathname === '/tenant/profile/complete') {
+      return response;
+    }
+
+    // Check if user has a tenant profile
+    const { data: profile, error } = await supabase
+      .from('tenant_profiles')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .single();
+
+    // No profile found - redirect to profile completion
+    if (error || !profile) {
+      const completeUrl = new URL('/tenant/profile/complete', request.url);
+      return NextResponse.redirect(completeUrl);
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Error in tenant route protection:', error);
+    // On error, allow access but log the issue
+    return null;
+  }
+}
+
+/**
  * Validate request for suspicious patterns
  */
 function validateRequest(request: NextRequest): { valid: boolean; reason?: string } {
@@ -124,13 +236,13 @@ function validateRequest(request: NextRequest): { valid: boolean; reason?: strin
   return { valid: true };
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   try {
     // Clean up rate limit store periodically
     if (Math.random() < 0.001) { // 0.1% chance
       cleanupRateLimitStore();
     }
-    
+
     // Validate request
     const validation = validateRequest(request);
     if (!validation.valid) {
@@ -139,19 +251,25 @@ export function middleware(request: NextRequest) {
         url: request.url,
         userAgent: request.headers.get('user-agent'),
       });
-      
+
       return new NextResponse('Request blocked', { status: 403 });
     }
-    
+
+    // Protect tenant routes (authentication and profile check)
+    const tenantProtection = await protectTenantRoutes(request);
+    if (tenantProtection) {
+      return addSecurityHeaders(tenantProtection);
+    }
+
     // Apply rate limiting to API routes
     if (request.nextUrl.pathname.startsWith('/api/')) {
       const rateLimitResult = rateLimit(request);
-      
+
       if (!rateLimitResult.allowed) {
         return new NextResponse(
-          JSON.stringify({ 
-            error: 'Demasiadas solicitudes', 
-            message: 'Has excedido el límite de solicitudes. Inténtalo más tarde.' 
+          JSON.stringify({
+            error: 'Demasiadas solicitudes',
+            message: 'Has excedido el límite de solicitudes. Inténtalo más tarde.'
           }),
           {
             status: 429,
@@ -163,22 +281,22 @@ export function middleware(request: NextRequest) {
           }
         );
       }
-      
+
       const response = NextResponse.next();
       response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
       return addSecurityHeaders(response);
     }
-    
+
     // For auth callback routes, add extra security
     if (request.nextUrl.pathname.startsWith('/auth/callback')) {
       const response = NextResponse.next();
       response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
       return addSecurityHeaders(response);
     }
-    
+
     // Add security headers to all responses
     return addSecurityHeaders(NextResponse.next());
-    
+
   } catch (error) {
     console.error('Middleware error:', error);
     // Don't block requests on middleware errors
