@@ -61,11 +61,11 @@ export default function TenantProfilePage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Completitud del Perfil
               </h2>
-              {completionStatus && (
+              {completionStatus?.data && (
                 <ProfileCompletionProgress
-                  percentage={completionStatus.percentage}
-                  missingFields={completionStatus.missingFields}
-                  nextSteps={completionStatus.nextSteps}
+                  percentage={completionStatus.data.percentage}
+                  missingFields={completionStatus.data.missingFields}
+                  nextSteps={completionStatus.data.nextSteps}
                   showDetails={true}
                 />
               )}
@@ -82,17 +82,17 @@ export default function TenantProfilePage() {
               <div className="space-y-4">
                 <InfoField
                   label="Nombre Completo"
-                  value={profile?.personalInfo?.fullName}
+                  value={profile?.data?.fullName}
                   isEditing={isEditing}
                 />
                 <InfoField
                   label="Teléfono"
-                  value={profile?.personalInfo?.phone}
+                  value={profile?.data?.phone}
                   isEditing={isEditing}
                 />
                 <InfoField
-                  label="Email"
-                  value={profile?.personalInfo?.email}
+                  label="Ocupación"
+                  value={profile?.data?.occupation}
                   isEditing={isEditing}
                 />
               </div>
@@ -106,17 +106,51 @@ export default function TenantProfilePage() {
               <div className="space-y-4">
                 <InfoField
                   label="Presupuesto"
-                  value={`L.${profile?.searchPreferences?.budgetMin?.toLocaleString()} - L.${profile?.searchPreferences?.budgetMax?.toLocaleString()}`}
+                  value={
+                    profile?.data?.budgetMin && profile?.data?.budgetMax
+                      ? `L.${profile.data.budgetMin.toLocaleString()} - L.${profile.data.budgetMax.toLocaleString()}`
+                      : undefined
+                  }
+                  isEditing={isEditing}
+                />
+                <InfoField
+                  label="Fecha de Mudanza"
+                  value={
+                    profile?.data?.moveDate
+                      ? new Date(profile.data.moveDate).toLocaleDateString('es-HN', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })
+                      : undefined
+                  }
+                  isEditing={isEditing}
+                />
+                <InfoField
+                  label="Número de Ocupantes"
+                  value={profile?.data?.occupants}
                   isEditing={isEditing}
                 />
                 <InfoField
                   label="Zonas Preferidas"
-                  value={profile?.searchPreferences?.preferredAreas?.join(', ')}
+                  value={profile?.data?.preferredAreas?.join(', ')}
                   isEditing={isEditing}
                 />
                 <InfoField
                   label="Tipos de Propiedad"
-                  value={profile?.searchPreferences?.propertyTypes?.join(', ')}
+                  value={profile?.data?.propertyTypes?.map((type: string) =>
+                    type === 'apartment' ? 'Apartamento' : type === 'house' ? 'Casa' : type
+                  ).join(', ')}
+                  isEditing={isEditing}
+                />
+                <InfoField
+                  label="Mascotas"
+                  value={profile?.data?.hasPets ? (profile.data.petDetails || 'Sí') : 'No'}
+                  isEditing={isEditing}
+                />
+                <InfoField
+                  label="Referencias"
+                  value={profile?.data?.hasReferences ? 'Sí' : 'No'}
                   isEditing={isEditing}
                 />
               </div>

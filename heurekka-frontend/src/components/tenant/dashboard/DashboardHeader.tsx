@@ -12,9 +12,10 @@ import type { DashboardStats } from '@/types/tenant';
 interface DashboardHeaderProps {
   userName?: string;
   stats?: DashboardStats;
+  onSectionClick?: (sectionId: string) => void;
 }
 
-export function DashboardHeader({ userName = 'Usuario', stats }: DashboardHeaderProps) {
+export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick }: DashboardHeaderProps) {
   return (
     <div className="space-y-6">
       {/* Greeting */}
@@ -37,6 +38,7 @@ export function DashboardHeader({ userName = 'Usuario', stats }: DashboardHeader
             badge={stats.newMatches > 0 ? `${stats.newMatches} nuevas` : undefined}
             iconBg="bg-blue-100"
             iconColor="text-blue-600"
+            onClick={() => onSectionClick?.('saved-searches')}
           />
           <StatCard
             icon={<BookmarkIcon className="h-6 w-6" />}
@@ -44,6 +46,7 @@ export function DashboardHeader({ userName = 'Usuario', stats }: DashboardHeader
             value={stats.favoritesCount}
             iconBg="bg-green-100"
             iconColor="text-green-600"
+            onClick={() => onSectionClick?.('favorites')}
           />
           <StatCard
             icon={<MessageSquare className="h-6 w-6" />}
@@ -51,6 +54,7 @@ export function DashboardHeader({ userName = 'Usuario', stats }: DashboardHeader
             value={stats.conversationsCount}
             iconBg="bg-purple-100"
             iconColor="text-purple-600"
+            onClick={() => onSectionClick?.('conversations')}
           />
         </div>
       )}
@@ -58,9 +62,12 @@ export function DashboardHeader({ userName = 'Usuario', stats }: DashboardHeader
   );
 }
 
-function StatCard({ icon, label, value, badge, iconBg, iconColor }: any) {
+function StatCard({ icon, label, value, badge, iconBg, iconColor, onClick }: any) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div
+      onClick={onClick}
+      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`${iconBg} ${iconColor} p-3 rounded-lg`}>

@@ -12,12 +12,19 @@ import { ProfileCompletionProgress } from '@/components/tenant/profile/ProfileCo
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
 import { useProfileCompletionStatus } from '@/hooks/tenant/useTenantProfile';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Trash2 } from 'lucide-react';
+import { Plus, Edit, Eye, Trash2, MessageSquare } from 'lucide-react';
 
 export default function TenantDashboardPage() {
   const router = useRouter();
   const { data: dashboardData, isLoading } = useTenantDashboard();
   const { data: completionStatus } = useProfileCompletionStatus();
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -30,19 +37,23 @@ export default function TenantDashboardPage() {
     );
   }
 
-  const userName = dashboardData?.profile?.personalInfo?.fullName?.split(' ')[0] || 'Usuario';
+  const userName = dashboardData?.data?.profile?.fullName?.split(' ')[0] || 'Usuario';
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         {/* Header */}
-        <DashboardHeader userName={userName} stats={dashboardData?.stats} />
+        <DashboardHeader
+          userName={userName}
+          stats={dashboardData?.data?.stats}
+          onSectionClick={scrollToSection}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
             {/* Saved Searches Section */}
-            <section className="bg-white rounded-lg border border-gray-200 p-6">
+            <section id="saved-searches" className="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Búsquedas Guardadas
@@ -57,7 +68,7 @@ export default function TenantDashboardPage() {
                 </Button>
               </div>
 
-              {!dashboardData?.savedSearches?.length ? (
+              {!dashboardData?.data?.savedSearches?.length ? (
                 <div className="text-center py-8">
                   <Search className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600 mb-4">
@@ -72,16 +83,16 @@ export default function TenantDashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {dashboardData.savedSearches.slice(0, 3).map((search) => (
+                  {dashboardData.data.savedSearches.slice(0, 3).map((search) => (
                     <SavedSearchCard key={search.id} search={search} />
                   ))}
-                  {dashboardData.savedSearches.length > 3 && (
+                  {dashboardData.data.savedSearches.length > 3 && (
                     <Button
                       onClick={() => router.push('/tenant/searches')}
                       variant="ghost"
                       className="w-full"
                     >
-                      Ver Todas ({dashboardData.savedSearches.length})
+                      Ver Todas ({dashboardData.data.savedSearches.length})
                     </Button>
                   )}
                 </div>
@@ -89,7 +100,7 @@ export default function TenantDashboardPage() {
             </section>
 
             {/* Favorites Section */}
-            <section className="bg-white rounded-lg border border-gray-200 p-6">
+            <section id="favorites" className="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">
                   Propiedades Favoritas
@@ -103,7 +114,7 @@ export default function TenantDashboardPage() {
                 </Button>
               </div>
 
-              {!dashboardData?.favorites?.length ? (
+              {!dashboardData?.data?.favorites?.length ? (
                 <div className="text-center py-8">
                   <BookmarkIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600 mb-4">
@@ -118,11 +129,30 @@ export default function TenantDashboardPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {dashboardData.favorites.slice(0, 4).map((favorite) => (
+                  {dashboardData.data.favorites.slice(0, 4).map((favorite) => (
                     <FavoritePropertyCard key={favorite.id} favorite={favorite} />
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* Conversations Section */}
+            <section id="conversations" className="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Conversaciones
+                </h2>
+              </div>
+
+              <div className="text-center py-8">
+                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 mb-4">
+                  Aún no has iniciado conversaciones
+                </p>
+                <p className="text-sm text-gray-500">
+                  Las conversaciones con propietarios aparecerán aquí
+                </p>
+              </div>
             </section>
           </div>
 
@@ -133,15 +163,111 @@ export default function TenantDashboardPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Mi Perfil
               </h2>
-              {completionStatus && (
+              {completionStatus?.data && (
                 <ProfileCompletionProgress
-                  percentage={completionStatus.percentage}
-                  missingFields={completionStatus.missingFields}
-                  nextSteps={completionStatus.nextSteps}
+                  percentage={completionStatus.data.percentage}
+                  missingFields={completionStatus.data.missingFields}
+                  nextSteps={completionStatus.data.nextSteps}
                   showDetails={true}
                   size="small"
                 />
               )}
+
+              {/* Profile Summary */}
+              {dashboardData?.data?.profile && (
+                <div className="mt-6 space-y-3 text-sm">
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold text-gray-900 mb-3">Tus Datos</h3>
+
+                    {/* Basic Info */}
+                    <div className="space-y-2">
+                      <ProfileDataItem
+                        label="Nombre"
+                        value={dashboardData.data.profile.fullName}
+                      />
+                      <ProfileDataItem
+                        label="Teléfono"
+                        value={dashboardData.data.profile.phone}
+                      />
+                      {dashboardData.data.profile.occupation && (
+                        <ProfileDataItem
+                          label="Ocupación"
+                          value={dashboardData.data.profile.occupation}
+                        />
+                      )}
+                    </div>
+
+                    {/* Budget */}
+                    {(dashboardData.data.profile.budgetMin || dashboardData.data.profile.budgetMax) && (
+                      <div className="mt-3 pt-3 border-t">
+                        <ProfileDataItem
+                          label="Presupuesto"
+                          value={`L.${dashboardData.data.profile.budgetMin?.toLocaleString() || '0'} - L.${dashboardData.data.profile.budgetMax?.toLocaleString() || '0'}`}
+                        />
+                      </div>
+                    )}
+
+                    {/* Move Date */}
+                    {dashboardData.data.profile.moveDate && (
+                      <ProfileDataItem
+                        label="Fecha de mudanza"
+                        value={new Date(dashboardData.data.profile.moveDate).toLocaleDateString('es-HN', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      />
+                    )}
+
+                    {/* Occupants */}
+                    {dashboardData.data.profile.occupants && (
+                      <ProfileDataItem
+                        label="Ocupantes"
+                        value={dashboardData.data.profile.occupants}
+                      />
+                    )}
+
+                    {/* Property Types */}
+                    {dashboardData.data.profile.propertyTypes && dashboardData.data.profile.propertyTypes.length > 0 && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-xs text-gray-600 mb-1">Tipo de propiedad</p>
+                        <div className="flex flex-wrap gap-1">
+                          {dashboardData.data.profile.propertyTypes.map((type: string) => (
+                            <span key={type} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                              {type === 'apartment' ? 'Apartamento' : type === 'house' ? 'Casa' : type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Preferred Areas */}
+                    {dashboardData.data.profile.preferredAreas && dashboardData.data.profile.preferredAreas.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-600 mb-1">Zonas preferidas</p>
+                        <div className="flex flex-wrap gap-1">
+                          {dashboardData.data.profile.preferredAreas.map((area: string) => (
+                            <span key={area} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-xs">
+                              {area}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pets */}
+                    {dashboardData.data.profile.hasPets && (
+                      <div className="mt-3 pt-3 border-t">
+                        <ProfileDataItem
+                          label="Mascotas"
+                          value={dashboardData.data.profile.petDetails || 'Sí'}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <Button
                 onClick={() => router.push('/tenant/profile')}
                 variant="outline"
@@ -229,6 +355,16 @@ function FavoritePropertyCard({ favorite }: any) {
           L.{favorite.property?.price?.toLocaleString()}/mes
         </p>
       </div>
+    </div>
+  );
+}
+
+// Profile Data Item Component
+function ProfileDataItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-gray-600">{label}</p>
+      <p className="text-sm text-gray-900 font-medium">{value}</p>
     </div>
   );
 }
