@@ -8,10 +8,6 @@ GraphQL Frontend Integration: Always ensure frontend GraphQL mutations match the
 
 Any time you start building new GraphQL endpoints or mutations, you MUST reference similar endpoints to understand the patterns that currently work for the app.
 
-### Supabase
-
-Any time you want to make edits, modifications, and updates within supabase use the supabase mcp server
-
 ### App Language
 The frontend (what the user can see) should be written in spanish.
 

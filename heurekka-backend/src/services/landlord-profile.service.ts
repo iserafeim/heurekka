@@ -323,7 +323,7 @@ class LandlordProfileService {
     }
 
     // If it starts with 504 but has wrong length or other cases, return null
-    console.log(`[Auth Sync] Invalid phone number format: ${phone} (${digitsOnly.length} digits)`);
+    console.log(`[Auth Sync] Invalid phone number format (${digitsOnly.length} digits)`);
     return null;
   }
 
@@ -332,7 +332,6 @@ class LandlordProfileService {
    */
   private async syncUserAuthData(userId: string, input: Partial<LandlordProfileInput>): Promise<void> {
     console.log('[Auth Sync] Starting sync for user:', userId);
-    console.log('[Auth Sync] Input data:', JSON.stringify(input, null, 2));
 
     try {
       // Extract fullName and phone based on landlord type
@@ -357,7 +356,7 @@ class LandlordProfileService {
         phone = input.primaryPhone;
       }
 
-      console.log('[Auth Sync] Extracted - Name:', fullName, 'Phone:', phone);
+      console.log('[Auth Sync] Extracted data for sync (PII redacted)');
 
       // Only update if we have values to update
       if (!fullName && !phone) {
@@ -379,8 +378,7 @@ class LandlordProfileService {
         return;
       }
 
-      console.log('[Auth Sync] Current user metadata:', currentUser.user.user_metadata);
-      console.log('[Auth Sync] Current user phone:', currentUser.user.phone);
+      console.log('[Auth Sync] Current user data retrieved');
 
       // Build update object - always update user_metadata if we have fullName
       const updateData: { user_metadata?: any; phone?: string } = {};
@@ -398,13 +396,13 @@ class LandlordProfileService {
         const e164Phone = this.convertToE164(phone);
         if (e164Phone) {
           updateData.phone = e164Phone;
-          console.log('[Auth Sync] Converted phone to E.164:', e164Phone);
+          console.log('[Auth Sync] Phone converted to E.164 format');
         } else {
           console.log('[Auth Sync] Skipping phone update - invalid format');
         }
       }
 
-      console.log('[Auth Sync] Update data:', JSON.stringify(updateData, null, 2));
+      console.log('[Auth Sync] Preparing user update with', Object.keys(updateData).join(', '));
 
       // Update user in Supabase Auth
       const { error } = await this.supabase.auth.admin.updateUserById(userId, updateData);
@@ -414,7 +412,7 @@ class LandlordProfileService {
         return;
       }
 
-      console.log(`[Auth Sync] ✅ Successfully updated user ${userId} - Name: ${fullName || 'unchanged'}, Phone: ${updateData.phone || 'unchanged'}`);
+      console.log(`[Auth Sync] ✅ Successfully updated user ${userId}`);
     } catch (error) {
       // Don't fail the profile creation/update if Auth sync fails
       console.error('[Auth Sync] Exception:', error);
@@ -772,10 +770,10 @@ class LandlordProfileService {
     skippedSteps?: string[]
   ): Promise<{ success: boolean; currentStep: number }> {
     try {
-      console.log('[SaveOnboardingProgress] Received data:', JSON.stringify({
+      console.log('[SaveOnboardingProgress] Saving progress:', JSON.stringify({
         userId,
         step,
-        formData,
+        landlordType: formData.landlordType,
         skippedSteps
       }, null, 2));
 
@@ -903,7 +901,7 @@ class LandlordProfileService {
 
       const onboardingData = landlordData.onboarding_data || {};
 
-      console.log('[CompleteOnboarding] Raw onboarding_data from database:', JSON.stringify(onboardingData, null, 2));
+      console.log('[CompleteOnboarding] Processing onboarding data for landlord type:', onboardingData.landlordType || landlordData.landlord_type);
 
       // Use landlordType from onboarding_data if available, otherwise fall back to landlord_type column
       // This allows users to change their type during onboarding
@@ -923,13 +921,13 @@ class LandlordProfileService {
         // Try professionalName first, then fullName, then fall back to existing full_name in DB
         if (onboardingData.professionalName) {
           updateData.full_name = onboardingData.professionalName;
-          console.log('[CompleteOnboarding] Using professionalName:', onboardingData.professionalName);
+          console.log('[CompleteOnboarding] Using professionalName');
         } else if (onboardingData.fullName) {
           updateData.full_name = onboardingData.fullName;
-          console.log('[CompleteOnboarding] Using fullName:', onboardingData.fullName);
+          console.log('[CompleteOnboarding] Using fullName');
         } else if (profile.full_name) {
           // Keep existing name if no new one provided
-          console.log('[CompleteOnboarding] Keeping existing full_name from DB:', profile.full_name);
+          console.log('[CompleteOnboarding] Keeping existing full_name from DB');
         } else {
           console.warn('[CompleteOnboarding] No professionalName, fullName, or existing full_name found!');
         }
