@@ -5,7 +5,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardHeader } from '@/components/tenant/dashboard/DashboardHeader';
 import { ProfileCompletionProgress } from '@/components/tenant/profile/ProfileCompletionProgress';
@@ -14,16 +14,16 @@ import { useProfileCompletionStatus } from '@/hooks/tenant/useTenantProfile';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Eye, Trash2, MessageSquare } from 'lucide-react';
 
+type TabSection = 'saved-searches' | 'favorites' | 'conversations';
+
 export default function TenantDashboardPage() {
   const router = useRouter();
   const { data: dashboardData, isLoading } = useTenantDashboard();
   const { data: completionStatus } = useProfileCompletionStatus();
+  const [activeTab, setActiveTab] = useState<TabSection>('saved-searches');
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  const handleTabChange = (sectionId: string) => {
+    setActiveTab(sectionId as TabSection);
   };
 
   if (isLoading) {
@@ -46,114 +46,121 @@ export default function TenantDashboardPage() {
         <DashboardHeader
           userName={userName}
           stats={dashboardData?.data?.stats}
-          onSectionClick={scrollToSection}
+          onSectionClick={handleTabChange}
+          activeTab={activeTab}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - 2 columns */}
           <div className="lg:col-span-2 space-y-6">
             {/* Saved Searches Section */}
-            <section id="saved-searches" className="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Búsquedas Guardadas
-                </h2>
-                <Button
-                  onClick={() => router.push('/tenant/searches/new')}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Nueva Búsqueda
-                </Button>
-              </div>
-
-              {!dashboardData?.data?.savedSearches?.length ? (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 mb-4">
-                    No tienes búsquedas guardadas aún
-                  </p>
+            {activeTab === 'saved-searches' && (
+              <section className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Búsquedas Guardadas
+                  </h2>
                   <Button
                     onClick={() => router.push('/tenant/searches/new')}
-                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
                   >
-                    Crear Primera Búsqueda
+                    <Plus className="h-4 w-4" />
+                    Nueva Búsqueda
                   </Button>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {dashboardData.data.savedSearches.slice(0, 3).map((search) => (
-                    <SavedSearchCard key={search.id} search={search} />
-                  ))}
-                  {dashboardData.data.savedSearches.length > 3 && (
+
+                {!dashboardData?.data?.savedSearches?.length ? (
+                  <div className="text-center py-8">
+                    <Search className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-4">
+                      No tienes búsquedas guardadas aún
+                    </p>
                     <Button
-                      onClick={() => router.push('/tenant/searches')}
-                      variant="ghost"
-                      className="w-full"
+                      onClick={() => router.push('/tenant/searches/new')}
+                      variant="outline"
                     >
-                      Ver Todas ({dashboardData.data.savedSearches.length})
+                      Crear Primera Búsqueda
                     </Button>
-                  )}
-                </div>
-              )}
-            </section>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dashboardData.data.savedSearches.slice(0, 3).map((search) => (
+                      <SavedSearchCard key={search.id} search={search} />
+                    ))}
+                    {dashboardData.data.savedSearches.length > 3 && (
+                      <Button
+                        onClick={() => router.push('/tenant/searches')}
+                        variant="ghost"
+                        className="w-full"
+                      >
+                        Ver Todas ({dashboardData.data.savedSearches.length})
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
 
             {/* Favorites Section */}
-            <section id="favorites" className="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Propiedades Favoritas
-                </h2>
-                <Button
-                  onClick={() => router.push('/tenant/favorites')}
-                  size="sm"
-                  variant="outline"
-                >
-                  Ver Todas
-                </Button>
-              </div>
-
-              {!dashboardData?.data?.favorites?.length ? (
-                <div className="text-center py-8">
-                  <BookmarkIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 mb-4">
-                    No tienes propiedades favoritas aún
-                  </p>
+            {activeTab === 'favorites' && (
+              <section className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Propiedades Favoritas
+                  </h2>
                   <Button
-                    onClick={() => router.push('/propiedades')}
+                    onClick={() => router.push('/tenant/favorites')}
+                    size="sm"
                     variant="outline"
                   >
-                    Explorar Propiedades
+                    Ver Todas
                   </Button>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {dashboardData.data.favorites.slice(0, 4).map((favorite) => (
-                    <FavoritePropertyCard key={favorite.id} favorite={favorite} />
-                  ))}
-                </div>
-              )}
-            </section>
+
+                {!dashboardData?.data?.favorites?.length ? (
+                  <div className="text-center py-8">
+                    <BookmarkIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 mb-4">
+                      No tienes propiedades favoritas aún
+                    </p>
+                    <Button
+                      onClick={() => router.push('/propiedades')}
+                      variant="outline"
+                    >
+                      Explorar Propiedades
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {dashboardData.data.favorites.slice(0, 4).map((favorite) => (
+                      <FavoritePropertyCard key={favorite.id} favorite={favorite} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
             {/* Conversations Section */}
-            <section id="conversations" className="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Conversaciones
-                </h2>
-              </div>
+            {activeTab === 'conversations' && (
+              <section className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Conversaciones
+                  </h2>
+                </div>
 
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 mb-4">
-                  Aún no has iniciado conversaciones
-                </p>
-                <p className="text-sm text-gray-500">
-                  Las conversaciones con propietarios aparecerán aquí
-                </p>
-              </div>
-            </section>
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 mb-4">
+                    Aún no has iniciado conversaciones
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Las conversaciones con propietarios aparecerán aquí
+                  </p>
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Sidebar - 1 column */}

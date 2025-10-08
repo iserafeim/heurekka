@@ -13,9 +13,10 @@ interface DashboardHeaderProps {
   userName?: string;
   stats?: DashboardStats;
   onSectionClick?: (sectionId: string) => void;
+  activeTab?: string;
 }
 
-export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick }: DashboardHeaderProps) {
+export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick, activeTab }: DashboardHeaderProps) {
   return (
     <div className="space-y-6">
       {/* Greeting */}
@@ -39,6 +40,7 @@ export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick }:
             iconBg="bg-blue-100"
             iconColor="text-blue-600"
             onClick={() => onSectionClick?.('saved-searches')}
+            isActive={activeTab === 'saved-searches'}
           />
           <StatCard
             icon={<BookmarkIcon className="h-6 w-6" />}
@@ -47,6 +49,7 @@ export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick }:
             iconBg="bg-green-100"
             iconColor="text-green-600"
             onClick={() => onSectionClick?.('favorites')}
+            isActive={activeTab === 'favorites'}
           />
           <StatCard
             icon={<MessageSquare className="h-6 w-6" />}
@@ -55,6 +58,7 @@ export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick }:
             iconBg="bg-purple-100"
             iconColor="text-purple-600"
             onClick={() => onSectionClick?.('conversations')}
+            isActive={activeTab === 'conversations'}
           />
         </div>
       )}
@@ -62,11 +66,15 @@ export function DashboardHeader({ userName = 'Usuario', stats, onSectionClick }:
   );
 }
 
-function StatCard({ icon, label, value, badge, iconBg, iconColor, onClick }: any) {
+function StatCard({ icon, label, value, badge, iconBg, iconColor, onClick, isActive }: any) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
+      className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all cursor-pointer ${
+        isActive
+          ? 'border-blue-500 shadow-md ring-2 ring-blue-500 ring-opacity-50'
+          : 'border-gray-200 hover:border-blue-300'
+      }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
