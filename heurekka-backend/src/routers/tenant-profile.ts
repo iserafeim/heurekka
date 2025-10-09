@@ -20,7 +20,10 @@ const createTenantProfileSchema = z.object({
   hasPets: z.boolean().optional(),
   petDetails: z.string().max(200).optional(),
   hasReferences: z.boolean().optional(),
-  messageToLandlords: z.string().max(500, 'El mensaje no puede exceder 500 caracteres').optional()
+  messageToLandlords: z.string().max(500, 'El mensaje no puede exceder 500 caracteres').optional(),
+  desiredBedrooms: z.array(z.number().int().min(1).max(10)).optional(),
+  desiredBathrooms: z.array(z.number().int().min(1).max(10)).optional(),
+  desiredParkingSpaces: z.array(z.number().int().min(0).max(10)).optional()
 }).refine(
   (data) => {
     if (data.budgetMin && data.budgetMax) {
@@ -48,7 +51,10 @@ const updateTenantProfileSchema = z.object({
   hasPets: z.boolean().optional(),
   petDetails: z.string().max(200).optional(),
   hasReferences: z.boolean().optional(),
-  messageToLandlords: z.string().max(500).optional()
+  messageToLandlords: z.string().max(500).optional(),
+  desiredBedrooms: z.array(z.number().int().min(1).max(10)).optional(),
+  desiredBathrooms: z.array(z.number().int().min(1).max(10)).optional(),
+  desiredParkingSpaces: z.array(z.number().int().min(0).max(10)).optional()
 }).refine(
   (data) => {
     if (data.budgetMin && data.budgetMax) {

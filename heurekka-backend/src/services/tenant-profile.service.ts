@@ -16,6 +16,10 @@ export interface TenantProfileInput {
   petDetails?: string;
   hasReferences?: boolean;
   messageToLandlords?: string;
+  // New fields for search preferences
+  desiredBedrooms?: number[];
+  desiredBathrooms?: number[];
+  desiredParkingSpaces?: number[];
 }
 
 export interface TenantProfile {
@@ -36,6 +40,9 @@ export interface TenantProfile {
   petDetails?: string;
   hasReferences: boolean;
   messageToLandlords?: string;
+  desiredBedrooms?: number[];
+  desiredBathrooms?: number[];
+  desiredParkingSpaces?: number[];
   profileCompletionPercentage: number;
   isVerified: boolean;
   createdAt: string;
@@ -116,6 +123,9 @@ class TenantProfileService {
           pet_details: input.petDetails,
           has_references: input.hasReferences || false,
           message_to_landlords: input.messageToLandlords,
+          desired_bedrooms: input.desiredBedrooms || [],
+          desired_bathrooms: input.desiredBathrooms || [],
+          desired_parking_spaces: input.desiredParkingSpaces || [],
           profile_completion_percentage: completionPercentage
         })
         .select()
@@ -255,6 +265,9 @@ class TenantProfileService {
           pet_details: input.petDetails,
           has_references: input.hasReferences,
           message_to_landlords: input.messageToLandlords,
+          desired_bedrooms: input.desiredBedrooms,
+          desired_bathrooms: input.desiredBathrooms,
+          desired_parking_spaces: input.desiredParkingSpaces,
           profile_completion_percentage: completionPercentage,
           last_active_at: new Date().toISOString()
         })
@@ -473,28 +486,30 @@ class TenantProfileService {
     const fields = {
       fullName: 15,
       phone: 15,
-      occupation: 10,
-      budgetMin: 10,
-      budgetMax: 10,
+      budgetMin: 15,
+      budgetMax: 15,
       moveDate: 10,
-      occupants: 10,
       preferredAreas: 10,
-      propertyTypes: 5,
-      hasPets: 5
+      propertyTypes: 10,
+      hasPets: 5,
+      desiredBedrooms: 5,
+      desiredBathrooms: 5,
+      desiredParkingSpaces: 5
     };
 
     let completedPoints = 0;
 
     if (profile.fullName) completedPoints += fields.fullName;
     if (profile.phone) completedPoints += fields.phone;
-    if (profile.occupation) completedPoints += fields.occupation;
     if (profile.budgetMin) completedPoints += fields.budgetMin;
     if (profile.budgetMax) completedPoints += fields.budgetMax;
     if (profile.moveDate) completedPoints += fields.moveDate;
-    if (profile.occupants) completedPoints += fields.occupants;
     if (profile.preferredAreas && profile.preferredAreas.length > 0) completedPoints += fields.preferredAreas;
     if (profile.propertyTypes && profile.propertyTypes.length > 0) completedPoints += fields.propertyTypes;
     if (profile.hasPets !== undefined) completedPoints += fields.hasPets;
+    if (profile.desiredBedrooms && profile.desiredBedrooms.length > 0) completedPoints += fields.desiredBedrooms;
+    if (profile.desiredBathrooms && profile.desiredBathrooms.length > 0) completedPoints += fields.desiredBathrooms;
+    if (profile.desiredParkingSpaces && profile.desiredParkingSpaces.length > 0) completedPoints += fields.desiredParkingSpaces;
 
     return Math.min(100, completedPoints);
   }
@@ -521,6 +536,9 @@ class TenantProfileService {
       petDetails: data.pet_details,
       hasReferences: data.has_references || false,
       messageToLandlords: data.message_to_landlords,
+      desiredBedrooms: data.desired_bedrooms || [],
+      desiredBathrooms: data.desired_bathrooms || [],
+      desiredParkingSpaces: data.desired_parking_spaces || [],
       profileCompletionPercentage: data.profile_completion_percentage || 0,
       isVerified: data.is_verified || false,
       createdAt: data.created_at,
@@ -579,14 +597,15 @@ class TenantProfileService {
     const allFields = {
       fullName: profile.fullName,
       phone: profile.phone,
-      occupation: profile.occupation,
       budgetMin: profile.budgetMin,
       budgetMax: profile.budgetMax,
       moveDate: profile.moveDate,
-      occupants: profile.occupants,
       preferredAreas: profile.preferredAreas && profile.preferredAreas.length > 0,
       propertyTypes: profile.propertyTypes && profile.propertyTypes.length > 0,
-      hasPets: profile.hasPets !== undefined
+      hasPets: profile.hasPets !== undefined,
+      desiredBedrooms: profile.desiredBedrooms && profile.desiredBedrooms.length > 0,
+      desiredBathrooms: profile.desiredBathrooms && profile.desiredBathrooms.length > 0,
+      desiredParkingSpaces: profile.desiredParkingSpaces && profile.desiredParkingSpaces.length > 0
     };
 
     const missingFields: string[] = [];
@@ -610,18 +629,19 @@ class TenantProfileService {
     const stepMapping: Record<string, string> = {
       fullName: 'Completa tu nombre completo',
       phone: 'Agrega tu número de teléfono',
-      occupation: 'Indica tu ocupación',
       budgetMin: 'Define tu presupuesto mínimo',
       budgetMax: 'Define tu presupuesto máximo',
       moveDate: 'Indica tu fecha de mudanza',
-      occupants: 'Especifica cuántas personas vivirán',
       preferredAreas: 'Selecciona tus zonas preferidas',
       propertyTypes: 'Elige los tipos de propiedad que buscas',
-      hasPets: 'Indica si tienes mascotas'
+      hasPets: 'Indica si tienes mascotas',
+      desiredBedrooms: 'Selecciona el número de habitaciones',
+      desiredBathrooms: 'Selecciona el número de baños',
+      desiredParkingSpaces: 'Selecciona el número de parqueos'
     };
 
     // Return steps for the most important missing fields (max 3)
-    const priorityFields = ['budgetMin', 'budgetMax', 'moveDate', 'preferredAreas', 'fullName', 'phone'];
+    const priorityFields = ['budgetMin', 'budgetMax', 'moveDate', 'preferredAreas', 'fullName', 'phone', 'desiredBedrooms', 'desiredBathrooms'];
     const priorityMissing = priorityFields.filter(f => missingFields.includes(f));
 
     return priorityMissing.slice(0, 3).map(field => stepMapping[field] || `Completa ${field}`);

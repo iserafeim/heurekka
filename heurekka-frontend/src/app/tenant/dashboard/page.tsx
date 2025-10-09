@@ -8,9 +8,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardHeader } from '@/components/tenant/dashboard/DashboardHeader';
-import { ProfileCompletionProgress } from '@/components/tenant/profile/ProfileCompletionProgress';
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
-import { useProfileCompletionStatus } from '@/hooks/tenant/useTenantProfile';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Eye, Trash2, MessageSquare, User, Phone, Briefcase, DollarSign, Calendar, Users, Home, MapPin } from 'lucide-react';
 
@@ -19,7 +17,6 @@ type TabSection = 'saved-searches' | 'favorites' | 'conversations';
 export default function TenantDashboardPage() {
   const router = useRouter();
   const { data: dashboardData, isLoading } = useTenantDashboard();
-  const { data: completionStatus } = useProfileCompletionStatus();
   const [activeTab, setActiveTab] = useState<TabSection>('saved-searches');
 
   const handleTabChange = (sectionId: string) => {
@@ -212,22 +209,11 @@ export default function TenantDashboardPage() {
 
           {/* Sidebar - 1 column */}
           <div className="space-y-8">
-            {/* Profile Completion Widget */}
+            {/* Profile Summary Widget */}
             <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/80 hover:shadow-2xl hover:shadow-gray-200/80 transition-shadow duration-300 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-6">
                 Mi Perfil
               </h2>
-              {completionStatus?.data && (
-                <div className="mb-6">
-                  <ProfileCompletionProgress
-                    percentage={completionStatus.data.percentage}
-                    missingFields={completionStatus.data.missingFields}
-                    nextSteps={completionStatus.data.nextSteps}
-                    showDetails={true}
-                    size="medium"
-                  />
-                </div>
-              )}
 
               {/* Profile Summary */}
               {dashboardData?.data?.profile && (
@@ -280,20 +266,6 @@ export default function TenantDashboardPage() {
                         </div>
                       </div>
                     )}
-
-                    {dashboardData.data.profile.occupants && (
-                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                        <Users className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                            Ocupantes
-                          </p>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {dashboardData.data.profile.occupants}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Preferences Section */}
@@ -339,6 +311,77 @@ export default function TenantDashboardPage() {
                               </span>
                             ))}
                           </div>
+                        </div>
+                      )}
+
+                      {dashboardData.data.profile.desiredBedrooms?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                            Habitaciones
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {dashboardData.data.profile.desiredBedrooms
+                              .sort((a: number, b: number) => a - b)
+                              .map((count: number) => (
+                                <span
+                                  key={count}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-medium border border-purple-100 hover:bg-purple-100 transition-colors duration-150"
+                                >
+                                  {count === 5 ? '5+' : count}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {dashboardData.data.profile.desiredBathrooms?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                            Baños
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {dashboardData.data.profile.desiredBathrooms
+                              .sort((a: number, b: number) => a - b)
+                              .map((count: number) => (
+                                <span
+                                  key={count}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 text-cyan-700 rounded-md text-xs font-medium border border-cyan-100 hover:bg-cyan-100 transition-colors duration-150"
+                                >
+                                  {count === 4 ? '4+' : count}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {dashboardData.data.profile.desiredParkingSpaces?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                            Parqueos
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {dashboardData.data.profile.desiredParkingSpaces
+                              .sort((a: number, b: number) => a - b)
+                              .map((count: number) => (
+                                <span
+                                  key={count}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-md text-xs font-medium border border-amber-100 hover:bg-amber-100 transition-colors duration-150"
+                                >
+                                  {count === 3 ? '3+' : count}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {dashboardData.data.profile.hasPets && dashboardData.data.profile.petDetails && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                            Mascotas
+                          </p>
+                          <p className="text-xs text-gray-700 bg-orange-50 border border-orange-100 rounded-md p-2">
+                            {dashboardData.data.profile.petDetails}
+                          </p>
                         </div>
                       )}
                     </div>

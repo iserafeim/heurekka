@@ -30,6 +30,13 @@ export interface SearchPreferences {
   moveInDate?: Date;
   preferredAreas: string[];
   propertyTypes: PropertyType[];
+  // New fields for tenant onboarding
+  hasPets?: boolean;
+  petDetails?: string;
+  desiredBedrooms?: number[];
+  desiredBathrooms?: number[];
+  desiredParkingSpaces?: number[];
+  // Legacy fields (keeping for backward compatibility)
   bedrooms?: {
     min?: number;
     max?: number;
@@ -168,18 +175,14 @@ export interface ProfileCompletionFormData {
     moveInDate?: string;
     preferredAreas: string[];
     propertyTypes: PropertyType[];
+    hasPets?: boolean;
+    petDetails?: string;
+    desiredBedrooms?: number[];
+    desiredBathrooms?: number[];
+    desiredParkingSpaces?: number[];
   };
   optionalInfo?: {
-    bedrooms?: {
-      min?: number;
-      max?: number;
-    };
-    bathrooms?: {
-      min?: number;
-      max?: number;
-    };
-    occupants?: OccupantInfo;
-    pets?: PetInfo;
+    messageToLandlords?: string;
   };
 }
 

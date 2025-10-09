@@ -5,21 +5,62 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ProfileCompletionProgress } from '@/components/tenant/profile/ProfileCompletionProgress';
-import { useTenantProfile, useProfileCompletionStatus, useUpdateTenantProfile } from '@/hooks/tenant/useTenantProfile';
+import { useTenantProfile, useUpdateTenantProfile } from '@/hooks/tenant/useTenantProfile';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function TenantProfilePage() {
   const router = useRouter();
   const { data: profile, isLoading } = useTenantProfile();
-  const { data: completionStatus } = useProfileCompletionStatus();
   const updateProfile = useUpdateTenantProfile();
   const [isEditing, setIsEditing] = useState(false);
+  const [desiredBedrooms, setDesiredBedrooms] = useState<number[]>([]);
+  const [desiredBathrooms, setDesiredBathrooms] = useState<number[]>([]);
+  const [desiredParkingSpaces, setDesiredParkingSpaces] = useState<number[]>([]);
+  const [hasPets, setHasPets] = useState(false);
+  const [petDetails, setPetDetails] = useState('');
+
+  // Initialize states when profile loads
+  useEffect(() => {
+    if (profile?.data) {
+      setDesiredBedrooms(profile.data.desiredBedrooms || []);
+      setDesiredBathrooms(profile.data.desiredBathrooms || []);
+      setDesiredParkingSpaces(profile.data.desiredParkingSpaces || []);
+      setHasPets(profile.data.hasPets || false);
+      setPetDetails(profile.data.petDetails || '');
+    }
+  }, [profile?.data]);
+
+  // Toggle functions for multi-select
+  const toggleBedroom = (count: number) => {
+    setDesiredBedrooms(prev =>
+      prev.includes(count)
+        ? prev.filter(c => c !== count)
+        : [...prev, count].sort((a, b) => a - b)
+    );
+  };
+
+  const toggleBathroom = (count: number) => {
+    setDesiredBathrooms(prev =>
+      prev.includes(count)
+        ? prev.filter(c => c !== count)
+        : [...prev, count].sort((a, b) => a - b)
+    );
+  };
+
+  const toggleParkingSpace = (count: number) => {
+    setDesiredParkingSpaces(prev =>
+      prev.includes(count)
+        ? prev.filter(c => c !== count)
+        : [...prev, count].sort((a, b) => a - b)
+    );
+  };
 
   const getMoveDateValue = (dateString?: string): string => {
     if (!dateString) return '1-3-months';
@@ -78,8 +119,6 @@ export default function TenantProfilePage() {
       const updateData: any = {
         fullName: data.fullName,
         phone: data.phone,
-        occupation: data.occupation,
-        occupants: data.occupants,
         budgetMin: data.budgetMin ? parseInt(data.budgetMin) : undefined,
         budgetMax: data.budgetMax ? parseInt(data.budgetMax) : undefined,
         moveDate: data.moveDate ? convertMoveDateRangeToDate(data.moveDate) : undefined,
@@ -87,8 +126,12 @@ export default function TenantProfilePage() {
           ? data.preferredAreas.split(',').map((area: string) => area.trim()).filter(Boolean)
           : [],
         propertyTypes: Array.isArray(data.propertyTypes) ? data.propertyTypes : [],
-        hasPets: data.hasPets === 'true' || data.hasPets === true,
+        hasPets: hasPets,
+        petDetails: petDetails,
         hasReferences: data.hasReferences === 'true' || data.hasReferences === true,
+        desiredBedrooms: desiredBedrooms,
+        desiredBathrooms: desiredBathrooms,
+        desiredParkingSpaces: desiredParkingSpaces,
       };
 
       await updateProfile.mutateAsync(updateData);
@@ -181,26 +224,9 @@ export default function TenantProfilePage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Sidebar */}
-          <div className="md:col-span-1">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Completitud del Perfil
-              </h2>
-              {completionStatus?.data && (
-                <ProfileCompletionProgress
-                  percentage={completionStatus.data.percentage}
-                  missingFields={completionStatus.data.missingFields}
-                  nextSteps={completionStatus.data.nextSteps}
-                  showDetails={true}
-                />
-              )}
-            </div>
-          </div>
-
+        <div className="max-w-4xl mx-auto">
           {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Personal Info */}
             <section className="bg-white rounded-xl border border-gray-200 shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -219,13 +245,6 @@ export default function TenantProfilePage() {
                   value={profile?.data?.phone}
                   isEditing={isEditing}
                   fieldName="phone"
-                  register={register}
-                />
-                <InfoField
-                  label="Ocupación"
-                  value={profile?.data?.occupation}
-                  isEditing={isEditing}
-                  fieldName="occupation"
                   register={register}
                 />
               </div>
@@ -305,14 +324,6 @@ export default function TenantProfilePage() {
                   />
                 )}
 
-                <InfoField
-                  label="Número de Ocupantes"
-                  value={profile?.data?.occupants}
-                  isEditing={isEditing}
-                  fieldName="occupants"
-                  register={register}
-                />
-
                 {/* Zonas Preferidas */}
                 {isEditing ? (
                   <div>
@@ -387,26 +398,173 @@ export default function TenantProfilePage() {
                   />
                 )}
 
-                {/* Mascotas */}
+                {/* Número de Habitaciones */}
                 {isEditing ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ¿Tienes mascotas?
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Número de Habitaciones
                     </label>
-                    <select
-                      {...register('hasPets')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="false">No</option>
-                      <option value="true">Sí</option>
-                    </select>
+                    <div className="grid grid-cols-5 gap-2">
+                      {[1, 2, 3, 4, 5].map((count) => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => toggleBedroom(count)}
+                          className={`
+                            px-4 py-3 rounded-lg border-2 text-center transition-all
+                            ${
+                              desiredBedrooms.includes(count)
+                                ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            }
+                          `}
+                        >
+                          {count === 5 ? '5+' : count}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <InfoField
-                    label="Mascotas"
-                    value={profile?.data?.hasPets ? (profile.data.petDetails || 'Sí') : 'No'}
+                    label="Número de Habitaciones"
+                    value={
+                      desiredBedrooms && desiredBedrooms.length > 0
+                        ? desiredBedrooms
+                            .sort((a: number, b: number) => a - b)
+                            .map((n: number) => (n === 5 ? '5+' : n))
+                            .join(', ') + ' habitaciones'
+                        : undefined
+                    }
                     isEditing={false}
                   />
+                )}
+
+                {/* Número de Baños */}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Número de Baños
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1, 2, 3, 4].map((count) => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => toggleBathroom(count)}
+                          className={`
+                            px-4 py-3 rounded-lg border-2 text-center transition-all
+                            ${
+                              desiredBathrooms.includes(count)
+                                ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            }
+                          `}
+                        >
+                          {count === 4 ? '4+' : count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <InfoField
+                    label="Número de Baños"
+                    value={
+                      desiredBathrooms && desiredBathrooms.length > 0
+                        ? desiredBathrooms
+                            .sort((a: number, b: number) => a - b)
+                            .map((n: number) => (n === 4 ? '4+' : n))
+                            .join(', ') + ' baños'
+                        : undefined
+                    }
+                    isEditing={false}
+                  />
+                )}
+
+                {/* Número de Parqueos */}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Número de Parqueos
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[0, 1, 2, 3].map((count) => (
+                        <button
+                          key={count}
+                          type="button"
+                          onClick={() => toggleParkingSpace(count)}
+                          className={`
+                            px-4 py-3 rounded-lg border-2 text-center transition-all
+                            ${
+                              desiredParkingSpaces.includes(count)
+                                ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            }
+                          `}
+                        >
+                          {count === 3 ? '3+' : count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <InfoField
+                    label="Número de Parqueos"
+                    value={
+                      desiredParkingSpaces && desiredParkingSpaces.length > 0
+                        ? desiredParkingSpaces
+                            .sort((a: number, b: number) => a - b)
+                            .map((n: number) => (n === 3 ? '3+' : n))
+                            .join(', ') + ' parqueos'
+                        : undefined
+                    }
+                    isEditing={false}
+                  />
+                )}
+
+                {/* Mascotas */}
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">
+                        ¿Tienes mascotas?
+                      </label>
+                      <Switch
+                        checked={hasPets}
+                        onCheckedChange={setHasPets}
+                      />
+                    </div>
+                    {hasPets && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Detalles de mascotas
+                        </label>
+                        <Textarea
+                          value={petDetails}
+                          onChange={(e) => setPetDetails(e.target.value)}
+                          placeholder="Ej: Pastor Alemán, 2 años"
+                          className="w-full"
+                          rows={3}
+                          maxLength={200}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {petDetails.length}/200 caracteres
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <InfoField
+                      label="Mascotas"
+                      value={hasPets ? 'Sí' : 'No'}
+                      isEditing={false}
+                    />
+                    {hasPets && petDetails && (
+                      <div className="mt-2 pl-4 border-l-2 border-blue-200">
+                        <p className="text-sm text-gray-600">{petDetails}</p>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Referencias */}

@@ -34,18 +34,18 @@ const step2Schema = z.object({
   moveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Selecciona cuándo deseas mudarte'),
   preferredAreas: z.array(z.string()).min(1, 'Selecciona al menos una zona'),
   propertyTypes: z.array(z.string()).min(1, 'Selecciona al menos un tipo de propiedad'),
+  hasPets: z.boolean().optional(),
+  petDetails: z.string().max(200).optional(),
+  desiredBedrooms: z.array(z.number()).optional(),
+  desiredBathrooms: z.array(z.number()).optional(),
+  desiredParkingSpaces: z.array(z.number()).optional(),
 }).refine((data) => data.budgetMax >= data.budgetMin, {
   message: 'El presupuesto máximo debe ser mayor o igual al mínimo',
   path: ['budgetMax'],
 });
 
 const step3Schema = z.object({
-  occupation: z.string().optional(),
-  occupants: z.string().optional(),
-  hasPets: z.boolean().default(false),
-  petDetails: z.string().optional(),
-  hasReferences: z.boolean().default(false),
-  messageToLandlords: z.string().optional(),
+  messageToLandlords: z.string().max(500).optional(),
 });
 
 interface ProfileCompletionWizardProps {
@@ -271,6 +271,11 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
       moveDate: '',
       preferredAreas: [],
       propertyTypes: [],
+      hasPets: false,
+      petDetails: '',
+      desiredBedrooms: [],
+      desiredBathrooms: [],
+      desiredParkingSpaces: [],
     },
   });
 
@@ -278,6 +283,10 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
   const budgetMax = watch('budgetMax') || 15000;
   const selectedAreas = watch('preferredAreas') || [];
   const selectedTypes = watch('propertyTypes') || [];
+  const hasPets = watch('hasPets');
+  const desiredBedrooms = watch('desiredBedrooms') || [];
+  const desiredBathrooms = watch('desiredBathrooms') || [];
+  const desiredParkingSpaces = watch('desiredParkingSpaces') || [];
 
   const convertMoveDateRangeToDate = (range: string): string => {
     const today = new Date();
@@ -330,6 +339,30 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
       ? current.filter((t: string) => t !== type)
       : [...current, type];
     setValue('propertyTypes', updated);
+  };
+
+  const toggleBedroom = (count: number) => {
+    const current = desiredBedrooms;
+    const updated = current.includes(count)
+      ? current.filter((n: number) => n !== count)
+      : [...current, count];
+    setValue('desiredBedrooms', updated);
+  };
+
+  const toggleBathroom = (count: number) => {
+    const current = desiredBathrooms;
+    const updated = current.includes(count)
+      ? current.filter((n: number) => n !== count)
+      : [...current, count];
+    setValue('desiredBathrooms', updated);
+  };
+
+  const toggleParkingSpace = (count: number) => {
+    const current = desiredParkingSpaces;
+    const updated = current.includes(count)
+      ? current.filter((n: number) => n !== count)
+      : [...current, count];
+    setValue('desiredParkingSpaces', updated);
   };
 
   const formatCurrency = (value: number) => {
@@ -456,79 +489,6 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
             <p className="text-sm text-red-600 mt-2">{errors.propertyTypes.message as string}</p>
           )}
         </div>
-      </div>
-
-      <div className="flex justify-between pt-4">
-        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl font-semibold">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Atrás
-        </Button>
-        <Button type="submit" className="px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
-          Continuar
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-// Step 3: Optional Details
-function Step3OptionalDetails({ onNext, onBack, onSkip, initialData }: any) {
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
-    resolver: zodResolver(step3Schema),
-    defaultValues: initialData?.optionalInfo || {
-      occupation: '',
-      occupants: '',
-      hasPets: false,
-      petDetails: '',
-      hasReferences: false,
-      messageToLandlords: '',
-    },
-  });
-
-  const hasPets = watch('hasPets');
-
-  return (
-    <form onSubmit={handleSubmit((data) => onNext({ optionalInfo: data }))} className="space-y-6">
-      <div className="space-y-6">
-        {/* Occupation */}
-        <div>
-          <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
-            Ocupación
-          </label>
-          <Input
-            id="occupation"
-            {...register('occupation')}
-            placeholder="Ej: Ingeniero, Estudiante, Médico"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Tu profesión u ocupación actual
-          </p>
-        </div>
-
-        {/* Occupants */}
-        <div>
-          <label htmlFor="occupants" className="block text-sm font-medium text-gray-700 mb-1">
-            Número de Ocupantes
-          </label>
-          <Select
-            onValueChange={(value) => setValue('occupants', value)}
-            defaultValue={initialData?.optionalInfo?.occupants || ''}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona el número de personas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">Solo yo</SelectItem>
-              <SelectItem value="2">2 personas</SelectItem>
-              <SelectItem value="3-4">3-4 personas</SelectItem>
-              <SelectItem value="5+">5 o más personas</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-gray-500 mt-1">
-            ¿Cuántas personas vivirán en la propiedad?
-          </p>
-        </div>
 
         {/* Has Pets */}
         <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
@@ -565,22 +525,125 @@ function Step3OptionalDetails({ onNext, onBack, onSkip, initialData }: any) {
           </div>
         )}
 
-        {/* Has References */}
-        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-          <Switch
-            id="hasReferences"
-            {...register('hasReferences')}
-          />
-          <div className="flex-1">
-            <label htmlFor="hasReferences" className="block text-sm font-medium text-gray-900 cursor-pointer">
-              Tengo referencias de arrendadores anteriores
+        {/* Desired Bedrooms (only if NOT looking for a room) */}
+        {!selectedTypes.includes('room') && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Número de Habitaciones
             </label>
-            <p className="text-xs text-gray-600 mt-1">
-              Esto puede mejorar tus probabilidades de aprobación
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => toggleBedroom(count)}
+                  className={`
+                    px-4 py-3 rounded-lg border-2 text-center transition-all
+                    ${
+                      desiredBedrooms.includes(count)
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }
+                  `}
+                >
+                  {count === 5 ? '5+' : count}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" {...register('desiredBedrooms')} />
+            <p className="text-xs text-gray-500 mt-2">
+              Puedes seleccionar múltiples opciones
             </p>
           </div>
+        )}
+
+        {/* Desired Bathrooms */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Número de Baños
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {[1, 2, 3, 4].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => toggleBathroom(count)}
+                className={`
+                  px-4 py-3 rounded-lg border-2 text-center transition-all
+                  ${
+                    desiredBathrooms.includes(count)
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }
+                `}
+              >
+                {count === 4 ? '4+' : count}
+              </button>
+            ))}
+          </div>
+          <input type="hidden" {...register('desiredBathrooms')} />
+          <p className="text-xs text-gray-500 mt-2">
+            Puedes seleccionar múltiples opciones
+          </p>
         </div>
 
+        {/* Desired Parking Spaces */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Número de Parqueos
+          </label>
+          <div className="grid grid-cols-4 gap-2">
+            {[0, 1, 2, 3].map((count) => (
+              <button
+                key={count}
+                type="button"
+                onClick={() => toggleParkingSpace(count)}
+                className={`
+                  px-4 py-3 rounded-lg border-2 text-center transition-all
+                  ${
+                    desiredParkingSpaces.includes(count)
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }
+                `}
+              >
+                {count === 3 ? '3+' : count}
+              </button>
+            ))}
+          </div>
+          <input type="hidden" {...register('desiredParkingSpaces')} />
+          <p className="text-xs text-gray-500 mt-2">
+            Puedes seleccionar múltiples opciones
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-between pt-4">
+        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl font-semibold">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Atrás
+        </Button>
+        <Button type="submit" className="px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
+          Continuar
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// Step 3: Optional Details
+function Step3OptionalDetails({ onNext, onBack, onSkip, initialData }: any) {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(step3Schema),
+    defaultValues: initialData?.optionalInfo || {
+      messageToLandlords: '',
+    },
+  });
+
+  return (
+    <form onSubmit={handleSubmit((data) => onNext({ optionalInfo: data }))} className="space-y-6">
+      <div className="space-y-6">
         {/* Message to Landlords */}
         <div>
           <label htmlFor="messageToLandlords" className="block text-sm font-medium text-gray-700 mb-1">
@@ -590,8 +653,12 @@ function Step3OptionalDetails({ onNext, onBack, onSkip, initialData }: any) {
             id="messageToLandlords"
             {...register('messageToLandlords')}
             placeholder="Cuéntale a los propietarios sobre ti, tu estilo de vida y qué tipo de inquilino eres..."
-            rows={4}
+            rows={6}
+            className="resize-none"
           />
+          {errors.messageToLandlords && (
+            <p className="text-sm text-red-600 mt-1">{errors.messageToLandlords.message as string}</p>
+          )}
           <p className="text-xs text-gray-500 mt-1">
             Una breve presentación personal que los propietarios verán en tu perfil
           </p>
