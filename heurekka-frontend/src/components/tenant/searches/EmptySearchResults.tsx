@@ -16,11 +16,11 @@ interface EmptySearchResultsProps {
 export function EmptySearchResults({ onEditCriteria }: EmptySearchResultsProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <Search className="h-8 w-8 text-gray-400" />
+      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+        <Search className="h-10 w-10 text-gray-400" />
       </div>
 
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+      <h3 className="text-2xl font-bold text-gray-900 mb-3">
         No se encontraron propiedades
       </h3>
 
@@ -30,13 +30,13 @@ export function EmptySearchResults({ onEditCriteria }: EmptySearchResultsProps) 
       </p>
 
       {onEditCriteria && (
-        <Button onClick={onEditCriteria} className="gap-2">
+        <Button onClick={onEditCriteria} className="gap-2 px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl">
           <Edit className="h-4 w-4" />
           Editar Criterios de Búsqueda
         </Button>
       )}
 
-      <div className="mt-8 p-4 bg-blue-50 rounded-lg max-w-md">
+      <div className="mt-8 p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl max-w-md border border-blue-200 shadow-sm">
         <p className="text-sm text-blue-900">
           <strong>Consejo:</strong> Te notificaremos por email cuando haya nuevas propiedades
           que coincidan con esta búsqueda.

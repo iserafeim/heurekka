@@ -99,7 +99,7 @@ export const HeroHeader = () => {
 
                                     {showUserMenu && (
                                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                            <Link href="/dashboard" onClick={() => setShowUserMenu(false)}>
+                                            <Link href="/tenant/dashboard" onClick={() => setShowUserMenu(false)}>
                                                 <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
                                                     <User className="h-4 w-4" />
                                                     Mi Perfil
@@ -184,7 +184,7 @@ export const HeroHeader = () => {
                                         <div className="px-4 py-2 text-sm text-gray-700 font-medium">
                                             {user?.email}
                                         </div>
-                                        <Link href="/dashboard" onClick={() => setMenuState(false)} className="block">
+                                        <Link href="/tenant/dashboard" onClick={() => setMenuState(false)} className="block">
                                             <Button
                                                 variant="ghost"
                                                 size="lg"

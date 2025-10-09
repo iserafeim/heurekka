@@ -39,10 +39,11 @@ export default function EditSavedSearchPage() {
   // Loading state
   if (isLoadingSearch) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-gray-600">Cargando búsqueda...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+          <p className="text-lg font-medium text-gray-900">Cargando búsqueda...</p>
+          <p className="text-sm text-gray-500 mt-2">Solo un momento</p>
         </div>
       </div>
     );
@@ -51,7 +52,7 @@ export default function EditSavedSearchPage() {
   // Not found state
   if (!savedSearch) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Búsqueda no encontrada
@@ -78,7 +79,7 @@ export default function EditSavedSearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">

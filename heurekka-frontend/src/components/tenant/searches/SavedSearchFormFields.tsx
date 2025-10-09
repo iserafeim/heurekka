@@ -75,7 +75,7 @@ export function SavedSearchFormFields({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Name */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Nombre de la Búsqueda <span className="text-red-500">*</span>
         </label>
@@ -90,7 +90,7 @@ export function SavedSearchFormFields({
       </div>
 
       {/* Property Types */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Tipos de Propiedad <span className="text-red-500">*</span>
         </label>
@@ -120,7 +120,7 @@ export function SavedSearchFormFields({
       </div>
 
       {/* Budget */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Presupuesto Mensual <span className="text-red-500">*</span>
         </label>
@@ -148,7 +148,7 @@ export function SavedSearchFormFields({
       </div>
 
       {/* Locations */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Zonas <span className="text-red-500">*</span>
         </label>
@@ -177,7 +177,7 @@ export function SavedSearchFormFields({
       </div>
 
       {/* Notifications */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
         <label className="flex items-center gap-3">
           <input
             type="checkbox"

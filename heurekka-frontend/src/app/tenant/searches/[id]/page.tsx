@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSavedSearch, useExecuteSavedSearch } from '@/hooks/tenant/useSavedSearches';
-import { useCreateFavorite, useFavorites } from '@/hooks/tenant/useFavorites';
+import { useAddFavorite, useFavorites } from '@/hooks/tenant/useFavorites';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit, Loader2, Heart } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,7 +27,7 @@ export default function SavedSearchResultsPage() {
   const { data: savedSearch, isLoading: isLoadingSearch } = useSavedSearch(searchId);
   const { data: results, isLoading: isLoadingResults } = useExecuteSavedSearch(searchId);
   const { data: favorites } = useFavorites();
-  const createFavorite = useCreateFavorite();
+  const addFavorite = useAddFavorite();
 
   const handleEditSearch = () => {
     router.push(`/tenant/searches/${searchId}/edit`);
@@ -35,7 +35,7 @@ export default function SavedSearchResultsPage() {
 
   const handleAddToFavorites = async (propertyId: string) => {
     try {
-      await createFavorite.mutateAsync({ propertyId });
+      await addFavorite.mutateAsync({ propertyId });
       toast.success('Propiedad añadida a favoritos');
     } catch (error) {
       toast.error('Error al añadir a favoritos');
@@ -71,10 +71,11 @@ export default function SavedSearchResultsPage() {
   // Loading state
   if (isLoadingSearch || isLoadingResults) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-gray-600">Cargando resultados...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+          <p className="text-lg font-medium text-gray-900">Cargando resultados...</p>
+          <p className="text-sm text-gray-500 mt-2">Solo un momento</p>
         </div>
       </div>
     );
@@ -83,7 +84,7 @@ export default function SavedSearchResultsPage() {
   // Not found state
   if (!savedSearch) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Búsqueda no encontrada
@@ -100,7 +101,7 @@ export default function SavedSearchResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">

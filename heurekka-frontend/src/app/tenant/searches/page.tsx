@@ -40,17 +40,18 @@ export default function SavedSearchesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando búsquedas...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+          <p className="text-lg font-medium text-gray-900">Cargando búsquedas...</p>
+          <p className="text-sm text-gray-500 mt-2">Solo un momento</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -79,15 +80,17 @@ export default function SavedSearchesPage() {
 
         {/* Empty State */}
         {!searches?.length ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-12 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <Search className="h-10 w-10 text-gray-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
               No tienes búsquedas guardadas
             </h2>
             <p className="text-gray-600 mb-6">
               Crea una búsqueda y recibe notificaciones de nuevas propiedades
             </p>
-            <Button onClick={() => router.push('/tenant/searches/new')}>
+            <Button onClick={() => router.push('/tenant/searches/new')} className="px-6 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl">
               <Plus className="h-4 w-4 mr-2" />
               Crear Primera Búsqueda
             </Button>

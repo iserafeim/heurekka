@@ -18,7 +18,7 @@ interface ProfileCompletionProgressProps {
 
 const sizeClasses = {
   small: 'w-16 h-16',
-  medium: 'w-24 h-24',
+  medium: 'w-20 h-20',
   large: 'w-32 h-32',
 };
 
@@ -106,18 +106,21 @@ export function ProfileCompletionProgress({
         <div className="space-y-3">
           {/* Missing Fields */}
           {missingFields.length > 0 && (
-            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="rounded-lg border border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-yellow-900 mb-2">
-                    Campos Faltantes
+                  <h4 className="text-sm font-semibold text-amber-900 mb-1">
+                    {missingFields.length === 1 ? '1 campo pendiente' : `${missingFields.length} campos pendientes`}
                   </h4>
-                  <ul className="space-y-1">
+                  <p className="text-xs text-amber-800 mb-3">
+                    Completa tu perfil para recibir mejores recomendaciones
+                  </p>
+                  <ul className="space-y-2">
                     {missingFields.map((field, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm text-yellow-800">
-                        <Circle className="h-3 w-3" />
-                        <span>{field}</span>
+                      <li key={index} className="flex items-center gap-2 text-sm text-amber-900">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                        <span className="capitalize">{field}</span>
                       </li>
                     ))}
                   </ul>

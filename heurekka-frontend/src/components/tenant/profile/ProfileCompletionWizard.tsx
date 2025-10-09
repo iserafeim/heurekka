@@ -31,7 +31,7 @@ const step1Schema = z.object({
 const step2Schema = z.object({
   budgetMin: z.number().min(0, 'El presupuesto mínimo debe ser mayor a 0'),
   budgetMax: z.number().min(0, 'El presupuesto máximo debe ser mayor a 0'),
-  moveDate: z.string().optional(),
+  moveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Selecciona cuándo deseas mudarte'),
   preferredAreas: z.array(z.string()).min(1, 'Selecciona al menos una zona'),
   propertyTypes: z.array(z.string()).min(1, 'Selecciona al menos un tipo de propiedad'),
 }).refine((data) => data.budgetMax >= data.budgetMin, {
@@ -65,9 +65,21 @@ export function ProfileCompletionWizard({
   const updateProfile = useUpdateTenantProfile();
 
   const steps = [
-    { number: 1, title: 'Información Personal', description: 'Datos de contacto' },
-    { number: 2, title: 'Preferencias de Búsqueda', description: 'Presupuesto y zonas' },
-    { number: 3, title: 'Detalles Opcionales', description: 'Mejora tu perfil' },
+    {
+      number: 1,
+      title: 'Información Personal',
+      subtitle: 'Solo te tomará 2 minutos y podrás contactar propiedades más rápido'
+    },
+    {
+      number: 2,
+      title: 'Preferencias de Búsqueda',
+      subtitle: 'Ayúdanos a encontrar la propiedad perfecta para ti'
+    },
+    {
+      number: 3,
+      title: 'Detalles Opcionales',
+      subtitle: 'Esta información ayuda a los propietarios a conocerte mejor'
+    },
   ];
 
   const handleNext = () => {
@@ -111,53 +123,43 @@ export function ProfileCompletionWizard({
     }
   };
 
+  const currentStepData = steps.find(s => s.number === currentStep);
+
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {/* Progress Indicator */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <React.Fragment key={step.number}>
-              <div className="flex flex-col items-center">
-                <div
-                  className={`
-                    w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold
-                    transition-all duration-200
-                    ${
-                      step.number < currentStep
-                        ? 'bg-green-600 text-white'
-                        : step.number === currentStep
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }
-                  `}
-                >
-                  {step.number < currentStep ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    step.number
-                  )}
-                </div>
-                <div className="mt-2 text-center">
-                  <p className="text-sm font-medium text-gray-900">{step.title}</p>
-                  <p className="text-xs text-gray-500">{step.description}</p>
-                </div>
-              </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`
-                    flex-1 h-1 mx-4 rounded-full
-                    ${step.number < currentStep ? 'bg-green-600' : 'bg-gray-200'}
-                  `}
-                />
-              )}
-            </React.Fragment>
+      <div className="flex flex-col gap-8">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {currentStepData?.title}
+          </h1>
+          <p className="text-gray-600">
+            {currentStepData?.subtitle}
+          </p>
+        </div>
+
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center gap-2">
+          {Array.from({ length: steps.length }).map((_, index) => (
+            <div
+              key={index}
+              className={`
+                h-2 rounded-full transition-all duration-300
+                ${
+                  index === currentStep - 1
+                    ? 'bg-blue-600 w-8' // Activo: más ancho y azul
+                    : index < currentStep - 1
+                    ? 'bg-blue-400 w-2' // Completado: azul claro
+                    : 'bg-gray-300 w-2' // Pendiente: gris
+                }
+              `}
+              aria-label={`Paso ${index + 1}${index === currentStep - 1 ? ' (actual)' : index < currentStep - 1 ? ' (completado)' : ''}`}
+            />
           ))}
         </div>
-      </div>
 
-      {/* Step Content */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        {/* Step Content */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6 md:p-8">
         {currentStep === 1 && (
           <Step1PersonalInfo onNext={handleStepComplete} initialData={formData} />
         )}
@@ -167,72 +169,90 @@ export function ProfileCompletionWizard({
         {currentStep === 3 && (
           <Step3OptionalDetails onNext={handleStepComplete} onBack={handleBack} onSkip={() => handleFinalSubmit(formData)} initialData={formData} />
         )}
-      </div>
-
-      {/* Cancel Button */}
-      {onCancel && (
-        <div className="mt-4 text-center">
-          <button
-            onClick={onCancel}
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            Completar Después
-          </button>
         </div>
-      )}
+
+        {/* Cancel Button */}
+        {onCancel && (
+          <div className="text-center">
+            <button
+              onClick={onCancel}
+              className="text-sm text-gray-600 hover:text-blue-600 transition-colors font-medium"
+            >
+              Completar Después
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 // Step 1: Personal Info
 function Step1PersonalInfo({ onNext, initialData }: any) {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(step1Schema),
     defaultValues: initialData?.personalInfo || {},
   });
 
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-numeric characters
+    const numbers = value.replace(/\D/g, '');
+
+    // Limit to 8 digits
+    const limited = numbers.slice(0, 8);
+
+    // Add hyphen after 4 digits
+    if (limited.length > 4) {
+      return `${limited.slice(0, 4)}-${limited.slice(4)}`;
+    }
+
+    return limited;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setValue('phone', formatted);
+    e.target.value = formatted;
+  };
+
   return (
     <form onSubmit={handleSubmit((data) => onNext({ personalInfo: data }))} className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Información Personal
-        </h3>
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+            Nombre Completo <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="fullName"
+            {...register('fullName')}
+            placeholder="Juan Pérez"
+            className={errors.fullName ? 'border-red-500' : ''}
+          />
+          {errors.fullName && (
+            <p className="text-sm text-red-600 mt-1">{errors.fullName.message as string}</p>
+          )}
+        </div>
 
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre Completo <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="fullName"
-              {...register('fullName')}
-              placeholder="Juan Pérez"
-              className={errors.fullName ? 'border-red-500' : ''}
-            />
-            {errors.fullName && (
-              <p className="text-sm text-red-600 mt-1">{errors.fullName.message as string}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="phone"
-              {...register('phone')}
-              placeholder="9999-9999"
-              className={errors.phone ? 'border-red-500' : ''}
-            />
-            {errors.phone && (
-              <p className="text-sm text-red-600 mt-1">{errors.phone.message as string}</p>
-            )}
-          </div>
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+            Teléfono <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="phone"
+            {...register('phone')}
+            onChange={handlePhoneChange}
+            placeholder="9999-9999"
+            className={errors.phone ? 'border-red-500' : ''}
+            maxLength={9}
+          />
+          {errors.phone && (
+            <p className="text-sm text-red-600 mt-1">{errors.phone.message as string}</p>
+          )}
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" className="flex items-center gap-2">
+        <Button type="submit" className="px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl flex items-center gap-2">
           Continuar
           <ArrowRight className="h-4 w-4" />
         </Button>
@@ -258,6 +278,38 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
   const budgetMax = watch('budgetMax') || 15000;
   const selectedAreas = watch('preferredAreas') || [];
   const selectedTypes = watch('propertyTypes') || [];
+
+  const convertMoveDateRangeToDate = (range: string): string => {
+    const today = new Date();
+    let daysToAdd = 60; // Default: 2 months
+
+    switch (range) {
+      case 'less-than-1-month':
+        daysToAdd = 15; // ~2 weeks
+        break;
+      case '1-3-months':
+        daysToAdd = 60; // ~2 months
+        break;
+      case '3-months-1-year':
+        daysToAdd = 180; // ~6 months
+        break;
+      case 'more-than-1-year':
+        daysToAdd = 365; // 1 year
+        break;
+      case 'not-sure':
+        daysToAdd = 90; // ~3 months
+        break;
+    }
+
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + daysToAdd);
+    return targetDate.toISOString().split('T')[0];
+  };
+
+  const handleMoveDateChange = (value: string) => {
+    const dateValue = convertMoveDateRangeToDate(value);
+    setValue('moveDate', dateValue);
+  };
 
   const handleBudgetChange = (values: number[]) => {
     setValue('budgetMin', values[0]);
@@ -290,127 +342,128 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
 
   return (
     <form onSubmit={handleSubmit((data) => onNext({ searchPreferences: data }))} className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Preferencias de Búsqueda
-        </h3>
-
-        <div className="space-y-6">
-          {/* Budget Range */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Presupuesto Mensual <span className="text-red-500">*</span>
-            </label>
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>{formatCurrency(budgetMin)}</span>
-                <span>{formatCurrency(budgetMax)}</span>
-              </div>
-              <Slider
-                min={1000}
-                max={50000}
-                step={500}
-                value={[budgetMin, budgetMax]}
-                onValueChange={handleBudgetChange}
-                className="w-full"
-              />
-              {/* Hidden inputs for form validation */}
-              <input type="hidden" {...register('budgetMin', { valueAsNumber: true })} />
-              <input type="hidden" {...register('budgetMax', { valueAsNumber: true })} />
+      <div className="space-y-6">
+        {/* Budget Range */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Presupuesto Mensual <span className="text-red-500">*</span>
+          </label>
+          <div className="space-y-4">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>{formatCurrency(budgetMin)}</span>
+              <span>{formatCurrency(budgetMax)}</span>
             </div>
-            {errors.budgetMax && (
-              <p className="text-sm text-red-600 mt-2">{errors.budgetMax.message as string}</p>
-            )}
-          </div>
-
-          {/* Move Date */}
-          <div>
-            <label htmlFor="moveDate" className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de Mudanza (Opcional)
-            </label>
-            <Input
-              id="moveDate"
-              type="date"
-              {...register('moveDate')}
-              min={new Date().toISOString().split('T')[0]}
+            <Slider
+              min={1000}
+              max={50000}
+              step={500}
+              value={[budgetMin, budgetMax]}
+              onValueChange={handleBudgetChange}
+              className="w-full"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              ¿Cuándo te gustaría mudarte?
-            </p>
+            {/* Hidden inputs for form validation */}
+            <input type="hidden" {...register('budgetMin', { valueAsNumber: true })} />
+            <input type="hidden" {...register('budgetMax', { valueAsNumber: true })} />
           </div>
+          {errors.budgetMax && (
+            <p className="text-sm text-red-600 mt-2">{errors.budgetMax.message as string}</p>
+          )}
+        </div>
 
-          {/* Preferred Areas */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Zonas Preferidas <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              {TEGUCIGALPA_AREAS.map((area) => (
-                <button
-                  key={area}
-                  type="button"
-                  onClick={() => toggleArea(area)}
-                  className={`
-                    px-3 py-2 rounded-md text-sm text-left transition-all
-                    ${
-                      selectedAreas.includes(area)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }
-                  `}
-                >
-                  {area}
-                </button>
-              ))}
-            </div>
-            <input type="hidden" {...register('preferredAreas')} />
-            {errors.preferredAreas && (
-              <p className="text-sm text-red-600 mt-2">{errors.preferredAreas.message as string}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-2">
-              Seleccionadas: {selectedAreas.length}
-            </p>
-          </div>
+        {/* Move Date */}
+        <div>
+          <label htmlFor="moveDate" className="block text-sm font-medium text-gray-700 mb-1">
+            ¿Cuándo deseas mudarte? <span className="text-red-500">*</span>
+          </label>
+          <Select onValueChange={handleMoveDateChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona el periodo aproximado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="less-than-1-month">Menos de 1 mes</SelectItem>
+              <SelectItem value="1-3-months">1 - 3 meses</SelectItem>
+              <SelectItem value="3-months-1-year">3 meses - 1 año</SelectItem>
+              <SelectItem value="more-than-1-year">Más de 1 año</SelectItem>
+              <SelectItem value="not-sure">Aún no estoy seguro</SelectItem>
+            </SelectContent>
+          </Select>
+          <input type="hidden" {...register('moveDate')} />
+          {errors.moveDate && (
+            <p className="text-sm text-red-600 mt-1">{errors.moveDate.message as string}</p>
+          )}
+        </div>
 
-          {/* Property Types */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Tipos de Propiedad <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {PROPERTY_TYPE_OPTIONS.filter(t => ['apartment', 'house', 'room'].includes(t.value)).map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  onClick={() => togglePropertyType(type.value)}
-                  className={`
-                    p-4 rounded-lg border-2 text-left transition-all
-                    ${
-                      selectedTypes.includes(type.value)
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <span className="text-2xl mb-2 block">{type.icon}</span>
-                  <span className="text-sm font-medium text-gray-900">{type.label}</span>
-                </button>
-              ))}
-            </div>
-            <input type="hidden" {...register('propertyTypes')} />
-            {errors.propertyTypes && (
-              <p className="text-sm text-red-600 mt-2">{errors.propertyTypes.message as string}</p>
-            )}
+        {/* Preferred Areas */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Zonas Preferidas <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+            {TEGUCIGALPA_AREAS.map((area) => (
+              <button
+                key={area}
+                type="button"
+                onClick={() => toggleArea(area)}
+                className={`
+                  px-3 py-2 rounded-md text-sm text-left transition-all
+                  ${
+                    selectedAreas.includes(area)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }
+                `}
+              >
+                {area}
+              </button>
+            ))}
           </div>
+          <input type="hidden" {...register('preferredAreas')} />
+          {errors.preferredAreas && (
+            <p className="text-sm text-red-600 mt-2">{errors.preferredAreas.message as string}</p>
+          )}
+          <p className="text-xs text-gray-500 mt-2">
+            Seleccionadas: {selectedAreas.length}
+          </p>
+        </div>
+
+        {/* Property Types */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Tipos de Propiedad <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {PROPERTY_TYPE_OPTIONS.filter(t => ['apartment', 'house', 'room'].includes(t.value)).map((type) => (
+              <button
+                key={type.value}
+                type="button"
+                onClick={() => togglePropertyType(type.value)}
+                className={`
+                  p-4 rounded-lg border-2 text-left transition-all
+                  ${
+                    selectedTypes.includes(type.value)
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <span className="text-2xl mb-2 block">{type.icon}</span>
+                <span className="text-sm font-medium text-gray-900">{type.label}</span>
+              </button>
+            ))}
+          </div>
+          <input type="hidden" {...register('propertyTypes')} />
+          {errors.propertyTypes && (
+            <p className="text-sm text-red-600 mt-2">{errors.propertyTypes.message as string}</p>
+          )}
         </div>
       </div>
 
       <div className="flex justify-between pt-4">
-        <Button type="button" onClick={onBack} variant="outline">
+        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl font-semibold">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Atrás
         </Button>
-        <Button type="submit">
+        <Button type="submit" className="px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
           Continuar
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
@@ -437,133 +490,124 @@ function Step3OptionalDetails({ onNext, onBack, onSkip, initialData }: any) {
 
   return (
     <form onSubmit={handleSubmit((data) => onNext({ optionalInfo: data }))} className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Información Opcional
-        </h3>
-        <p className="text-sm text-gray-600 mb-6">
-          Esta información ayuda a los propietarios a conocerte mejor
-        </p>
+      <div className="space-y-6">
+        {/* Occupation */}
+        <div>
+          <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
+            Ocupación
+          </label>
+          <Input
+            id="occupation"
+            {...register('occupation')}
+            placeholder="Ej: Ingeniero, Estudiante, Médico"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Tu profesión u ocupación actual
+          </p>
+        </div>
 
-        <div className="space-y-6">
-          {/* Occupation */}
-          <div>
-            <label htmlFor="occupation" className="block text-sm font-medium text-gray-700 mb-1">
-              Ocupación
+        {/* Occupants */}
+        <div>
+          <label htmlFor="occupants" className="block text-sm font-medium text-gray-700 mb-1">
+            Número de Ocupantes
+          </label>
+          <Select
+            onValueChange={(value) => setValue('occupants', value)}
+            defaultValue={initialData?.optionalInfo?.occupants || ''}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona el número de personas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Solo yo</SelectItem>
+              <SelectItem value="2">2 personas</SelectItem>
+              <SelectItem value="3-4">3-4 personas</SelectItem>
+              <SelectItem value="5+">5 o más personas</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500 mt-1">
+            ¿Cuántas personas vivirán en la propiedad?
+          </p>
+        </div>
+
+        {/* Has Pets */}
+        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+          <Switch
+            id="hasPets"
+            checked={hasPets}
+            onCheckedChange={(checked) => setValue('hasPets', checked)}
+          />
+          <div className="flex-1">
+            <label htmlFor="hasPets" className="block text-sm font-medium text-gray-900 cursor-pointer">
+              Tengo mascotas
             </label>
-            <Input
-              id="occupation"
-              {...register('occupation')}
-              placeholder="Ej: Ingeniero, Estudiante, Médico"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Tu profesión u ocupación actual
+            <p className="text-xs text-gray-600 mt-1">
+              Activa esta opción si tienes o planeas tener mascotas
             </p>
           </div>
+        </div>
 
-          {/* Occupants */}
-          <div>
-            <label htmlFor="occupants" className="block text-sm font-medium text-gray-700 mb-1">
-              Número de Ocupantes
-            </label>
-            <Select
-              onValueChange={(value) => setValue('occupants', value)}
-              defaultValue={initialData?.optionalInfo?.occupants || ''}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona el número de personas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Solo yo</SelectItem>
-                <SelectItem value="2">2 personas</SelectItem>
-                <SelectItem value="3-4">3-4 personas</SelectItem>
-                <SelectItem value="5+">5 o más personas</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-gray-500 mt-1">
-              ¿Cuántas personas vivirán en la propiedad?
-            </p>
-          </div>
-
-          {/* Has Pets */}
-          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-            <Switch
-              id="hasPets"
-              checked={hasPets}
-              onCheckedChange={(checked) => setValue('hasPets', checked)}
-            />
-            <div className="flex-1">
-              <label htmlFor="hasPets" className="block text-sm font-medium text-gray-900 cursor-pointer">
-                Tengo mascotas
-              </label>
-              <p className="text-xs text-gray-600 mt-1">
-                Activa esta opción si tienes o planeas tener mascotas
-              </p>
-            </div>
-          </div>
-
-          {/* Pet Details (conditional) */}
-          {hasPets && (
-            <div className="ml-4 pl-4 border-l-2 border-blue-600">
-              <label htmlFor="petDetails" className="block text-sm font-medium text-gray-700 mb-1">
-                Detalles sobre tus mascotas
-              </label>
-              <Textarea
-                id="petDetails"
-                {...register('petDetails')}
-                placeholder="Ej: 1 perro pequeño, bien entrenado y tranquilo"
-                rows={3}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Describe tus mascotas: tipo, cantidad, tamaño, temperamento
-              </p>
-            </div>
-          )}
-
-          {/* Has References */}
-          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-            <Switch
-              id="hasReferences"
-              {...register('hasReferences')}
-            />
-            <div className="flex-1">
-              <label htmlFor="hasReferences" className="block text-sm font-medium text-gray-900 cursor-pointer">
-                Tengo referencias de arrendadores anteriores
-              </label>
-              <p className="text-xs text-gray-600 mt-1">
-                Esto puede mejorar tus probabilidades de aprobación
-              </p>
-            </div>
-          </div>
-
-          {/* Message to Landlords */}
-          <div>
-            <label htmlFor="messageToLandlords" className="block text-sm font-medium text-gray-700 mb-1">
-              Mensaje para propietarios (Opcional)
+        {/* Pet Details (conditional) */}
+        {hasPets && (
+          <div className="ml-4 pl-4 border-l-2 border-blue-600">
+            <label htmlFor="petDetails" className="block text-sm font-medium text-gray-700 mb-1">
+              Detalles sobre tus mascotas
             </label>
             <Textarea
-              id="messageToLandlords"
-              {...register('messageToLandlords')}
-              placeholder="Cuéntale a los propietarios sobre ti, tu estilo de vida y qué tipo de inquilino eres..."
-              rows={4}
+              id="petDetails"
+              {...register('petDetails')}
+              placeholder="Ej: 1 perro pequeño, bien entrenado y tranquilo"
+              rows={3}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Una breve presentación personal que los propietarios verán en tu perfil
+              Describe tus mascotas: tipo, cantidad, tamaño, temperamento
             </p>
           </div>
+        )}
+
+        {/* Has References */}
+        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+          <Switch
+            id="hasReferences"
+            {...register('hasReferences')}
+          />
+          <div className="flex-1">
+            <label htmlFor="hasReferences" className="block text-sm font-medium text-gray-900 cursor-pointer">
+              Tengo referencias de arrendadores anteriores
+            </label>
+            <p className="text-xs text-gray-600 mt-1">
+              Esto puede mejorar tus probabilidades de aprobación
+            </p>
+          </div>
+        </div>
+
+        {/* Message to Landlords */}
+        <div>
+          <label htmlFor="messageToLandlords" className="block text-sm font-medium text-gray-700 mb-1">
+            Mensaje para propietarios (Opcional)
+          </label>
+          <Textarea
+            id="messageToLandlords"
+            {...register('messageToLandlords')}
+            placeholder="Cuéntale a los propietarios sobre ti, tu estilo de vida y qué tipo de inquilino eres..."
+            rows={4}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Una breve presentación personal que los propietarios verán en tu perfil
+          </p>
         </div>
       </div>
 
       <div className="flex justify-between pt-4">
-        <Button type="button" onClick={onBack} variant="outline">
+        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl font-semibold">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Atrás
         </Button>
         <div className="flex gap-2">
-          <Button type="button" onClick={onSkip} variant="ghost">
+          <Button type="button" onClick={onSkip} variant="ghost" className="font-medium">
             Omitir
           </Button>
-          <Button type="submit" className="bg-green-600 hover:bg-green-700">
+          <Button type="submit" className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
             Completar Perfil
             <Check className="h-4 w-4 ml-2" />
           </Button>
