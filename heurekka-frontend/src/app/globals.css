@@ -354,7 +354,7 @@
   --neutral-950: 3 7 18; /* #030712 */
 
   /* Theme Application */
-  --background: 255 255 255; /* White */
+  --background: var(--neutral-50); /* Very light gray */
   --foreground: var(--neutral-900);
   --card: var(--background);
   --card-foreground: var(--foreground);
@@ -372,6 +372,14 @@
   --border: var(--neutral-200);
   --input: var(--neutral-200);
   --ring: var(--primary);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 
 .dark {
@@ -530,7 +538,7 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Safari and Chrome */
   }

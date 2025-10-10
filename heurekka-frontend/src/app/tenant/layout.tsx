@@ -1,10 +1,9 @@
 /**
  * Tenant Layout
- * Layout principal para las páginas del tenant que incluye navbar
+ * Layout principal para las páginas del tenant
  */
 
 import React from 'react';
-import { HeroHeader } from '@/components/header';
 
 export default function TenantLayout({
   children,
@@ -12,9 +11,8 @@ export default function TenantLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      <HeroHeader />
-      <main className="pt-20">{children}</main>
+    <div className="min-h-screen bg-gray-50">
+      <main>{children}</main>
     </div>
   );
 }
