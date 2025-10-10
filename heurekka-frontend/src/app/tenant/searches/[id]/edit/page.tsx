@@ -24,16 +24,33 @@ export default function EditSavedSearchPage() {
 
   const handleSubmit = async (data: SavedSearchFormData) => {
     try {
-      await updateSearch.mutateAsync({ id: searchId, ...data });
+      // Transform data to match backend schema
+      const payload = {
+        searchId: searchId,
+        data: {
+          profileName: data.name,
+          searchCriteria: {
+            propertyTypes: data.propertyTypes,
+            locations: data.locations,
+            budgetMin: data.budgetMin,
+            budgetMax: data.budgetMax,
+            bedrooms: data.bedrooms,
+            bathrooms: data.bathrooms,
+            amenities: data.amenities,
+          },
+        },
+      };
+
+      await updateSearch.mutateAsync(payload as any);
       toast.success('Búsqueda actualizada exitosamente');
-      router.push('/tenant/searches');
+      router.push('/tenant/dashboard');
     } catch (error) {
       toast.error('Error al actualizar la búsqueda');
     }
   };
 
   const handleCancel = () => {
-    router.push('/tenant/searches');
+    router.push('/tenant/dashboard');
   };
 
   // Loading state
@@ -68,14 +85,20 @@ export default function EditSavedSearchPage() {
     );
   }
 
+  // Unwrap savedSearch if needed (handle both wrapped and unwrapped formats)
+  const searchData = savedSearch.data || savedSearch;
+
   // Map saved search data to form data
   const defaultValues: Partial<SavedSearchFormData> = {
-    name: savedSearch.name,
-    propertyTypes: savedSearch.criteria.propertyTypes || [],
-    locations: savedSearch.criteria.locations || [],
-    budgetMin: savedSearch.criteria.budgetMin || 5000,
-    budgetMax: savedSearch.criteria.budgetMax || 15000,
-    notificationEnabled: savedSearch.notificationEnabled,
+    name: searchData.name,
+    propertyTypes: searchData.searchCriteria?.propertyTypes || [],
+    locations: searchData.searchCriteria?.locations || [],
+    budgetMin: searchData.searchCriteria?.budgetMin || 5000,
+    budgetMax: searchData.searchCriteria?.budgetMax || 15000,
+    bedrooms: searchData.searchCriteria?.bedrooms,
+    bathrooms: searchData.searchCriteria?.bathrooms,
+    amenities: searchData.searchCriteria?.amenities,
+    notificationEnabled: searchData.notificationEnabled,
   };
 
   return (
@@ -97,7 +120,7 @@ export default function EditSavedSearchPage() {
             Búsquedas
           </button>
           <span>/</span>
-          <span className="text-gray-900">Editar &quot;{savedSearch.name}&quot;</span>
+          <span className="text-gray-900">Editar &quot;{searchData.name}&quot;</span>
         </div>
 
         {/* Header */}
@@ -109,7 +132,7 @@ export default function EditSavedSearchPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Editar Búsqueda</h1>
             <p className="text-gray-600 mt-1">
-              Actualiza los criterios de búsqueda &quot;{savedSearch.name}&quot;
+              Actualiza los criterios de búsqueda &quot;{searchData.name}&quot;
             </p>
           </div>
         </div>

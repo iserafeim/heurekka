@@ -211,7 +211,7 @@ export function SavedSearchFormFields({
         <Button
           type="submit"
           disabled={isLoading}
-          className="flex-1"
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
         >
           {isLoading ? 'Procesando...' : submitLabel}
         </Button>

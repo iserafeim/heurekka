@@ -18,11 +18,12 @@ export default function SavedSearchesPage() {
   const deleteSearch = useDeleteSavedSearch();
   const toggleStatus = useToggleSavedSearchStatus();
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`¿Eliminar la búsqueda "${name}"?`)) return;
+  const handleDelete = async (id: string, name: string, profileName?: string) => {
+    const searchName = profileName || name || 'esta búsqueda';
+    if (!confirm(`¿Eliminar la búsqueda "${searchName}"?`)) return;
 
     try {
-      await deleteSearch.mutateAsync({ id });
+      await deleteSearch.mutateAsync({ searchId: id });
       toast.success('Búsqueda eliminada');
     } catch (error) {
       toast.error('Error al eliminar búsqueda');
@@ -31,7 +32,7 @@ export default function SavedSearchesPage() {
 
   const handleToggleStatus = async (id: string) => {
     try {
-      await toggleStatus.mutateAsync({ id });
+      await toggleStatus.mutateAsync({ searchId: id });
       toast.success('Estado actualizado');
     } catch (error) {
       toast.error('Error al actualizar estado');
@@ -107,7 +108,7 @@ export default function SavedSearchesPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {search.name}
+                      {search.profileName || search.name || 'Búsqueda sin nombre'}
                     </h3>
                     <div className="flex items-center gap-2">
                       <span
@@ -132,18 +133,18 @@ export default function SavedSearchesPage() {
                 <div className="space-y-2 mb-4">
                   <CriteriaItem
                     label="Presupuesto"
-                    value={`L.${search.criteria.budgetMin?.toLocaleString()} - L.${search.criteria.budgetMax?.toLocaleString()}`}
+                    value={`L.${search.searchCriteria?.budgetMin?.toLocaleString() || '0'} - L.${search.searchCriteria?.budgetMax?.toLocaleString() || '0'}`}
                   />
-                  {search.criteria.locations && search.criteria.locations.length > 0 && (
+                  {search.searchCriteria?.locations && search.searchCriteria.locations.length > 0 && (
                     <CriteriaItem
                       label="Zonas"
-                      value={search.criteria.locations.slice(0, 2).join(', ') + (search.criteria.locations.length > 2 ? '...' : '')}
+                      value={search.searchCriteria.locations.slice(0, 2).join(', ') + (search.searchCriteria.locations.length > 2 ? '...' : '')}
                     />
                   )}
-                  {search.criteria.propertyTypes && search.criteria.propertyTypes.length > 0 && (
+                  {search.searchCriteria?.propertyTypes && search.searchCriteria.propertyTypes.length > 0 && (
                     <CriteriaItem
                       label="Tipos"
-                      value={search.criteria.propertyTypes.join(', ')}
+                      value={search.searchCriteria.propertyTypes.join(', ')}
                     />
                   )}
                 </div>
@@ -179,7 +180,7 @@ export default function SavedSearchesPage() {
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button
-                    onClick={() => handleDelete(search.id, search.name)}
+                    onClick={() => handleDelete(search.id, search.name, search.profileName)}
                     size="sm"
                     variant="ghost"
                   >

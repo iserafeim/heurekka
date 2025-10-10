@@ -21,7 +21,7 @@ export function useSavedSearches() {
  */
 export function useSavedSearch(id: string) {
   return trpc.savedSearch.getById.useQuery(
-    { id },
+    { searchId: id },
     {
       retry: 1,
       enabled: !!id,
@@ -53,7 +53,7 @@ export function useUpdateSavedSearch() {
   return trpc.savedSearch.update.useMutation({
     onSuccess: (data) => {
       utils.savedSearch.list.invalidate();
-      utils.savedSearch.getById.invalidate({ id: data.id });
+      utils.savedSearch.getById.invalidate({ searchId: data.id });
       utils.savedSearch.summary.invalidate();
     },
   });
@@ -83,17 +83,17 @@ export function useToggleSavedSearchStatus() {
   return trpc.savedSearch.toggleStatus.useMutation({
     onSuccess: (data) => {
       utils.savedSearch.list.invalidate();
-      utils.savedSearch.getById.invalidate({ id: data.id });
+      utils.savedSearch.getById.invalidate({ searchId: data.id });
     },
     // Optimistic update
-    onMutate: async ({ id }) => {
+    onMutate: async ({ searchId }) => {
       await utils.savedSearch.list.cancel();
       const previousSearches = utils.savedSearch.list.getData();
 
       utils.savedSearch.list.setData(undefined, (old) => {
         if (!old) return old;
         return old.map((search) =>
-          search.id === id
+          search.id === searchId
             ? { ...search, isActive: !search.isActive }
             : search
         );
@@ -114,7 +114,7 @@ export function useToggleSavedSearchStatus() {
  */
 export function useExecuteSavedSearch(id: string) {
   return trpc.savedSearch.execute.useQuery(
-    { id },
+    { searchId: id },
     {
       retry: 1,
       enabled: !!id,

@@ -20,9 +20,24 @@ export default function NewSavedSearchPage() {
 
   const handleSubmit = async (data: SavedSearchFormData) => {
     try {
-      await createSearch.mutateAsync(data);
+      // Transform data to match backend schema
+      const payload = {
+        profileName: data.name,
+        searchCriteria: {
+          propertyTypes: data.propertyTypes,
+          locations: data.locations,
+          budgetMin: data.budgetMin,
+          budgetMax: data.budgetMax,
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          amenities: data.amenities,
+        },
+        notificationEnabled: data.notificationEnabled,
+      };
+
+      await createSearch.mutateAsync(payload as any);
       toast.success('Búsqueda creada exitosamente');
-      router.push('/tenant/searches');
+      router.push('/tenant/dashboard');
     } catch (error) {
       toast.error('Error al crear la búsqueda');
     }

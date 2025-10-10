@@ -205,15 +205,19 @@ export function PropertyCard({
   }, []);
 
   // Format price to match homepage style
-  const formatPrice = (price: { amount: number; currency: string; period: string }) => {
+  const formatPrice = (price: { amount: number; currency: string; period: string } | number) => {
+    // Handle both number and object formats
+    const amount = typeof price === 'number' ? price : price.amount;
+    const currency = typeof price === 'number' ? 'HNL' : price.currency;
+
     const formatter = new Intl.NumberFormat('es-HN', {
       style: 'currency',
-      currency: price.currency,
+      currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     })
 
-    return formatter.format(price.amount)
+    return formatter.format(amount)
   }
 
   // Get responsive card height based on variant and view mode

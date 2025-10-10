@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
+import { useDeleteSavedSearch } from '@/hooks/tenant/useSavedSearches';
 import { TenantSidebar } from '@/components/tenant/TenantSidebar';
 import { TenantHeader } from '@/components/tenant/TenantHeader';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import {
   Plus,
   Edit,
   Eye,
+  Trash2,
   DollarSign,
   Calendar,
   Home,
@@ -27,6 +29,7 @@ import {
   BookmarkIcon,
   MessageSquare,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 type TabSection = 'saved-searches' | 'favorites' | 'conversations' | 'profile';
 
@@ -460,18 +463,40 @@ export default function TenantDashboardPage() {
 
 // Helper Components
 function SavedSearchCard({ search }: any) {
+  const router = useRouter();
+  const deleteSearch = useDeleteSavedSearch();
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!search.id) return;
+
+    const searchName = search.profileName || search.name || 'esta búsqueda';
+    if (!confirm(`¿Eliminar la búsqueda "${searchName}"?`)) return;
+
+    try {
+      await deleteSearch.mutateAsync({ searchId: search.id });
+      toast.success('Búsqueda eliminada');
+    } catch (error) {
+      toast.error('Error al eliminar búsqueda');
+    }
+  };
+
   return (
-    <div className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer relative overflow-hidden">
+    <div className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100/50 transition-all duration-300 hover:scale-[1.02] relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 to-blue-50/0 group-hover:from-blue-50/40 group-hover:to-purple-50/20 transition-all duration-300"></div>
       <div className="relative flex items-start justify-between">
-        <div className="flex-1 min-w-0">
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={() => search.id && router.push(`/tenant/searches/${search.id}`)}
+        >
           <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
-            {search.name}
+            {search.profileName || search.name || 'Búsqueda sin nombre'}
           </h3>
           <div className="flex items-center gap-2 mt-2">
             <DollarSign className="h-4 w-4 text-gray-400" />
             <p className="text-sm font-medium text-gray-600">
-              L.{search.criteria.budgetMin?.toLocaleString()} - L.{search.criteria.budgetMax?.toLocaleString()}
+              L.{search.searchCriteria?.budgetMin?.toLocaleString() || '0'} - L.{search.searchCriteria?.budgetMax?.toLocaleString() || '0'}
             </p>
           </div>
           {search.newMatchCount > 0 && (
@@ -482,11 +507,35 @@ function SavedSearchCard({ search }: any) {
           )}
         </div>
         <div className="flex gap-2 ml-4">
-          <Button size="sm" variant="ghost" className="hover:bg-blue-50 hover:text-blue-600">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="hover:bg-blue-50 hover:text-blue-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (search.id) router.push(`/tenant/searches/${search.id}`);
+            }}
+          >
             <Eye className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="ghost" className="hover:bg-blue-50 hover:text-blue-600">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="hover:bg-blue-50 hover:text-blue-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (search.id) router.push(`/tenant/searches/${search.id}/edit`);
+            }}
+          >
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="hover:bg-red-50 hover:text-red-600"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>

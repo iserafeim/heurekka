@@ -372,7 +372,7 @@ class SavedSearchService {
             order_index
           )
         `)
-        .eq('status', 'available')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       // Apply filters based on criteria
