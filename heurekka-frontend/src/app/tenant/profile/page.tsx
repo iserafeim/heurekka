@@ -76,7 +76,7 @@ export default function TenantProfilePage() {
     return 'more-than-1-year';
   };
 
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
+  const { register, handleSubmit, formState: { isDirty }, watch } = useForm({
     values: profile?.data ? {
       ...profile.data,
       preferredAreas: profile.data.preferredAreas?.join(', ') || '',
@@ -85,6 +85,23 @@ export default function TenantProfilePage() {
       hasReferences: profile.data.hasReferences?.toString() || 'false',
     } : {},
   });
+
+  // Check if any field has changed (including useState fields)
+  const hasChanges = React.useMemo(() => {
+    if (!profile?.data) return false;
+
+    // Check form fields
+    if (isDirty) return true;
+
+    // Check state-managed fields
+    const bedroomsChanged = JSON.stringify(desiredBedrooms.sort()) !== JSON.stringify((profile.data.desiredBedrooms || []).sort());
+    const bathroomsChanged = JSON.stringify(desiredBathrooms.sort()) !== JSON.stringify((profile.data.desiredBathrooms || []).sort());
+    const parkingChanged = JSON.stringify(desiredParkingSpaces.sort()) !== JSON.stringify((profile.data.desiredParkingSpaces || []).sort());
+    const petsChanged = hasPets !== (profile.data.hasPets || false);
+    const petDetailsChanged = petDetails !== (profile.data.petDetails || '');
+
+    return bedroomsChanged || bathroomsChanged || parkingChanged || petsChanged || petDetailsChanged;
+  }, [isDirty, desiredBedrooms, desiredBathrooms, desiredParkingSpaces, hasPets, petDetails, profile?.data]);
 
   const convertMoveDateRangeToDate = (range: string): string => {
     const today = new Date();
@@ -201,7 +218,7 @@ export default function TenantProfilePage() {
               </Button>
               <Button
                 onClick={handleSubmit(onSave)}
-                disabled={updateProfile.isPending || !isDirty}
+                disabled={updateProfile.isPending || !hasChanges}
               >
                 {updateProfile.isPending ? (
                   <>
