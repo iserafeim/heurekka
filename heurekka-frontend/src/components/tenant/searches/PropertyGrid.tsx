@@ -19,49 +19,56 @@ export function PropertyGrid({ properties, onFavorite, favoritePropertyIds = [] 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {properties.map((property: any) => {
-        // Normalize property data for PropertyCard
-        // Handle multiple data formats:
-        // 1. Backend MatchedProperty: { priceAmount, type, areaSqm, landlordId, etc. }
-        // 2. FavoriteProperty: { price, propertyType, location, etc. }
-        // 3. Homepage Property: { price: {amount, currency}, type, etc. }
+        // Transform backend MatchedProperty format to PropertyCard Property format
+        // Backend returns: { priceAmount, type, areaSqm, address: {neighborhood, city, street}, landlordId }
 
         const price = property.priceAmount || property.price || 0;
         const propertyType = property.type || property.propertyType || 'apartment';
-        const neighborhood = property.address?.neighborhood || property.location || property.neighborhood || '';
 
+        // Extract neighborhood from address object or fallback to other sources
+        const neighborhood = (
+          property.address?.neighborhood?.trim() ||
+          property.location?.trim() ||
+          property.neighborhood?.trim() ||
+          ''
+        );
+
+        const city = property.address?.city?.trim() || property.city || 'Tegucigalpa';
+        const street = property.address?.street?.trim() || property.address || '';
         const area = property.areaSqm || property.area || 0;
 
+        // Transform to Property format for PropertyCard
         const normalizedProperty = {
           id: property.id,
-          title: property.title,
-          price: typeof price === 'number' ? price : price?.amount || 0,
-          propertyType,
+          address: street,
           neighborhood,
-          city: property.address?.city || 'Tegucigalpa',
-          address: typeof property.address === 'string' ? property.address : property.address?.street || '',
+          city,
+          price,
           bedrooms: property.bedrooms || 0,
           bathrooms: typeof property.bathrooms === 'string'
             ? parseFloat(property.bathrooms)
             : property.bathrooms || 0,
           area,
-          size: {
-            value: area,
-            unit: 'm2'
-          },
-          images: property.images || [],
+          propertyType,
+          images: Array.isArray(property.images)
+            ? property.images.map((img: any) => typeof img === 'string' ? img : img?.url || '')
+            : [],
+          description: property.description || property.title || '',
           amenities: property.amenities || [],
-          coordinates: { lat: 0, lng: 0 },
-          description: property.description || '',
+          coordinates: property.coordinates || { lat: 0, lng: 0 },
           landlord: {
             id: property.landlordId || property.landlord?.id || '',
             name: property.landlord?.name || 'Propietario',
           },
           listing: {
             listedDate: property.createdAt || new Date().toISOString(),
+            status: 'active',
+            daysOnMarket: 0,
           },
           stats: {
             views: 0,
             favorites: 0,
+            inquiries: 0,
           },
         };
 

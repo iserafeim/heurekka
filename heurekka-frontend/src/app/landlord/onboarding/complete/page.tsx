@@ -100,12 +100,12 @@ export default function CompletePage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Resumen de tu perfil</h2>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between py-2 border-b">
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
             <span className="text-gray-600">Tipo de cuenta</span>
             <span className="font-semibold text-gray-900">{getLandlordTypeLabel()}</span>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-b">
+          <div className="flex items-center justify-between py-2 border-b border-gray-200">
             <span className="text-gray-600">Completitud</span>
             <span className="font-semibold text-green-600">{profileCompletionPercentage}%</span>
           </div>

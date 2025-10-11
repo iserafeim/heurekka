@@ -9,20 +9,24 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useFavorites, useToggleFavorite } from '@/hooks/tenant/useFavorites';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Heart, MessageSquare, Eye, Trash2 } from 'lucide-react';
+import { PropertyCard } from '@/components/ui/property-card';
+import { ArrowLeft, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FavoritesPage() {
   const router = useRouter();
-  const { data: favorites, isLoading } = useFavorites();
+  const { data: favoritesResponse, isLoading } = useFavorites();
   const toggleFavorite = useToggleFavorite();
 
-  const handleRemove = async (propertyId: string) => {
+  // Extract favorites array from response
+  const favorites = favoritesResponse?.data || [];
+
+  const handleToggleFavorite = async (propertyId: string) => {
     try {
       await toggleFavorite.mutateAsync({ propertyId });
-      toast.success('Propiedad removida de favoritos');
+      toast.success('Favorito actualizado');
     } catch (error) {
-      toast.error('Error al remover de favoritos');
+      toast.error('Error al actualizar favorito');
     }
   };
 
@@ -52,13 +56,13 @@ export default function FavoritesPage() {
               Propiedades Favoritas
             </h1>
             <p className="text-gray-600 mt-1">
-              {favorites?.length || 0} propiedades guardadas
+              {favorites.length} propiedades guardadas
             </p>
           </div>
         </div>
 
         {/* Empty State */}
-        {!favorites?.length ? (
+        {!favorites.length ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <Heart className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -72,56 +76,60 @@ export default function FavoritesPage() {
             </Button>
           </div>
         ) : (
-          /* Grid de Favoritos */
+          /* Grid de Favoritos con PropertyCard */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {favorites.map((favorite) => (
-              <div
-                key={favorite.id}
-                className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                {/* Image */}
-                <div className="aspect-video bg-gray-200 relative">
-                  {favorite.isContacted && (
-                    <span className="absolute top-2 right-2 px-2 py-1 bg-green-600 text-white text-xs font-semibold rounded">
-                      Contactado
-                    </span>
-                  )}
-                </div>
+            {favorites.map((favorite: any) => {
+              // Transform backend favorite format to PropertyCard Property format
+              const property = favorite.property;
 
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    {favorite.property?.title || 'Propiedad'}
-                  </h3>
-                  <p className="text-blue-600 font-bold text-lg mb-2">
-                    L.{favorite.property?.price?.toLocaleString()}/mes
-                  </p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {favorite.property?.location}
-                  </p>
+              // Extract neighborhood from address object
+              const neighborhood = property.address?.neighborhood || '';
+              const city = property.address?.city || 'Tegucigalpa';
+              const street = property.address?.street || '';
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => router.push(`/propiedades/${favorite.propertyId}`)}
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button
-                      onClick={() => handleRemove(favorite.propertyId)}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+              const normalizedProperty = {
+                id: property.id,
+                address: street,
+                neighborhood,
+                city,
+                price: property.priceAmount,
+                bedrooms: property.bedrooms || 0,
+                bathrooms: typeof property.bathrooms === 'string'
+                  ? parseFloat(property.bathrooms)
+                  : property.bathrooms || 0,
+                area: property.areaSqm || 0,
+                propertyType: property.type,
+                images: Array.isArray(property.images)
+                  ? property.images.map((img: any) => typeof img === 'string' ? img : img?.url || '')
+                  : [],
+                description: property.title || '',
+                amenities: property.amenities || [],
+                coordinates: { lat: 0, lng: 0 },
+                landlord: {
+                  id: property.landlordId || '',
+                  name: 'Propietario',
+                },
+                listing: {
+                  listedDate: property.createdAt || new Date().toISOString(),
+                  status: 'active',
+                  daysOnMarket: 0,
+                },
+                stats: {
+                  views: 0,
+                  favorites: 0,
+                  inquiries: 0,
+                },
+              };
+
+              return (
+                <PropertyCard
+                  key={favorite.id}
+                  property={normalizedProperty}
+                  isFavorite={true}
+                  onFavorite={() => handleToggleFavorite(property.id)}
+                />
+              );
+            })}
           </div>
         )}
       </div>

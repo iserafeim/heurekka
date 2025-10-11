@@ -74,6 +74,39 @@ class FavoriteService {
         });
       }
 
+      // Get property details first
+      const { data: property, error: propertyError } = await this.supabase
+        .from('properties')
+        .select(`
+          id,
+          title,
+          type,
+          price_amount,
+          currency,
+          bedrooms,
+          bathrooms,
+          area_sqm,
+          address,
+          amenities,
+          status,
+          landlord_id,
+          created_at,
+          property_images (
+            url,
+            is_primary,
+            order_index
+          )
+        `)
+        .eq('id', propertyId)
+        .single();
+
+      if (propertyError || !property) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Propiedad no encontrada'
+        });
+      }
+
       // Add to favorites
       const { data, error } = await this.supabase
         .from('property_favorites')
@@ -92,14 +125,43 @@ class FavoriteService {
         });
       }
 
-      // Increment favorite_count on property
-      await this.supabase
-        .from('properties')
-        .update({ favorite_count: this.supabase.raw('favorite_count + 1') })
-        .eq('id', propertyId);
+      // Increment favorite_count on property using rpc
+      try {
+        await this.supabase.rpc('increment_favorite_count', { property_id: propertyId });
+      } catch (rpcError) {
+        // Non-critical error, just log it
+        console.warn('Failed to increment favorite count:', rpcError);
+      }
 
-      // Get full property details
-      return await this.getFavoriteWithProperty(data.id);
+      // Check if contacted
+      const contactedProperties = await this.getContactedProperties(userId, [propertyId]);
+      const contactedAt = contactedProperties.get(propertyId) || null;
+
+      // Return the favorite with property details
+      return {
+        id: data.id,
+        userId: data.user_id,
+        propertyId: data.property_id,
+        createdAt: data.created_at,
+        property: {
+          id: property.id,
+          title: property.title,
+          type: property.type,
+          priceAmount: property.price_amount,
+          currency: property.currency || 'HNL',
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          areaSqm: property.area_sqm,
+          address: property.address,
+          amenities: property.amenities || [],
+          status: property.status,
+          landlordId: property.landlord_id,
+          images: property.property_images || [],
+          createdAt: property.created_at
+        },
+        contacted: !!contactedAt,
+        contactedAt
+      };
     } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
@@ -131,11 +193,13 @@ class FavoriteService {
         });
       }
 
-      // Decrement favorite_count on property
-      await this.supabase
-        .from('properties')
-        .update({ favorite_count: this.supabase.raw('GREATEST(favorite_count - 1, 0)') })
-        .eq('id', propertyId);
+      // Decrement favorite_count on property using rpc
+      try {
+        await this.supabase.rpc('decrement_favorite_count', { property_id: propertyId });
+      } catch (rpcError) {
+        // Non-critical error, just log it
+        console.warn('Failed to decrement favorite count:', rpcError);
+      }
 
       return { success: true };
     } catch (error) {

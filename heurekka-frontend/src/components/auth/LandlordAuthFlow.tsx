@@ -329,9 +329,8 @@ export function LandlordAuthFlow({
 
             <Button
               type="submit"
-              variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               loading={isLoading}
               loadingText="Creando cuenta..."
             >
@@ -425,9 +424,8 @@ export function LandlordAuthFlow({
 
             <Button
               type="submit"
-              variant="primary"
               size="lg"
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               loading={isLoading}
               loadingText="Iniciando sesión..."
             >

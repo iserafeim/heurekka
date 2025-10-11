@@ -223,17 +223,17 @@ export function PropertyCard({
   // Get responsive card height based on variant and view mode
   const getCardHeight = (variant: string, viewMode: string) => {
     if (viewMode === 'list') {
-      return 'h-[420px]'; // Desktop full list (4 columns) - increased for verified badge
+      return 'h-[450px]'; // Desktop full list (4 columns) - increased for better spacing
     }
 
     switch (variant) {
       case 'compact':
-        return 'h-[340px]'; // Compact variant - increased for verified badge
+        return 'h-[360px]'; // Compact variant - increased for better spacing
       case 'large':
-        return 'h-[440px]'; // Large variant - increased for verified badge
+        return 'h-[470px]'; // Large variant - increased for better spacing
       case 'default':
       default:
-        return 'h-[400px] md:h-[380px] lg:h-[400px]'; // Responsive default - increased for verified badge
+        return 'h-[430px] md:h-[410px] lg:h-[430px]'; // Responsive default - increased for better spacing
     }
   };
 
@@ -399,22 +399,20 @@ export function PropertyCard({
         )}
 
         {/* Favorite button top-right */}
-        <div className="absolute top-2 right-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 bg-transparent hover:bg-transparent border-0 ring-0 outline-none"
-            onClick={handleFavoriteClick}
-            aria-label={actualIsFavorited ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-          >
-            <Bookmark
-              className={cn(
-                "h-6 w-6 transition-colors stroke-2 stroke-white",
-                actualIsFavorited ? "fill-blue-500 text-white" : "text-white"
-              )}
-            />
-          </Button>
-        </div>
+        <button
+          onClick={handleFavoriteClick}
+          className="absolute top-3 right-3 p-0 bg-transparent hover:bg-transparent border-0 cursor-pointer outline-none"
+          aria-label={actualIsFavorited ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+        >
+          <Bookmark
+            className={cn(
+              "w-8 h-8 transition-all duration-200 stroke-2 drop-shadow-lg",
+              actualIsFavorited
+                ? "fill-blue-500 stroke-white text-white"
+                : "fill-white/20 stroke-white text-white hover:fill-white/40"
+            )}
+          />
+        </button>
 
         {/* Image navigation buttons - only show if multiple images */}
         {hasMultipleImages && (
@@ -478,7 +476,7 @@ export function PropertyCard({
       </div>
 
       {/* Content section - following Zillow schema */}
-      <CardContent className="p-3 flex-1 flex flex-col justify-between">
+      <CardContent className="p-4 flex-1 flex flex-col justify-between">
         {/* Verified badge - only for verified properties */}
         {normalizedProperty.verificationStatus === 'verified' && (
           <div className="mb-2">
@@ -505,7 +503,9 @@ export function PropertyCard({
         {/* Location - neighborhood and city only */}
         <div className="flex-1">
           <div className="text-sm text-black font-semibold truncate">
-            {normalizedProperty.address.neighborhood}, Tegucigalpa
+            {normalizedProperty.address.neighborhood ?
+              `${normalizedProperty.address.neighborhood}, Tegucigalpa` :
+              'Tegucigalpa'}
           </div>
         </div>
 

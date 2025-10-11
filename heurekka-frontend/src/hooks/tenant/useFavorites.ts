@@ -72,22 +72,41 @@ export function useToggleFavorite() {
       utils.favorite.summary.invalidate();
       utils.tenantDashboard.getData.invalidate();
     },
-    // Optimistic update
+    // Optimistic update mejorado
     onMutate: async ({ propertyId }) => {
+      // Cancelar queries en curso
       await utils.favorite.list.cancel();
-      const previousFavorites = utils.favorite.list.getData();
+      await utils.favorite.isFavorite.cancel({ propertyId });
 
-      // Actualizar optimísticamente
+      // Guardar estado anterior
+      const previousFavorites = utils.favorite.list.getData();
+      const previousIsFavorite = utils.favorite.isFavorite.getData({ propertyId });
+
+      // Actualizar estado isFavorite inmediatamente
       utils.favorite.isFavorite.setData({ propertyId }, (old) => !old);
 
-      return { previousFavorites };
+      // Actualizar lista de favoritos inmediatamente
+      if (previousIsFavorite) {
+        // Si era favorito, quitarlo de la lista
+        utils.favorite.list.setData(undefined, (old) => {
+          if (!old?.data) return old;
+          return {
+            ...old,
+            data: old.data.filter((fav: any) => fav.property.id !== propertyId)
+          };
+        });
+      }
+
+      return { previousFavorites, previousIsFavorite };
     },
     onError: (_err, { propertyId }, context) => {
       // Revertir en caso de error
       if (context?.previousFavorites) {
         utils.favorite.list.setData(undefined, context.previousFavorites);
       }
-      utils.favorite.isFavorite.invalidate({ propertyId });
+      if (context?.previousIsFavorite !== undefined) {
+        utils.favorite.isFavorite.setData({ propertyId }, context.previousIsFavorite);
+      }
     },
   });
 }

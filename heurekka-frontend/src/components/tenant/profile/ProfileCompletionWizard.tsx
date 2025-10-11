@@ -252,7 +252,7 @@ function Step1PersonalInfo({ onNext, initialData }: any) {
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" className="px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl flex items-center gap-2">
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl flex items-center gap-2">
           Continuar
           <ArrowRight className="h-4 w-4" />
         </Button>
@@ -623,7 +623,7 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Atrás
         </Button>
-        <Button type="submit" className="px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
           Continuar
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>

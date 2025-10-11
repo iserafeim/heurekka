@@ -907,12 +907,23 @@ class LandlordProfileService {
       // This allows users to change their type during onboarding
       const landlordType = onboardingData.landlordType || landlordData.landlord_type;
 
+      // Get user email from Supabase Auth
+      const { data: authUser, error: authError } = await this.supabase.auth.admin.getUserById(userId);
+      const userEmail = authUser?.user?.email || null;
+
+      if (userEmail) {
+        console.log('[CompleteOnboarding] User email found, will be saved to landlords table');
+      } else {
+        console.warn('[CompleteOnboarding] No email found for user');
+      }
+
       // Prepare update data based on landlord type
       const updateData: any = {
         onboarding_completed: true,
         onboarding_completed_at: new Date().toISOString(),
         last_active_at: new Date().toISOString(),
-        landlord_type: landlordType // Update the landlord_type column with the correct value
+        landlord_type: landlordType, // Update the landlord_type column with the correct value
+        email: userEmail // Copy email from auth.users to landlords table
       };
 
       // Copy common fields
