@@ -23,7 +23,6 @@ import {
 import {
   Plus,
   Edit,
-  Eye,
   Trash2,
   DollarSign,
   Calendar,
@@ -36,16 +35,35 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TEGUCIGALPA_AREAS } from '@/types/tenant';
 
 type TabSection = 'saved-searches' | 'favorites' | 'conversations' | 'profile';
 
 export default function TenantDashboardPage() {
   const router = useRouter();
+  const utils = trpc.useUtils();
   const { data: dashboardData, isLoading } = useTenantDashboard();
   const { data: favoritesResponse } = useFavorites();
   const toggleFavorite = useToggleFavorite();
   const [activeTab, setActiveTab] = useState<TabSection>('saved-searches');
   const [expandedSearchId, setExpandedSearchId] = useState<string | null>(null);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProfile, setEditedProfile] = useState<any>(null);
+
+  // Mutation for updating profile
+  const updateProfile = trpc.tenantProfile.update.useMutation({
+    onSuccess: async () => {
+      toast.success('Perfil actualizado exitosamente');
+      setIsEditing(false);
+      // Invalidate dashboard query to refetch data
+      await utils.tenantDashboard.get.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Error al actualizar el perfil');
+    }
+  });
 
   // Extract favorites array from response
   const favorites = favoritesResponse?.data || [];
@@ -61,6 +79,117 @@ export default function TenantDashboardPage() {
     } catch (error) {
       toast.error('Error al actualizar favorito');
     }
+  };
+
+  // Handle edit mode
+  const handleEditProfile = () => {
+    if (dashboardData?.data?.profile) {
+      // Determine the move date range from the actual move date
+      let moveDateRange = '';
+      if (dashboardData.data.profile.moveDate) {
+        const range = getMoveDateRange(dashboardData.data.profile.moveDate);
+        if (range.includes('Menos de 1 mes')) moveDateRange = 'less-than-1-month';
+        else if (range.includes('1 - 3 meses')) moveDateRange = '1-3-months';
+        else if (range.includes('3 meses - 1 año')) moveDateRange = '3-months-1-year';
+        else if (range.includes('Más de 1 año')) moveDateRange = 'more-than-1-year';
+        else moveDateRange = 'not-sure';
+      }
+
+      setEditedProfile({
+        fullName: dashboardData.data.profile.fullName,
+        phone: dashboardData.data.profile.phone,
+        email: (dashboardData.data.profile as any).email || '',
+        password: '',
+        budgetMin: dashboardData.data.profile.budgetMin,
+        budgetMax: dashboardData.data.profile.budgetMax,
+        moveDate: dashboardData.data.profile.moveDate,
+        moveDateRange: moveDateRange,
+        preferredAreas: dashboardData.data.profile.preferredAreas || [],
+        propertyTypes: dashboardData.data.profile.propertyTypes || [],
+        desiredBedrooms: dashboardData.data.profile.desiredBedrooms || [],
+        desiredBathrooms: dashboardData.data.profile.desiredBathrooms || [],
+        desiredParkingSpaces: dashboardData.data.profile.desiredParkingSpaces || [],
+        hasPets: dashboardData.data.profile.hasPets,
+        petDetails: dashboardData.data.profile.petDetails
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedProfile(null);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editedProfile) return;
+
+    // Validation
+    if (!editedProfile.fullName?.trim()) {
+      toast.error('El nombre completo es requerido');
+      return;
+    }
+
+    if (!editedProfile.phone?.trim()) {
+      toast.error('El número de teléfono es requerido');
+      return;
+    }
+
+    // Validate phone format (must be 9999-9999)
+    const phoneRegex = /^[0-9]{4}-[0-9]{4}$/;
+    if (!phoneRegex.test(editedProfile.phone)) {
+      toast.error('El formato del teléfono debe ser 9999-9999');
+      return;
+    }
+
+    // Validate email format
+    if (editedProfile.email && editedProfile.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editedProfile.email)) {
+        toast.error('El formato del email no es válido');
+        return;
+      }
+    }
+
+    if (editedProfile.budgetMin && editedProfile.budgetMax && editedProfile.budgetMin > editedProfile.budgetMax) {
+      toast.error('El presupuesto mínimo no puede ser mayor que el máximo');
+      return;
+    }
+
+    try {
+      // Format the data before sending to backend
+      const { moveDateRange, ...profileData } = editedProfile; // Remove moveDateRange as it's UI-only
+
+      const formattedData = {
+        ...profileData,
+        // Convert ISO date string to YYYY-MM-DD format if present
+        moveDate: profileData.moveDate
+          ? new Date(profileData.moveDate).toISOString().split('T')[0]
+          : undefined,
+        // Ensure empty arrays are sent as undefined
+        propertyTypes: profileData.propertyTypes?.length > 0 ? profileData.propertyTypes : undefined,
+        preferredAreas: profileData.preferredAreas?.length > 0 ? profileData.preferredAreas : undefined,
+        desiredBedrooms: profileData.desiredBedrooms?.length > 0 ? profileData.desiredBedrooms : undefined,
+        desiredBathrooms: profileData.desiredBathrooms?.length > 0 ? profileData.desiredBathrooms : undefined,
+        desiredParkingSpaces: profileData.desiredParkingSpaces?.length > 0 ? profileData.desiredParkingSpaces : undefined,
+        petDetails: profileData.hasPets ? profileData.petDetails : undefined,
+        // Only send email if it was changed
+        email: profileData.email?.trim() || undefined,
+        // Only send password if it was provided
+        password: profileData.password?.trim() || undefined,
+      };
+
+      await updateProfile.mutateAsync(formattedData);
+    } catch (error) {
+      // Error handled by mutation onError
+    }
+  };
+
+  const handleFieldChange = (field: string, value: any) => {
+    setEditedProfile((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const getMoveDateRange = (dateString: string): string => {
@@ -137,16 +266,16 @@ export default function TenantDashboardPage() {
                 <div>
                   {/* Saved Searches Section */}
                   {activeTab === 'saved-searches' && (
-                    <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-blue-100/50 hover:shadow-2xl hover:shadow-blue-200/50 transition-shadow duration-300 p-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-semibold text-gray-900">
+                    <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-blue-100/50 hover:shadow-2xl hover:shadow-blue-200/50 transition-shadow duration-300 p-4 sm:p-6 md:p-8">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-4">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                           Búsquedas Guardadas
                         </h2>
                         <Button
                           onClick={() => router.push('/tenant/searches/new')}
                           size="sm"
                           variant="outline"
-                          className="flex items-center gap-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                          className="flex items-center gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 w-full sm:w-auto justify-center"
                         >
                           <Plus className="h-4 w-4" />
                           Nueva Búsqueda
@@ -329,244 +458,699 @@ export default function TenantDashboardPage() {
 
                   {/* Profile Section */}
                   {activeTab === 'profile' && dashboardData?.data?.profile && (
-                    <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/50 transition-shadow duration-300 p-5 md:p-6">
-                      {/* Section Header with Subtitle */}
-                      <div className="mb-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-1">
-                          Mi Perfil
+                    <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/50 transition-shadow duration-300 p-3 sm:p-6 md:p-8">
+                      {/* Section Header */}
+                      <div className="mb-4 sm:mb-8">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                          Información Personal
                         </h2>
-                        <p className="text-xs text-gray-600">
-                          Tu información y preferencias de búsqueda
-                        </p>
                       </div>
 
-                      {/* Primary Identity Section - Enhanced */}
-                      <div className="bg-gradient-to-br from-blue-50 via-blue-50/80 to-white rounded-xl p-4 border border-blue-100 shadow-sm mb-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-lg ring-2 ring-blue-100">
+                      {/* Avatar Section - More Prominent */}
+                      <div className="mb-4 sm:mb-8">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-xl sm:text-3xl flex-shrink-0 shadow-lg ring-2 sm:ring-4 ring-blue-100">
                             {dashboardData.data.profile.fullName.split(' ').map((n: string) => n[0]).join('')}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-gray-900 truncate mb-0.5">
-                              {dashboardData.data.profile.fullName}
-                            </h3>
-                            <p className="text-sm text-gray-600 flex items-center gap-1.5">
-                              <span className="w-1 h-1 bg-blue-600 rounded-full"></span>
-                              {dashboardData.data.profile.phone}
-                            </p>
-                          </div>
                         </div>
                       </div>
 
-                      {/* Search Criteria Section - Enhanced */}
-                      <div className="mb-6">
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                          Criterios de Búsqueda
-                        </h4>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {(dashboardData.data.profile.budgetMin || dashboardData.data.profile.budgetMax) && (
-                            <div className="flex items-start gap-2.5 p-3.5 bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-100 shadow-sm animate-in fade-in-50 slide-in-from-bottom-4">
-                              <DollarSign className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">
-                                  Presupuesto Mensual
-                                </p>
-                                <p className="text-base font-semibold text-gray-900">
-                                  L.{dashboardData.data.profile.budgetMin?.toLocaleString() || '0'} - L.{dashboardData.data.profile.budgetMax?.toLocaleString() || '0'}
-                                </p>
-                              </div>
+                      {/* Personal Info Grid - 2x2 Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 mb-4 sm:mb-8">
+                        {/* Full Name */}
+                        <div>
+                          <label className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 block">
+                            Nombre Completo
+                          </label>
+                          {isEditing ? (
+                            <div className="p-2 sm:p-3 bg-white rounded-lg border border-blue-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all duration-150">
+                              <input
+                                type="text"
+                                value={editedProfile?.fullName || ''}
+                                onChange={(e) => handleFieldChange('fullName', e.target.value)}
+                                className="w-full text-sm sm:text-base font-semibold text-gray-900 outline-none bg-transparent"
+                                placeholder="Ingresa tu nombre completo"
+                              />
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Esto se mostrará en tu perfil público
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="p-2.5 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm sm:text-base font-semibold text-gray-900">
+                                {dashboardData.data.profile.fullName}
+                              </p>
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Esto se mostrará en tu perfil público
+                              </p>
                             </div>
                           )}
+                        </div>
 
-                          {dashboardData.data.profile.moveDate && (
-                            <div className="flex items-start gap-2.5 p-3.5 bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-100 shadow-sm animate-in fade-in-50 slide-in-from-bottom-4">
-                              <Calendar className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">
-                                  ¿Cuándo deseas mudarte?
-                                </p>
-                                <p className="text-base font-semibold text-gray-900">
-                                  {getMoveDateRange(dashboardData.data.profile.moveDate)}
-                                </p>
-                              </div>
+                        {/* Phone Number */}
+                        <div>
+                          <label className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 block">
+                            Número de Teléfono
+                          </label>
+                          {isEditing ? (
+                            <div className="p-2 sm:p-3 bg-white rounded-lg border border-blue-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all duration-150">
+                              <input
+                                type="text"
+                                value={editedProfile?.phone || ''}
+                                onChange={(e) => {
+                                  let value = e.target.value.replace(/[^0-9]/g, '');
+                                  if (value.length > 4) {
+                                    value = value.slice(0, 4) + '-' + value.slice(4, 8);
+                                  }
+                                  handleFieldChange('phone', value);
+                                }}
+                                className="w-full text-sm sm:text-base font-semibold text-gray-900 outline-none bg-transparent"
+                                placeholder="9999-9999"
+                                maxLength={9}
+                              />
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Usado para contacto con propietarios
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="p-2.5 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm sm:text-base font-semibold text-gray-900">
+                                {dashboardData.data.profile.phone}
+                              </p>
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Usado para contacto con propietarios
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <label className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 block">
+                            Correo Electrónico
+                          </label>
+                          {isEditing ? (
+                            <div className="p-2 sm:p-3 bg-white rounded-lg border border-blue-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all duration-150">
+                              <input
+                                type="email"
+                                value={editedProfile?.email || ''}
+                                onChange={(e) => handleFieldChange('email', e.target.value)}
+                                className="w-full text-sm sm:text-base font-semibold text-gray-900 outline-none bg-transparent"
+                                placeholder="correo@ejemplo.com"
+                              />
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Te enviaremos confirmaciones a este email
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="p-2.5 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                              <p className="text-sm sm:text-base font-semibold text-gray-900">
+                                {(dashboardData.data.profile as any).email || 'No registrado'}
+                              </p>
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Te enviaremos confirmaciones a este email
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                          <label className="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 block">
+                            {isEditing ? 'Nueva Contraseña (opcional)' : 'Contraseña'}
+                          </label>
+                          {isEditing ? (
+                            <div className="p-2 sm:p-3 bg-white rounded-lg border border-blue-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all duration-150">
+                              <input
+                                type="password"
+                                value={editedProfile?.password || ''}
+                                onChange={(e) => handleFieldChange('password', e.target.value)}
+                                className="w-full text-sm sm:text-base font-semibold text-gray-900 outline-none bg-transparent"
+                                placeholder="Deja vacío para mantener la actual"
+                              />
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                Solo ingresa una nueva contraseña si deseas cambiarla
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="p-2.5 sm:p-4 bg-blue-50 rounded-lg border border-blue-100">
+                              <p className="text-sm sm:text-base font-semibold text-gray-900">
+                                ••••••••
+                              </p>
+                              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">
+                                {(dashboardData.data.profile as any).passwordUpdatedAt
+                                  ? `Última actualización: ${new Date((dashboardData.data.profile as any).passwordUpdatedAt).toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' })}`
+                                  : 'Haz clic en Editar Perfil para cambiar tu contraseña'}
+                              </p>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Preferences Section - Enhanced with Blue Theme */}
-                      {(dashboardData.data.profile.propertyTypes?.length > 0 ||
-                        dashboardData.data.profile.preferredAreas?.length > 0) && (
-                        <div className="mb-6">
-                          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                            Preferencias
-                          </h4>
+                      {/* Divider */}
+                      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4 sm:mb-8"></div>
 
-                          <div className="space-y-4">
-                            {dashboardData.data.profile.propertyTypes?.length > 0 && (
-                              <>
-                                <div className="animate-in fade-in-50 slide-in-from-bottom-4" style={{ animationDelay: '100ms' }}>
-                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                    Tipo de Propiedad
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                    {dashboardData.data.profile.propertyTypes.map((type: string, index: number) => (
-                                      <span
-                                        key={type}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 min-w-[70px] justify-center bg-blue-50 text-blue-800 rounded-md text-xs font-semibold border border-blue-100 shadow-sm"
-                                        style={{ animationDelay: `${150 + index * 50}ms` }}
+                      {/* Unified Preferences Section */}
+                      <div className="mb-4 sm:mb-8">
+                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-6">
+                          Preferencias de Búsqueda
+                        </h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-12 gap-y-4 sm:gap-y-8">
+                          {/* Left Column - Qué, Dónde y Cuándo */}
+                          <div className="space-y-4 sm:space-y-8">
+                            {/* 1. Tipo de Propiedad */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Tipo de Propiedad
+                              </p>
+                              {isEditing ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {[
+                                    { value: 'apartment', label: 'Apartamento' },
+                                    { value: 'house', label: 'Casa' },
+                                    { value: 'room', label: 'Habitación' }
+                                  ].map((type) => {
+                                    const isSelected = editedProfile?.propertyTypes?.includes(type.value) || false;
+                                    return (
+                                      <button
+                                        key={type.value}
+                                        type="button"
+                                        onClick={() => {
+                                          const current = editedProfile?.propertyTypes || [];
+                                          const updated = isSelected
+                                            ? current.filter((t: string) => t !== type.value)
+                                            : [...current, type.value];
+                                          handleFieldChange('propertyTypes', updated);
+                                        }}
+                                        className={cn(
+                                          "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-150 active:scale-[0.98]",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400 shadow-sm"
+                                            : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300"
+                                        )}
                                       >
-                                        <Home className="w-3.5 h-3.5 text-blue-600" />
-                                        {type === 'apartment' ? 'Apartamento' : type === 'house' ? 'Casa' : type}
+                                        <Home className={cn("w-4 h-4 -mt-px", isSelected ? "text-gray-700" : "text-gray-500")} />
+                                        {type.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {[
+                                    { value: 'apartment', label: 'Apartamento' },
+                                    { value: 'house', label: 'Casa' },
+                                    { value: 'room', label: 'Habitación' }
+                                  ].map((type) => {
+                                    const isSelected = dashboardData.data.profile.propertyTypes?.includes(type.value) || false;
+                                    return (
+                                      <span
+                                        key={type.value}
+                                        className={cn(
+                                          "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200 cursor-default select-none",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400"
+                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                        )}
+                                      >
+                                        <Home className={cn("w-4 h-4 -mt-px", isSelected ? "text-gray-700" : "text-gray-500")} />
+                                        {type.label}
                                       </span>
-                                    ))}
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 2. Presupuesto Mensual */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Presupuesto Mensual
+                              </p>
+                              {isEditing ? (
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="text-xs font-medium text-gray-500 mb-1.5 block uppercase tracking-wide">Mínimo</label>
+                                      <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">L.</span>
+                                        <input
+                                          type="number"
+                                          value={editedProfile?.budgetMin || ''}
+                                          onChange={(e) => handleFieldChange('budgetMin', parseInt(e.target.value) || 0)}
+                                          className="w-full pl-8 pr-3 py-2.5 bg-white border border-blue-200 rounded-lg text-sm font-medium text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-150"
+                                          placeholder="0"
+                                          min="0"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-gray-500 mb-1.5 block uppercase tracking-wide">Máximo</label>
+                                      <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">L.</span>
+                                        <input
+                                          type="number"
+                                          value={editedProfile?.budgetMax || ''}
+                                          onChange={(e) => handleFieldChange('budgetMax', parseInt(e.target.value) || 0)}
+                                          className="w-full pl-8 pr-3 py-2.5 bg-white border border-blue-200 rounded-lg text-sm font-medium text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-150"
+                                          placeholder="0"
+                                          min="0"
+                                        />
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                                {/* Visual Separator */}
-                                <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-                              </>
-                            )}
+                              ) : (
+                                <div className="max-w-md">
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="text-xs font-medium text-gray-500 mb-1.5 block uppercase tracking-wide">Mínimo</label>
+                                      <div className="px-4 py-2.5 bg-white rounded-lg border border-blue-200">
+                                        <div className="flex items-baseline gap-1">
+                                          <span className="text-xs text-gray-500">L.</span>
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {dashboardData.data.profile.budgetMin?.toLocaleString() || '0'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-gray-500 mb-1.5 block uppercase tracking-wide">Máximo</label>
+                                      <div className="px-4 py-2.5 bg-white rounded-lg border border-blue-200">
+                                        <div className="flex items-baseline gap-1">
+                                          <span className="text-xs text-gray-500">L.</span>
+                                          <span className="text-sm font-medium text-gray-900">
+                                            {dashboardData.data.profile.budgetMax?.toLocaleString() || '0'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
 
-                            {dashboardData.data.profile.preferredAreas?.length > 0 && (
-                              <>
-                                <div className="animate-in fade-in-50 slide-in-from-bottom-4" style={{ animationDelay: '200ms' }}>
-                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                    Zonas Preferidas
+                            {/* 3. Zonas Preferidas */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Zonas Preferidas
+                              </p>
+                              {isEditing ? (
+                                <div className="space-y-2">
+                                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto border border-blue-200 rounded-lg p-3 bg-white">
+                                    {TEGUCIGALPA_AREAS.map((area) => {
+                                      const isSelected = editedProfile?.preferredAreas?.includes(area) || false;
+                                      return (
+                                        <button
+                                          key={area}
+                                          type="button"
+                                          onClick={() => {
+                                            const current = editedProfile?.preferredAreas || [];
+                                            const updated = isSelected
+                                              ? current.filter((a: string) => a !== area)
+                                              : [...current, area];
+                                            handleFieldChange('preferredAreas', updated);
+                                          }}
+                                          className={cn(
+                                            "px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-all duration-150 active:scale-[0.98]",
+                                            isSelected
+                                              ? "bg-blue-50 text-gray-900 border border-blue-400 shadow-sm"
+                                              : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-blue-300"
+                                          )}
+                                        >
+                                          {area}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    Seleccionadas: {editedProfile?.preferredAreas?.length || 0}
                                   </p>
-                                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                    {dashboardData.data.profile.preferredAreas.map((area: string, index: number) => (
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {dashboardData.data.profile.preferredAreas?.length > 0 ? (
+                                    dashboardData.data.profile.preferredAreas.map((area: string) => (
                                       <span
                                         key={area}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-800 rounded-md text-xs font-semibold border border-blue-100 shadow-sm"
-                                        style={{ animationDelay: `${250 + index * 50}ms` }}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-gray-900 rounded-lg text-sm font-medium border border-blue-400 cursor-default select-none"
                                       >
-                                        <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                                        <MapPin className="w-4 h-4 text-gray-700 -mt-px" />
                                         {area}
                                       </span>
-                                    ))}
-                                  </div>
+                                    ))
+                                  ) : (
+                                    <span className="text-sm text-gray-500">No especificado</span>
+                                  )}
                                 </div>
-                                {/* Visual Separator */}
-                                <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-                              </>
-                            )}
+                              )}
+                            </div>
 
-                            {dashboardData.data.profile.desiredBedrooms?.length > 0 && (
-                              <>
-                                <div className="animate-in fade-in-50 slide-in-from-bottom-4" style={{ animationDelay: '300ms' }}>
-                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                    Habitaciones
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                    {dashboardData.data.profile.desiredBedrooms
-                                      .sort((a: number, b: number) => a - b)
-                                      .map((count: number, index: number) => (
-                                        <span
-                                          key={count}
-                                          className="inline-flex items-center justify-center px-2.5 py-1.5 min-w-[45px] bg-blue-50 text-blue-800 rounded-md text-xs font-bold border border-blue-100 shadow-sm"
-                                          style={{ animationDelay: `${350 + index * 50}ms` }}
-                                        >
-                                          {count === 5 ? '5+' : count}
-                                        </span>
-                                      ))}
-                                  </div>
-                                </div>
-                                {/* Visual Separator */}
-                                <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-                              </>
-                            )}
-
-                            {dashboardData.data.profile.desiredBathrooms?.length > 0 && (
-                              <>
-                                <div className="animate-in fade-in-50 slide-in-from-bottom-4" style={{ animationDelay: '400ms' }}>
-                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                    Baños
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                    {dashboardData.data.profile.desiredBathrooms
-                                      .sort((a: number, b: number) => a - b)
-                                      .map((count: number, index: number) => (
-                                        <span
-                                          key={count}
-                                          className="inline-flex items-center justify-center px-2.5 py-1.5 min-w-[45px] bg-blue-50 text-blue-800 rounded-md text-xs font-bold border border-blue-100 shadow-sm"
-                                          style={{ animationDelay: `${450 + index * 50}ms` }}
-                                        >
-                                          {count === 4 ? '4+' : count}
-                                        </span>
-                                      ))}
-                                  </div>
-                                </div>
-                                {/* Visual Separator */}
-                                <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-                              </>
-                            )}
-
-                            {dashboardData.data.profile.desiredParkingSpaces?.length > 0 && (
-                              <>
-                                <div className="animate-in fade-in-50 slide-in-from-bottom-4" style={{ animationDelay: '500ms' }}>
-                                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                    Parqueos
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                    {dashboardData.data.profile.desiredParkingSpaces
-                                      .sort((a: number, b: number) => a - b)
-                                      .map((count: number, index: number) => (
-                                        <span
-                                          key={count}
-                                          className="inline-flex items-center justify-center px-2.5 py-1.5 min-w-[45px] bg-blue-50 text-blue-800 rounded-md text-xs font-bold border border-blue-100 shadow-sm"
-                                          style={{ animationDelay: `${550 + index * 50}ms` }}
-                                        >
-                                          {count === 3 ? '3+' : count}
-                                        </span>
-                                      ))}
-                                  </div>
-                                </div>
-                                {/* Visual Separator */}
-                                <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
-                              </>
-                            )}
-
-                            {/* Mascotas - Siempre mostrar */}
-                            <div className="animate-in fade-in-50 slide-in-from-bottom-4" style={{ animationDelay: '600ms' }}>
-                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                                Mascotas
+                            {/* 4. Fecha de Mudanza */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                ¿Cuándo deseas mudarte?
                               </p>
-                              <div className="flex flex-wrap gap-1.5 md:gap-2">
-                                {dashboardData.data.profile.hasPets ? (
-                                  dashboardData.data.profile.petDetails ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-800 rounded-md text-xs font-semibold border border-blue-100 shadow-sm">
-                                      <span className="text-sm">🐾</span>
-                                      {dashboardData.data.profile.petDetails}
+                              {isEditing ? (
+                                <select
+                                  value={editedProfile?.moveDateRange || ''}
+                                  onChange={(e) => {
+                                    const range = e.target.value;
+                                    handleFieldChange('moveDateRange', range);
+
+                                    // Convert range to actual date for backend
+                                    const today = new Date();
+                                    let daysToAdd = 60;
+
+                                    switch (range) {
+                                      case 'less-than-1-month':
+                                        daysToAdd = 15;
+                                        break;
+                                      case '1-3-months':
+                                        daysToAdd = 60;
+                                        break;
+                                      case '3-months-1-year':
+                                        daysToAdd = 180;
+                                        break;
+                                      case 'more-than-1-year':
+                                        daysToAdd = 365;
+                                        break;
+                                      case 'not-sure':
+                                        daysToAdd = 90;
+                                        break;
+                                    }
+
+                                    const targetDate = new Date(today);
+                                    targetDate.setDate(today.getDate() + daysToAdd);
+                                    handleFieldChange('moveDate', targetDate.toISOString());
+                                  }}
+                                  className="w-full px-3 py-2.5 bg-white border border-blue-200 rounded-lg text-sm font-medium text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-150"
+                                >
+                                  <option value="">Selecciona el periodo...</option>
+                                  <option value="less-than-1-month">Menos de 1 mes</option>
+                                  <option value="1-3-months">1 - 3 meses</option>
+                                  <option value="3-months-1-year">3 meses - 1 año</option>
+                                  <option value="more-than-1-year">Más de 1 año</option>
+                                  <option value="not-sure">Aún no estoy seguro</option>
+                                </select>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {dashboardData.data.profile.moveDate ? (
+                                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-gray-900 rounded-lg text-sm font-medium border border-blue-400 cursor-default select-none">
+                                      <Calendar className="w-4 h-4 text-gray-700 -mt-px" />
+                                      {getMoveDateRange(dashboardData.data.profile.moveDate)}
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-800 rounded-md text-xs font-semibold border border-blue-100 shadow-sm">
-                                      <span className="text-sm">🐾</span>
+                                    <span className="text-sm text-gray-500">No especificado</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right Column - Características de la Propiedad */}
+                          <div className="space-y-4 sm:space-y-8">
+                            {/* 5. Habitaciones */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Habitaciones
+                              </p>
+                              {isEditing ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {[1, 2, 3, 4, 5].map((count: number) => {
+                                    const isSelected = editedProfile?.desiredBedrooms?.includes(count) || false;
+                                    return (
+                                      <button
+                                        key={count}
+                                        type="button"
+                                        onClick={() => {
+                                          const current = editedProfile?.desiredBedrooms || [];
+                                          const updated = isSelected
+                                            ? current.filter((c: number) => c !== count)
+                                            : [...current, count];
+                                          handleFieldChange('desiredBedrooms', updated);
+                                        }}
+                                        className={cn(
+                                          "inline-flex items-center justify-center w-14 h-11 rounded-lg text-sm font-medium border transition-all duration-150 active:scale-[0.98]",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400 shadow-sm"
+                                            : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300"
+                                        )}
+                                      >
+                                        {count === 5 ? '5+' : count}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {[1, 2, 3, 4, 5].map((count: number) => {
+                                    const isSelected = dashboardData.data.profile.desiredBedrooms?.includes(count) || false;
+                                    return (
+                                      <span
+                                        key={count}
+                                        className={cn(
+                                          "inline-flex items-center justify-center w-14 h-11 rounded-lg text-sm font-medium border transition-all duration-200 cursor-default select-none",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400"
+                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                        )}
+                                      >
+                                        {count === 5 ? '5+' : count}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 6. Baños */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Baños
+                              </p>
+                              {isEditing ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {[1, 2, 3, 4, 5].map((count: number) => {
+                                    const isSelected = editedProfile?.desiredBathrooms?.includes(count) || false;
+                                    return (
+                                      <button
+                                        key={count}
+                                        type="button"
+                                        onClick={() => {
+                                          const current = editedProfile?.desiredBathrooms || [];
+                                          const updated = isSelected
+                                            ? current.filter((c: number) => c !== count)
+                                            : [...current, count];
+                                          handleFieldChange('desiredBathrooms', updated);
+                                        }}
+                                        className={cn(
+                                          "inline-flex items-center justify-center w-14 h-11 rounded-lg text-sm font-medium border transition-all duration-150 active:scale-[0.98]",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400 shadow-sm"
+                                            : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300"
+                                        )}
+                                      >
+                                        {count === 5 ? '5+' : count}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {[1, 2, 3, 4, 5].map((count: number) => {
+                                    const isSelected = dashboardData.data.profile.desiredBathrooms?.includes(count) || false;
+                                    return (
+                                      <span
+                                        key={count}
+                                        className={cn(
+                                          "inline-flex items-center justify-center w-14 h-11 rounded-lg text-sm font-medium border transition-all duration-200 cursor-default select-none",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400"
+                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                        )}
+                                      >
+                                        {count === 5 ? '5+' : count}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 7. Parqueos */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Parqueos
+                              </p>
+                              {isEditing ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {[0, 1, 2, 3, 4, 5].map((count: number) => {
+                                    const isSelected = editedProfile?.desiredParkingSpaces?.includes(count) || false;
+                                    return (
+                                      <button
+                                        key={count}
+                                        type="button"
+                                        onClick={() => {
+                                          const current = editedProfile?.desiredParkingSpaces || [];
+                                          const updated = isSelected
+                                            ? current.filter((c: number) => c !== count)
+                                            : [...current, count];
+                                          handleFieldChange('desiredParkingSpaces', updated);
+                                        }}
+                                        className={cn(
+                                          "inline-flex items-center justify-center w-14 h-11 rounded-lg text-sm font-medium border transition-all duration-150 active:scale-[0.98]",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400 shadow-sm"
+                                            : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300"
+                                        )}
+                                      >
+                                        {count === 5 ? '5+' : count}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {[0, 1, 2, 3, 4, 5].map((count: number) => {
+                                    const isSelected = dashboardData.data.profile.desiredParkingSpaces?.includes(count) || false;
+                                    return (
+                                      <span
+                                        key={count}
+                                        className={cn(
+                                          "inline-flex items-center justify-center w-14 h-11 rounded-lg text-sm font-medium border transition-all duration-200 cursor-default select-none",
+                                          isSelected
+                                            ? "bg-blue-50 text-gray-900 border-blue-400"
+                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                        )}
+                                      >
+                                        {count === 5 ? '5+' : count}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 8. Mascotas */}
+                            <div>
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3 tracking-tight">
+                                Mascotas
+                              </p>
+                              {isEditing ? (
+                                <div className="space-y-3">
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleFieldChange('hasPets', true)}
+                                      className={cn(
+                                        "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border transition-all duration-150 active:scale-[0.98] inline-flex items-center justify-center gap-1.5",
+                                        editedProfile?.hasPets
+                                          ? "bg-blue-50 text-gray-900 border-blue-400 shadow-sm"
+                                          : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300"
+                                      )}
+                                    >
+                                      <span className="text-base">🐾</span>
                                       Sí
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleFieldChange('hasPets', false);
+                                        handleFieldChange('petDetails', null);
+                                      }}
+                                      className={cn(
+                                        "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border transition-all duration-150 active:scale-[0.98]",
+                                        !editedProfile?.hasPets
+                                          ? "bg-blue-50 text-gray-900 border-blue-400 shadow-sm"
+                                          : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300"
+                                      )}
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                  {editedProfile?.hasPets && (
+                                    <input
+                                      type="text"
+                                      value={editedProfile?.petDetails || ''}
+                                      onChange={(e) => handleFieldChange('petDetails', e.target.value)}
+                                      className="w-full px-3 py-2.5 bg-white border border-blue-200 rounded-lg text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-150"
+                                      placeholder="Ej: 1 perro pequeño, 2 gatos"
+                                    />
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {dashboardData.data.profile.hasPets ? (
+                                    dashboardData.data.profile.petDetails ? (
+                                      <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-gray-900 rounded-lg text-sm font-medium border border-blue-400 cursor-default select-none">
+                                        <span className="text-base">🐾</span>
+                                        {dashboardData.data.profile.petDetails}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-gray-900 rounded-lg text-sm font-medium border border-blue-400 cursor-default select-none">
+                                        <span className="text-base">🐾</span>
+                                        Sí
+                                      </span>
+                                    )
+                                  ) : (
+                                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm font-medium border border-gray-200 cursor-default select-none">
+                                      No
                                     </span>
-                                  )
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-gray-50 text-gray-700 rounded-md text-xs font-semibold border border-gray-200 shadow-sm">
-                                    No
-                                  </span>
-                                )}
-                              </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
-                      )}
+                      </div>
 
-                      {/* Edit Profile Button - Primary Action */}
-                      <div className="pt-5 mt-1">
-                        <div className="h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent mb-5"></div>
-                        <Button
-                          onClick={() => router.push('/tenant/profile')}
-                          size="default"
-                          className="w-full md:w-auto bg-blue-600 text-white font-semibold rounded-lg px-5 py-2.5 flex items-center justify-center gap-2 shadow-md shadow-blue-200/50"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Editar Perfil
-                        </Button>
+                      {/* Divider */}
+                      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent my-4 sm:my-8"></div>
+
+                      {/* Edit Profile Buttons */}
+                      <div className="flex justify-end gap-3">
+                        {isEditing ? (
+                          <>
+                            <Button
+                              onClick={handleCancelEdit}
+                              size="lg"
+                              variant="outline"
+                              disabled={updateProfile.isLoading}
+                              className="border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold rounded-lg px-6 py-3"
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              onClick={handleSaveProfile}
+                              size="lg"
+                              disabled={updateProfile.isLoading}
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-6 py-3 flex items-center gap-2 shadow-lg shadow-blue-200/50 hover:shadow-xl transition-all"
+                            >
+                              {updateProfile.isLoading ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                  Guardando...
+                                </>
+                              ) : (
+                                <>
+                                  <Edit className="h-5 w-5" />
+                                  Guardar Cambios
+                                </>
+                              )}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={handleEditProfile}
+                            size="lg"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg px-6 py-3 flex items-center gap-2 shadow-lg shadow-blue-200/50 hover:shadow-xl transition-all"
+                          >
+                            <Edit className="h-5 w-5" />
+                            Editar Perfil
+                          </Button>
+                        )}
                       </div>
                     </section>
                   )}
@@ -618,72 +1202,58 @@ function SavedSearchCard({ search, isExpanded, onToggleExpand, onFavoriteToggle 
   };
 
   return (
-    <div className="group bg-white border border-gray-200 rounded-2xl overflow-hidden transition-all duration-300">
+    <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-sm">
       {/* Header - Clickable */}
       <div
         className={cn(
-          "p-5 cursor-pointer relative transition-all duration-300",
+          "px-3 py-3 sm:px-4 sm:py-3.5 cursor-pointer relative transition-all duration-200",
           isExpanded
-            ? "bg-gradient-to-br from-blue-50/40 to-purple-50/20 border-b border-gray-200"
-            : "hover:border-blue-400 hover:shadow-xl hover:shadow-blue-100/50"
+            ? "bg-blue-50/30 border-b border-blue-100"
+            : "hover:bg-gray-50/50"
         )}
         onClick={() => onToggleExpand(search.id)}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <h3 className="font-semibold text-sm sm:text-base text-gray-900 group-hover:text-blue-600 transition-colors duration-150 truncate">
                 {search.profileName || search.name || 'Búsqueda sin nombre'}
               </h3>
               {isExpanded ? (
-                <ChevronUp className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <ChevronUp className="h-4 w-4 text-blue-600 flex-shrink-0 transition-transform duration-200" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0 transition-transform duration-200" />
               )}
             </div>
-            <div className="flex items-center gap-2 mt-2">
-              <DollarSign className="h-4 w-4 text-gray-400" />
-              <p className="text-sm font-medium text-gray-600">
-                L.{search.searchCriteria?.budgetMin?.toLocaleString() || '0'} - L.{search.searchCriteria?.budgetMax?.toLocaleString() || '0'}
-              </p>
-            </div>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-1.5">
+              L.{search.searchCriteria?.budgetMin?.toLocaleString('es-HN') || '0'} - L.{search.searchCriteria?.budgetMax?.toLocaleString('es-HN') || '0'}
+            </p>
             {search.newMatchCount > 0 && (
-              <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-md">
-                <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                {search.newMatchCount} nuevas coincidencias
+              <div className="inline-flex items-center gap-1.5 mt-2 sm:mt-2.5 px-2 sm:px-2.5 py-0.5 sm:py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                {search.newMatchCount} {search.newMatchCount === 1 ? 'nueva' : 'nuevas'}
               </div>
             )}
           </div>
-          <div className="flex gap-2 ml-4">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
             <Button
               size="sm"
               variant="ghost"
-              className="hover:bg-blue-50 hover:text-blue-600"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (search.id) router.push(`/tenant/searches/${search.id}`);
-              }}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="hover:bg-blue-50 hover:text-blue-600"
+              className="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 p-0 sm:p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 transition-colors duration-150"
               onClick={(e) => {
                 e.stopPropagation();
                 if (search.id) router.push(`/tenant/searches/${search.id}/edit`);
               }}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-3.5 w-3.5" />
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="hover:bg-red-50 hover:text-red-600"
+              className="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 p-0 sm:p-2 text-gray-600 hover:text-red-600 hover:bg-red-50/50 transition-colors duration-150"
               onClick={handleDelete}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
@@ -691,30 +1261,36 @@ function SavedSearchCard({ search, isExpanded, onToggleExpand, onFavoriteToggle 
 
       {/* Expandable Content - Properties Grid */}
       {isExpanded && (
-        <div className="p-6 bg-gray-50">
+        <div className="px-3 py-4 sm:px-6 sm:py-5 bg-white border-t border-gray-100">
           {loadingResults ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-sm text-gray-600">Cargando propiedades...</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+                  <div className="aspect-[3/2] bg-gray-200"></div>
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : properties.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="h-8 w-8 text-gray-400" />
+            <div className="text-center py-10">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
-              <p className="text-gray-600 font-medium">No se encontraron propiedades</p>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm font-medium text-gray-700 mb-1">No se encontraron propiedades</p>
+              <p className="text-xs text-gray-500">
                 Intenta ajustar los criterios de búsqueda
               </p>
             </div>
           ) : (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-4">
+              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-3 sm:mb-4">
                 {properties.length} {properties.length === 1 ? 'propiedad encontrada' : 'propiedades encontradas'}
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {properties.map((property: any) => {
                   // Transform to PropertyCard format
                   const normalizedProperty = {

@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
-  Home,
   Search,
   BookmarkIcon,
   MessageSquare,
@@ -21,6 +21,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Logo } from "@/components/logo"
 
 interface TenantSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: {
@@ -67,18 +68,15 @@ export function TenantSidebar({
   onSectionChange,
   ...props
 }: TenantSidebarProps) {
+  const router = useRouter()
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Home className="size-4" />
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">Heurekka</span>
-              </div>
+            <SidebarMenuButton size="lg" onClick={() => router.push("/")} className="hover:bg-transparent">
+              <Logo />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -27,6 +27,7 @@ export interface TenantProfile {
   userId: string;
   fullName: string;
   phone: string;
+  email?: string; // Email from auth.users
   phoneVerified: boolean;
   occupation?: string;
   profilePhotoUrl?: string;
@@ -48,6 +49,7 @@ export interface TenantProfile {
   createdAt: string;
   updatedAt: string;
   lastActiveAt: string;
+  passwordUpdatedAt?: string; // Last password update timestamp
 }
 
 export interface UpdateTenantProfileInput extends Partial<TenantProfileInput> {
@@ -175,7 +177,10 @@ class TenantProfileService {
         return null;
       }
 
-      return this.transformTenantProfile(data);
+      // Get email and password info from auth.users
+      const { data: userData } = await this.supabase.auth.admin.getUserById(userId);
+
+      return this.transformTenantProfile(data, userData?.user);
     } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
@@ -517,12 +522,13 @@ class TenantProfileService {
   /**
    * Transform database record to TenantProfile
    */
-  private transformTenantProfile(data: any): TenantProfile {
+  private transformTenantProfile(data: any, authUser?: any): TenantProfile {
     return {
       id: data.id,
       userId: data.user_id,
       fullName: data.full_name,
       phone: data.phone,
+      email: authUser?.email || undefined,
       phoneVerified: data.phone_verified || false,
       occupation: data.occupation,
       profilePhotoUrl: data.profile_photo_url,
@@ -543,7 +549,8 @@ class TenantProfileService {
       isVerified: data.is_verified || false,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      lastActiveAt: data.last_active_at
+      lastActiveAt: data.last_active_at,
+      passwordUpdatedAt: authUser?.last_password_change_at || authUser?.updated_at
     };
   }
 
