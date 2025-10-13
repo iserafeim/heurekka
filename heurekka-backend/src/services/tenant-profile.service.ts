@@ -8,7 +8,7 @@ export interface TenantProfileInput {
   occupation?: string;
   budgetMin?: number;
   budgetMax?: number;
-  moveDate?: string; // ISO date string
+  moveDate?: string; // Text like "menos de 1 mes", "1-3 meses", "más de 3 meses"
   occupants?: string;
   preferredAreas?: string[];
   propertyTypes?: string[];
@@ -469,19 +469,8 @@ class TenantProfileService {
       });
     }
 
-    if (input.moveDate) {
-      const moveDate = new Date(input.moveDate);
-      const today = new Date();
-      const sixMonthsFromNow = new Date();
-      sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-
-      if (moveDate < today || moveDate > sixMonthsFromNow) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'La fecha de mudanza debe estar entre hoy y 6 meses'
-        });
-      }
-    }
+    // moveDate is now a text field (e.g., "menos de 1 mes", "1-3 meses", "más de 3 meses")
+    // No date validation needed
   }
 
   /**

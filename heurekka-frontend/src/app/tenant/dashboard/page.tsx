@@ -54,11 +54,30 @@ export default function TenantDashboardPage() {
 
   // Mutation for updating profile
   const updateProfile = trpc.tenantProfile.update.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (updatedProfile) => {
+      // Optimistically update the cache with the new data
+      const currentDashboardData = utils.tenantDashboard.getData.getData();
+      if (currentDashboardData && editedProfile) {
+        utils.tenantDashboard.getData.setData(undefined, {
+          ...currentDashboardData,
+          data: {
+            ...currentDashboardData.data,
+            profile: {
+              ...currentDashboardData.data.profile,
+              ...editedProfile,
+            }
+          }
+        });
+      }
+
       toast.success('Perfil actualizado exitosamente');
       setIsEditing(false);
-      // Invalidate dashboard query to refetch data
-      await utils.tenantDashboard.get.invalidate();
+
+      // Invalidate queries in the background to ensure data consistency
+      await Promise.all([
+        utils.tenantDashboard.getData.invalidate(),
+        utils.tenantProfile.getCurrent.invalidate(),
+      ]);
     },
     onError: (error) => {
       toast.error(error.message || 'Error al actualizar el perfil');
@@ -84,17 +103,6 @@ export default function TenantDashboardPage() {
   // Handle edit mode
   const handleEditProfile = () => {
     if (dashboardData?.data?.profile) {
-      // Determine the move date range from the actual move date
-      let moveDateRange = '';
-      if (dashboardData.data.profile.moveDate) {
-        const range = getMoveDateRange(dashboardData.data.profile.moveDate);
-        if (range.includes('Menos de 1 mes')) moveDateRange = 'less-than-1-month';
-        else if (range.includes('1 - 3 meses')) moveDateRange = '1-3-months';
-        else if (range.includes('3 meses - 1 año')) moveDateRange = '3-months-1-year';
-        else if (range.includes('Más de 1 año')) moveDateRange = 'more-than-1-year';
-        else moveDateRange = 'not-sure';
-      }
-
       setEditedProfile({
         fullName: dashboardData.data.profile.fullName,
         phone: dashboardData.data.profile.phone,
@@ -103,7 +111,6 @@ export default function TenantDashboardPage() {
         budgetMin: dashboardData.data.profile.budgetMin,
         budgetMax: dashboardData.data.profile.budgetMax,
         moveDate: dashboardData.data.profile.moveDate,
-        moveDateRange: moveDateRange,
         preferredAreas: dashboardData.data.profile.preferredAreas || [],
         propertyTypes: dashboardData.data.profile.propertyTypes || [],
         desiredBedrooms: dashboardData.data.profile.desiredBedrooms || [],
@@ -158,25 +165,20 @@ export default function TenantDashboardPage() {
 
     try {
       // Format the data before sending to backend
-      const { moveDateRange, ...profileData } = editedProfile; // Remove moveDateRange as it's UI-only
-
       const formattedData = {
-        ...profileData,
-        // Convert ISO date string to YYYY-MM-DD format if present
-        moveDate: profileData.moveDate
-          ? new Date(profileData.moveDate).toISOString().split('T')[0]
-          : undefined,
+        ...editedProfile,
+        // moveDate is already in text format, send as-is
         // Ensure empty arrays are sent as undefined
-        propertyTypes: profileData.propertyTypes?.length > 0 ? profileData.propertyTypes : undefined,
-        preferredAreas: profileData.preferredAreas?.length > 0 ? profileData.preferredAreas : undefined,
-        desiredBedrooms: profileData.desiredBedrooms?.length > 0 ? profileData.desiredBedrooms : undefined,
-        desiredBathrooms: profileData.desiredBathrooms?.length > 0 ? profileData.desiredBathrooms : undefined,
-        desiredParkingSpaces: profileData.desiredParkingSpaces?.length > 0 ? profileData.desiredParkingSpaces : undefined,
-        petDetails: profileData.hasPets ? profileData.petDetails : undefined,
+        propertyTypes: editedProfile.propertyTypes?.length > 0 ? editedProfile.propertyTypes : undefined,
+        preferredAreas: editedProfile.preferredAreas?.length > 0 ? editedProfile.preferredAreas : undefined,
+        desiredBedrooms: editedProfile.desiredBedrooms?.length > 0 ? editedProfile.desiredBedrooms : undefined,
+        desiredBathrooms: editedProfile.desiredBathrooms?.length > 0 ? editedProfile.desiredBathrooms : undefined,
+        desiredParkingSpaces: editedProfile.desiredParkingSpaces?.length > 0 ? editedProfile.desiredParkingSpaces : undefined,
+        petDetails: editedProfile.hasPets ? editedProfile.petDetails : undefined,
         // Only send email if it was changed
-        email: profileData.email?.trim() || undefined,
+        email: editedProfile.email?.trim() || undefined,
         // Only send password if it was provided
-        password: profileData.password?.trim() || undefined,
+        password: editedProfile.password?.trim() || undefined,
       };
 
       await updateProfile.mutateAsync(formattedData);
@@ -192,18 +194,7 @@ export default function TenantDashboardPage() {
     }));
   };
 
-  const getMoveDateRange = (dateString: string): string => {
-    const targetDate = new Date(dateString);
-    const today = new Date();
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return 'Lo antes posible';
-    if (diffDays <= 30) return 'Menos de 1 mes';
-    if (diffDays <= 90) return '1 - 3 meses';
-    if (diffDays <= 365) return '3 meses - 1 año';
-    return 'Más de 1 año';
-  };
+  // moveDate is now stored as text directly (e.g., "Menos de 1 mes")
 
   if (isLoading) {
     return (
@@ -814,52 +805,23 @@ export default function TenantDashboardPage() {
                               </p>
                               {isEditing ? (
                                 <select
-                                  value={editedProfile?.moveDateRange || ''}
-                                  onChange={(e) => {
-                                    const range = e.target.value;
-                                    handleFieldChange('moveDateRange', range);
-
-                                    // Convert range to actual date for backend
-                                    const today = new Date();
-                                    let daysToAdd = 60;
-
-                                    switch (range) {
-                                      case 'less-than-1-month':
-                                        daysToAdd = 15;
-                                        break;
-                                      case '1-3-months':
-                                        daysToAdd = 60;
-                                        break;
-                                      case '3-months-1-year':
-                                        daysToAdd = 180;
-                                        break;
-                                      case 'more-than-1-year':
-                                        daysToAdd = 365;
-                                        break;
-                                      case 'not-sure':
-                                        daysToAdd = 90;
-                                        break;
-                                    }
-
-                                    const targetDate = new Date(today);
-                                    targetDate.setDate(today.getDate() + daysToAdd);
-                                    handleFieldChange('moveDate', targetDate.toISOString());
-                                  }}
+                                  value={editedProfile?.moveDate || ''}
+                                  onChange={(e) => handleFieldChange('moveDate', e.target.value)}
                                   className="w-full px-3 py-2.5 bg-white border border-blue-200 rounded-lg text-sm font-medium text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-150"
                                 >
                                   <option value="">Selecciona el periodo...</option>
-                                  <option value="less-than-1-month">Menos de 1 mes</option>
-                                  <option value="1-3-months">1 - 3 meses</option>
-                                  <option value="3-months-1-year">3 meses - 1 año</option>
-                                  <option value="more-than-1-year">Más de 1 año</option>
-                                  <option value="not-sure">Aún no estoy seguro</option>
+                                  <option value="Menos de 1 mes">Menos de 1 mes</option>
+                                  <option value="1-3 meses">1-3 meses</option>
+                                  <option value="3-6 meses">3-6 meses</option>
+                                  <option value="Más de 6 meses">Más de 6 meses</option>
+                                  <option value="Flexible">Flexible</option>
                                 </select>
                               ) : (
                                 <div className="flex flex-wrap gap-2">
                                   {dashboardData.data.profile.moveDate ? (
                                     <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-gray-900 rounded-lg text-sm font-medium border border-blue-400 cursor-default select-none">
                                       <Calendar className="w-4 h-4 text-gray-700 -mt-px" />
-                                      {getMoveDateRange(dashboardData.data.profile.moveDate)}
+                                      {dashboardData.data.profile.moveDate}
                                     </span>
                                   ) : (
                                     <span className="text-sm text-gray-500">No especificado</span>

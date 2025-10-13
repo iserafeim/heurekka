@@ -156,72 +156,16 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
     setShowTenantAuth(true);
   }, [property]);
 
-  // Handle successful authentication - then proceed to WhatsApp
+  // Handle successful authentication - just close the modal
   const handleAuthSuccess = useCallback(() => {
     if (!property) return;
 
     // Close auth modal
     setShowTenantAuth(false);
 
-    // Get and validate phone number
-    const phoneNumber = property.contactPhone || property.landlord?.phone || '50400000000';
-
-    if (!validatePhoneNumber(phoneNumber)) {
-      console.error('Invalid phone number format:', phoneNumber);
-      alert('Número de teléfono inválido. Por favor contacte al administrador.');
-      return;
-    }
-
-    // Track conversion with full context
-    const contactData = {
-      property_id: property.id,
-      price: property.price,
-      location: property.neighborhood,
-      time_in_modal: timeInModal,
-      images_viewed: imagesViewed.size,
-      contact_method: 'whatsapp'
-    };
-
-    // Generate rich WhatsApp message in Spanish with sanitized content
-    const sanitizedAddress = sanitizeText(property.address || `${property.neighborhood}, ${property.city}`);
-    const sanitizedType = sanitizeText(getPropertyTypeLabel(property.propertyType));
-
-    const message = `Hola! Vi esta propiedad en Heurekka:
-
-📍 ${sanitizedAddress}
-💰 ${formatCurrency(property.price)}/mes
-🏠 ${sanitizedType}
-🛏️ ${property.bedrooms} habitaciones
-🚿 ${property.bathrooms} baños
-📐 ${property.area} m²
-
-¿Podría darme más información o agendar una visita?
-
-Gracias!`;
-
-    // Create safe WhatsApp URL
-    try {
-      const cleanPhone = phoneNumber.replace(/[-\\s().+]/g, '');
-      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-
-      // Validate URL length (WhatsApp has URL limits)
-      if (whatsappUrl.length > 2000) {
-        console.warn('WhatsApp URL too long, using simplified message');
-        const simpleMessage = `Hola! Estoy interesado en esta propiedad en Heurekka: ${sanitizedAddress} - ${formatCurrency(property.price)}/mes`;
-        const simpleUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(simpleMessage)}`;
-        window.open(simpleUrl, '_blank', 'noopener,noreferrer');
-      } else {
-        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-      }
-
-      // TODO: Track analytics event
-      console.log('WhatsApp contact initiated:', contactData);
-
-    } catch (error) {
-      console.error('Error creating WhatsApp URL:', error);
-      alert('Error al abrir WhatsApp. Por favor intente de nuevo.');
-    }
-  }, [property, timeInModal, imagesViewed.size]);
+    // User is now authenticated and will be redirected to complete their profile
+    // No WhatsApp redirection here - let them complete their profile first
+  }, [property]);
 
   // Format currency
   const formatCurrency = (amount: number) => {

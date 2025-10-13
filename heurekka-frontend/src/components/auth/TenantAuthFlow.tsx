@@ -220,9 +220,36 @@ export function TenantAuthFlow({
           onSuccess();
         }
 
-        // Redirect to tenant profile completion
-        // The profile page will handle redirecting to dashboard if already complete
-        router.push('/tenant/profile/complete');
+        // Check if user has a complete profile
+        // If they don't have a profile, redirect to complete it
+        // If they do, redirect to dashboard
+        try {
+          const profileResponse = await fetch('/api/trpc/tenantProfile.getCurrent', {
+            headers: {
+              'Authorization': `Bearer ${await secureAuth.getAccessToken()}`,
+            },
+          });
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+
+            // Check if profile exists and has required fields
+            if (profileData?.result?.data?.data?.fullName && profileData?.result?.data?.data?.phone) {
+              // Profile is complete, go to dashboard
+              router.push('/tenant/dashboard');
+            } else {
+              // Profile is incomplete, go to complete it
+              router.push('/tenant/profile/complete');
+            }
+          } else {
+            // No profile found, redirect to complete it
+            router.push('/tenant/profile/complete');
+          }
+        } catch (error) {
+          console.error('[TenantAuth] Error checking profile:', error);
+          // On error, assume profile needs completion
+          router.push('/tenant/profile/complete');
+        }
       }
     } catch (error: any) {
       // Generic error message to prevent information leakage

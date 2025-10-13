@@ -31,17 +31,23 @@ const step1Schema = z.object({
 const step2Schema = z.object({
   budgetMin: z.number().min(0, 'El presupuesto mínimo debe ser mayor a 0'),
   budgetMax: z.number().min(0, 'El presupuesto máximo debe ser mayor a 0'),
-  moveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Selecciona cuándo deseas mudarte'),
+  moveDate: z.string().min(1, 'Selecciona cuándo deseas mudarte'),
   preferredAreas: z.array(z.string()).min(1, 'Selecciona al menos una zona'),
   propertyTypes: z.array(z.string()).min(1, 'Selecciona al menos un tipo de propiedad'),
-  hasPets: z.boolean().optional(),
+  hasPets: z.boolean(),
   petDetails: z.string().max(200).optional(),
-  desiredBedrooms: z.array(z.number()).optional(),
-  desiredBathrooms: z.array(z.number()).optional(),
-  desiredParkingSpaces: z.array(z.number()).optional(),
+  desiredBedrooms: z.array(z.number()),
+  desiredBathrooms: z.array(z.number()).min(1, 'Selecciona al menos un número de baños'),
+  desiredParkingSpaces: z.array(z.number()).min(1, 'Selecciona al menos un número de parqueos'),
 }).refine((data) => data.budgetMax >= data.budgetMin, {
   message: 'El presupuesto máximo debe ser mayor o igual al mínimo',
   path: ['budgetMax'],
+}).refine((data) => !data.hasPets || (data.hasPets && data.petDetails && data.petDetails.trim().length > 0), {
+  message: 'Describe tus mascotas',
+  path: ['petDetails'],
+}).refine((data) => data.propertyTypes.includes('room') || data.desiredBedrooms.length >= 1, {
+  message: 'Selecciona al menos un número de habitaciones',
+  path: ['desiredBedrooms'],
 });
 
 const step3Schema = z.object({
@@ -140,17 +146,17 @@ export function ProfileCompletionWizard({
 
         {/* Progress Indicator */}
         <div className="flex items-center justify-center gap-2">
-          {Array.from({ length: steps.length }).map((_, index) => (
+          {steps.map((step, index) => (
             <div
-              key={index}
+              key={step.number}
               className={`
-                h-2 rounded-full transition-all duration-300
+                h-1.5 rounded-full transition-all duration-300
                 ${
                   index === currentStep - 1
-                    ? 'bg-blue-600 w-8' // Activo: más ancho y azul
+                    ? 'bg-blue-600 w-12' // Active: longer and blue
                     : index < currentStep - 1
-                    ? 'bg-blue-400 w-2' // Completado: azul claro
-                    : 'bg-gray-300 w-2' // Pendiente: gris
+                    ? 'bg-blue-400 w-8' // Completed: medium blue
+                    : 'bg-gray-300 w-8' // Pending: gray
                 }
               `}
               aria-label={`Paso ${index + 1}${index === currentStep - 1 ? ' (actual)' : index < currentStep - 1 ? ' (completado)' : ''}`}
@@ -217,24 +223,24 @@ function Step1PersonalInfo({ onNext, initialData }: any) {
 
   return (
     <form onSubmit={handleSubmit((data) => onNext({ personalInfo: data }))} className="space-y-6">
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
             Nombre Completo <span className="text-red-500">*</span>
           </label>
           <Input
             id="fullName"
             {...register('fullName')}
             placeholder="Juan Pérez"
-            className={errors.fullName ? 'border-red-500' : ''}
+            className={`h-12 ${errors.fullName ? 'border-red-500' : ''}`}
           />
           {errors.fullName && (
-            <p className="text-sm text-red-600 mt-1">{errors.fullName.message as string}</p>
+            <p className="text-xs text-red-600 mt-2">{errors.fullName.message as string}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
             Teléfono <span className="text-red-500">*</span>
           </label>
           <Input
@@ -242,17 +248,28 @@ function Step1PersonalInfo({ onNext, initialData }: any) {
             {...register('phone')}
             onChange={handlePhoneChange}
             placeholder="9999-9999"
-            className={errors.phone ? 'border-red-500' : ''}
+            className={`h-12 ${errors.phone ? 'border-red-500' : ''}`}
             maxLength={9}
           />
           {errors.phone && (
-            <p className="text-sm text-red-600 mt-1">{errors.phone.message as string}</p>
+            <p className="text-xs text-red-600 mt-2">{errors.phone.message as string}</p>
           )}
         </div>
       </div>
 
       <div className="flex justify-end">
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl flex items-center gap-2">
+        <Button
+          type="submit"
+          className="
+            bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+            text-white px-8 py-3 h-12
+            rounded-xl font-semibold
+            shadow-md hover:shadow-lg active:shadow-sm
+            transform hover:-translate-y-0.5 active:translate-y-0
+            transition-all duration-200
+            flex items-center justify-center gap-2
+          "
+        >
           Continuar
           <ArrowRight className="h-4 w-4" />
         </Button>
@@ -288,36 +305,8 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
   const desiredBathrooms = watch('desiredBathrooms') || [];
   const desiredParkingSpaces = watch('desiredParkingSpaces') || [];
 
-  const convertMoveDateRangeToDate = (range: string): string => {
-    const today = new Date();
-    let daysToAdd = 60; // Default: 2 months
-
-    switch (range) {
-      case 'less-than-1-month':
-        daysToAdd = 15; // ~2 weeks
-        break;
-      case '1-3-months':
-        daysToAdd = 60; // ~2 months
-        break;
-      case '3-months-1-year':
-        daysToAdd = 180; // ~6 months
-        break;
-      case 'more-than-1-year':
-        daysToAdd = 365; // 1 year
-        break;
-      case 'not-sure':
-        daysToAdd = 90; // ~3 months
-        break;
-    }
-
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + daysToAdd);
-    return targetDate.toISOString().split('T')[0];
-  };
-
   const handleMoveDateChange = (value: string) => {
-    const dateValue = convertMoveDateRangeToDate(value);
-    setValue('moveDate', dateValue);
+    setValue('moveDate', value);
   };
 
   const handleBudgetChange = (values: number[]) => {
@@ -382,10 +371,22 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
             Presupuesto Mensual <span className="text-red-500">*</span>
           </label>
           <div className="space-y-4">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>{formatCurrency(budgetMin)}</span>
-              <span>{formatCurrency(budgetMax)}</span>
+            {/* Budget Display Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <span className="text-xs text-gray-700 block mb-1">Mínimo</span>
+                <span className="text-lg text-gray-900">
+                  {formatCurrency(budgetMin)}
+                </span>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <span className="text-xs text-gray-700 block mb-1">Máximo</span>
+                <span className="text-lg text-gray-900">
+                  {formatCurrency(budgetMax)}
+                </span>
+              </div>
             </div>
+
             <Slider
               min={1000}
               max={50000}
@@ -394,6 +395,13 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
               onValueChange={handleBudgetChange}
               className="w-full"
             />
+
+            {/* Range Labels */}
+            <div className="flex justify-between text-xs text-gray-700">
+              <span>L 1,000</span>
+              <span>L 50,000</span>
+            </div>
+
             {/* Hidden inputs for form validation */}
             <input type="hidden" {...register('budgetMin', { valueAsNumber: true })} />
             <input type="hidden" {...register('budgetMax', { valueAsNumber: true })} />
@@ -413,11 +421,11 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
               <SelectValue placeholder="Selecciona el periodo aproximado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="less-than-1-month">Menos de 1 mes</SelectItem>
-              <SelectItem value="1-3-months">1 - 3 meses</SelectItem>
-              <SelectItem value="3-months-1-year">3 meses - 1 año</SelectItem>
-              <SelectItem value="more-than-1-year">Más de 1 año</SelectItem>
-              <SelectItem value="not-sure">Aún no estoy seguro</SelectItem>
+              <SelectItem value="Menos de 1 mes">Menos de 1 mes</SelectItem>
+              <SelectItem value="1-3 meses">1-3 meses</SelectItem>
+              <SelectItem value="3-6 meses">3-6 meses</SelectItem>
+              <SelectItem value="Más de 6 meses">Más de 6 meses</SelectItem>
+              <SelectItem value="Flexible">Flexible</SelectItem>
             </SelectContent>
           </Select>
           <input type="hidden" {...register('moveDate')} />
@@ -431,18 +439,19 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Zonas Preferidas <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
             {TEGUCIGALPA_AREAS.map((area) => (
               <button
                 key={area}
                 type="button"
                 onClick={() => toggleArea(area)}
                 className={`
-                  px-3 py-2 rounded-md text-sm text-left transition-all
+                  px-4 py-3 rounded-lg text-sm text-left transition-all
+                  min-h-[48px] flex items-center
                   ${
                     selectedAreas.includes(area)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
                   }
                 `}
               >
@@ -471,16 +480,29 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
                 type="button"
                 onClick={() => togglePropertyType(type.value)}
                 className={`
-                  p-4 rounded-lg border-2 text-left transition-all
+                  relative p-4 rounded-xl border-2 text-left transition-all duration-200
+                  hover:shadow-md active:scale-[0.98]
+                  min-h-[100px] flex flex-col
                   ${
                     selectedTypes.includes(type.value)
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-600 bg-blue-50 shadow-md shadow-blue-600/10'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }
                 `}
               >
-                <span className="text-2xl mb-2 block">{type.icon}</span>
-                <span className="text-sm font-medium text-gray-900">{type.label}</span>
+                {/* Checkmark indicator */}
+                {selectedTypes.includes(type.value) && (
+                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                )}
+
+                <span className="text-3xl mb-2">{type.icon}</span>
+                <span className={`text-sm font-semibold ${
+                  selectedTypes.includes(type.value) ? 'text-blue-700' : 'text-gray-700'
+                }`}>
+                  {type.label}
+                </span>
               </button>
             ))}
           </div>
@@ -498,7 +520,7 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
             onCheckedChange={(checked) => setValue('hasPets', checked)}
           />
           <div className="flex-1">
-            <label htmlFor="hasPets" className="block text-sm font-medium text-gray-900 cursor-pointer">
+            <label htmlFor="hasPets" className="block text-sm font-medium text-gray-700 cursor-pointer">
               Tengo mascotas
             </label>
             <p className="text-xs text-gray-600 mt-1">
@@ -510,16 +532,20 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
         {/* Pet Details (conditional) */}
         {hasPets && (
           <div className="ml-4 pl-4 border-l-2 border-blue-600">
-            <label htmlFor="petDetails" className="block text-sm font-medium text-gray-700 mb-1">
-              Detalles sobre tus mascotas
+            <label htmlFor="petDetails" className="block text-sm font-medium text-gray-700 mb-2">
+              Detalles sobre tus mascotas <span className="text-red-500">*</span>
             </label>
             <Textarea
               id="petDetails"
               {...register('petDetails')}
               placeholder="Ej: 1 perro pequeño, bien entrenado y tranquilo"
               rows={3}
+              className={errors.petDetails ? 'border-red-500' : ''}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            {errors.petDetails && (
+              <p className="text-xs text-red-600 mt-2">{errors.petDetails.message as string}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
               Describe tus mascotas: tipo, cantidad, tamaño, temperamento
             </p>
           </div>
@@ -529,9 +555,9 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
         {!selectedTypes.includes('room') && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Número de Habitaciones
+              Número de Habitaciones <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((count) => (
                 <button
                   key={count}
@@ -539,10 +565,12 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
                   onClick={() => toggleBedroom(count)}
                   className={`
                     px-4 py-3 rounded-lg border-2 text-center transition-all
+                    min-h-[48px] flex items-center justify-center
+                    font-semibold
                     ${
                       desiredBedrooms.includes(count)
-                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
                     }
                   `}
                 >
@@ -551,6 +579,9 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
               ))}
             </div>
             <input type="hidden" {...register('desiredBedrooms')} />
+            {errors.desiredBedrooms && (
+              <p className="text-sm text-red-600 mt-2">{errors.desiredBedrooms.message as string}</p>
+            )}
             <p className="text-xs text-gray-500 mt-2">
               Puedes seleccionar múltiples opciones
             </p>
@@ -560,9 +591,9 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
         {/* Desired Bathrooms */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            Número de Baños
+            Número de Baños <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[1, 2, 3, 4].map((count) => (
               <button
                 key={count}
@@ -570,10 +601,12 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
                 onClick={() => toggleBathroom(count)}
                 className={`
                   px-4 py-3 rounded-lg border-2 text-center transition-all
+                  min-h-[48px] flex items-center justify-center
+                  font-semibold
                   ${
                     desiredBathrooms.includes(count)
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
                   }
                 `}
               >
@@ -582,6 +615,9 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
             ))}
           </div>
           <input type="hidden" {...register('desiredBathrooms')} />
+          {errors.desiredBathrooms && (
+            <p className="text-sm text-red-600 mt-2">{errors.desiredBathrooms.message as string}</p>
+          )}
           <p className="text-xs text-gray-500 mt-2">
             Puedes seleccionar múltiples opciones
           </p>
@@ -590,9 +626,9 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
         {/* Desired Parking Spaces */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            Número de Parqueos
+            Número de Parqueos <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[0, 1, 2, 3].map((count) => (
               <button
                 key={count}
@@ -600,10 +636,12 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
                 onClick={() => toggleParkingSpace(count)}
                 className={`
                   px-4 py-3 rounded-lg border-2 text-center transition-all
+                  min-h-[48px] flex items-center justify-center
+                  font-semibold
                   ${
                     desiredParkingSpaces.includes(count)
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
                   }
                 `}
               >
@@ -612,20 +650,45 @@ function Step2SearchPreferences({ onNext, onBack, initialData }: any) {
             ))}
           </div>
           <input type="hidden" {...register('desiredParkingSpaces')} />
+          {errors.desiredParkingSpaces && (
+            <p className="text-sm text-red-600 mt-2">{errors.desiredParkingSpaces.message as string}</p>
+          )}
           <p className="text-xs text-gray-500 mt-2">
             Puedes seleccionar múltiples opciones
           </p>
         </div>
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl font-semibold">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex justify-between pt-4 gap-3">
+        <Button
+          type="button"
+          onClick={onBack}
+          variant="outline"
+          className="
+            border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50
+            px-6 py-3 h-12
+            rounded-xl font-semibold
+            transition-all duration-200
+            flex items-center gap-2
+          "
+        >
+          <ArrowLeft className="h-4 w-4" />
           Atrás
         </Button>
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
+        <Button
+          type="submit"
+          className="
+            bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+            text-white px-8 py-3 h-12
+            rounded-xl font-semibold
+            shadow-md hover:shadow-lg active:shadow-sm
+            transform hover:-translate-y-0.5 active:translate-y-0
+            transition-all duration-200
+            flex items-center justify-center gap-2
+          "
+        >
           Continuar
-          <ArrowRight className="h-4 w-4 ml-2" />
+          <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </form>
@@ -665,18 +728,52 @@ function Step3OptionalDetails({ onNext, onBack, onSkip, initialData }: any) {
         </div>
       </div>
 
-      <div className="flex justify-between pt-4">
-        <Button type="button" onClick={onBack} variant="outline" className="rounded-xl font-semibold">
-          <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex flex-col sm:flex-row justify-between pt-4 gap-3">
+        <Button
+          type="button"
+          onClick={onBack}
+          variant="outline"
+          className="
+            border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50
+            px-6 py-3 h-12
+            rounded-xl font-semibold
+            transition-all duration-200
+            flex items-center justify-center gap-2
+          "
+        >
+          <ArrowLeft className="h-4 w-4" />
           Atrás
         </Button>
         <div className="flex gap-2">
-          <Button type="button" onClick={onSkip} variant="ghost" className="font-medium">
+          <Button
+            type="button"
+            onClick={onSkip}
+            variant="ghost"
+            className="
+              hover:bg-gray-100
+              px-4 py-3 h-12
+              rounded-xl font-medium
+              transition-all duration-200
+            "
+          >
             Omitir
           </Button>
-          <Button type="submit" className="bg-green-600 hover:bg-green-700 px-6 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl">
+          <Button
+            type="submit"
+            className="
+              bg-gradient-to-r from-green-600 to-emerald-600
+              hover:from-green-700 hover:to-emerald-700
+              text-white px-8 py-3 h-12
+              rounded-xl font-semibold
+              shadow-lg shadow-green-600/30 hover:shadow-xl hover:shadow-green-600/40
+              transform hover:-translate-y-0.5 hover:scale-105
+              active:translate-y-0 active:scale-100
+              transition-all duration-300
+              flex items-center justify-center gap-2
+            "
+          >
+            <Check className="h-5 w-5" />
             Completar Perfil
-            <Check className="h-4 w-4 ml-2" />
           </Button>
         </div>
       </div>

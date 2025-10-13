@@ -267,13 +267,23 @@ export function TenantProfileForm({
             </div>
 
             {/* Move Date */}
-            <FormInput
-              label="Fecha de Mudanza"
-              type="date"
-              value={formData.moveDate || ''}
-              onChange={(e) => updateField('moveDate', e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-            />
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Fecha de Mudanza
+              </label>
+              <select
+                value={formData.moveDate || ''}
+                onChange={(e) => updateField('moveDate', e.target.value)}
+                className="flex h-12 w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="Menos de 1 mes">Menos de 1 mes</option>
+                <option value="1-3 meses">1-3 meses</option>
+                <option value="3-6 meses">3-6 meses</option>
+                <option value="Más de 6 meses">Más de 6 meses</option>
+                <option value="Flexible">Flexible</option>
+              </select>
+            </div>
 
             {/* Occupants */}
             <div>

@@ -110,7 +110,11 @@ export function TenantSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
+            <SidebarMenuButton
+              size="lg"
+              onClick={() => onSectionChange('profile')}
+              className="cursor-pointer hover:bg-accent"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback>
