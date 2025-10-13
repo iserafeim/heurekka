@@ -124,7 +124,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
+            value: isDev ? 'unsafe-none' : 'require-corp',
           },
           {
             key: 'Cross-Origin-Opener-Policy',
@@ -132,7 +132,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Cross-Origin-Resource-Policy',
-            value: 'same-origin',
+            value: 'cross-origin',
           },
           // Content Security Policy
           {
@@ -142,7 +142,7 @@ const nextConfig: NextConfig = {
               "script-src 'self'" + (isDev ? " 'unsafe-inline' 'unsafe-eval'" : " 'strict-dynamic' 'nonce-{nonce}'"),
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https://images.unsplash.com https://cdn.heurekka.com https://storage.googleapis.com https://res.cloudinary.com https://api.mapbox.com https://picsum.photos blob:",
+              "img-src 'self' data: https://images.unsplash.com https://cdn.heurekka.com https://storage.googleapis.com https://res.cloudinary.com https://api.mapbox.com https://picsum.photos https://*.supabase.co blob:",
               "media-src 'self' https:",
               "object-src 'none'",
               "base-uri 'self'",

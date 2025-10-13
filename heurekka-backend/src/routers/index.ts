@@ -8,6 +8,7 @@ import { landlordProfileRouter } from './landlord-profile';
 import { savedSearchRouter } from './saved-search';
 import { favoriteRouter } from './favorite';
 import { tenantDashboardRouter } from './tenant-dashboard';
+import { landlordDashboardRouter } from './landlord-dashboard';
 import type { Context } from '../server';
 import { router, publicProcedure, protectedProcedure } from '../lib/trpc';
 
@@ -43,6 +44,9 @@ export const appRouter = router({
   // Tenant dashboard routes
   tenantDashboard: tenantDashboardRouter,
 
+  // Landlord dashboard routes
+  landlordDashboard: landlordDashboardRouter,
+
   // Health check for the entire API
   health: publicProcedure
     .query(() => {
@@ -63,7 +67,8 @@ export const appRouter = router({
           'landlord-profiles',
           'saved-searches',
           'favorites-management',
-          'tenant-dashboard'
+          'tenant-dashboard',
+          'landlord-dashboard'
         ]
       };
     }),

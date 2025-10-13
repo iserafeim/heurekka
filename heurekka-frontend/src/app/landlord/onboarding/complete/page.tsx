@@ -45,7 +45,7 @@ export default function CompletePage() {
   };
 
   const handleExploreDashboard = () => {
-    router.push('/landlord/dashboard');
+    router.push('/dashboard?tab=leads');
   };
 
   const getLandlordTypeLabel = () => {

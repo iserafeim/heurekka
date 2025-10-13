@@ -731,6 +731,9 @@ class LandlordProfileService {
       fullName: data.full_name,
       phone: data.phone,
       email: data.email || data.contact_email,
+      emailVerified: data.email_verified || false,
+      phoneVerified: data.phone_verified || false,
+      profilePhotoUrl: data.profile_photo_url,
       companyName: data.company_name,
       companyRtn: data.company_rtn,
       agentType: data.agent_type,
@@ -756,7 +759,9 @@ class LandlordProfileService {
       priceRangeMax: data.price_range_max,
       companyLogoUrl: data.company_logo_url,
       licenseDocumentUrl: data.license_document_url,
-      companyDescription: data.company_description
+      companyDescription: data.company_description,
+      propertyCountRange: data.property_count_range,
+      propertyLocation: data.property_location
     };
   }
 
