@@ -15,7 +15,7 @@ status: approved
 # Landlord Dashboard - Screen States
 
 ## Overview
-Comprehensive documentation of all screen states for the landlord dashboard feature, including lead inbox, detail views, analytics panels, and response interfaces.
+Comprehensive documentation of all screen states for the landlord dashboard feature within the unified `/dashboard` tab-based interface. Covers the Leads tab, Analytics tab, and profile management within Mi Perfil tab. Uses shadcn/ui components throughout for consistent, accessible UI patterns.
 
 ## Table of Contents
 1. [Dashboard Main View](#dashboard-main-view)
@@ -25,52 +25,91 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
 6. [Settings & Configuration](#settings-configuration)
 7. [Mobile Views](#mobile-views)
 
-## Dashboard Main View
+## Unified Dashboard Main View
 
-### State: Default Dashboard
+### State: Default Dashboard with Tab Navigation
 **Layout Structure**:
-- Container: 1440px max-width
-- Grid: 12-column with 24px gutters
-- Sidebar: 280px fixed width
-- Main content: Flexible with 32px padding
-- Header height: 80px sticky
+- Container: Full viewport
+- Sidebar: 280px fixed width with tab list
+- Main content: Flexible, renders active tab content
+- No separate header - integrated within tab content areas
+
+**shadcn Components Used**:
+- **Tabs** component for sidebar navigation structure
+- **ScrollArea** for scrollable sidebar
+- **Separator** for visual dividers between role sections (dual-context users)
+- **Badge** for notification counts on tabs
 
 **Visual Specifications**:
 ```css
-/* Dashboard Container */
+/* Unified Dashboard Container */
 .dashboard-container {
   display: grid;
   grid-template-columns: 280px 1fr;
-  grid-template-rows: 80px 1fr;
   min-height: 100vh;
   background: #FAFBFF;
 }
 
-.dashboard-header {
-  grid-column: 1 / -1;
-  background: white;
-  border-bottom: 1px solid #E5E7EB;
-  padding: 0 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
+/* Sidebar with Tab Navigation */
 .dashboard-sidebar {
   background: white;
   border-right: 1px solid #E5E7EB;
   padding: 24px 16px;
   overflow-y: auto;
-  height: calc(100vh - 80px);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Tab List (using shadcn Tabs) */
+.sidebar-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-trigger {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6B7280;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.tab-trigger:hover {
+  background: #F3F4F6;
+  color: #1A1A1A;
+}
+
+.tab-trigger[data-state="active"] {
+  background: #EEF2FF;
+  color: #6366F1;
+}
+
+/* Role Separator for Dual-Context Users */
+.role-separator {
+  margin: 16px 0;
+  border-top: 1px solid #E5E7EB;
+}
+
+.role-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #9CA3AF;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin: 12px 16px 8px;
+}
+
+/* Main Tab Content Area */
 .dashboard-main {
   padding: 32px;
   overflow-y: auto;
-  height: calc(100vh - 80px);
+  height: 100vh;
 }
 
 /* Metrics Summary Bar */
@@ -118,9 +157,19 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
 }
 ```
 
-### State: Loading Dashboard
+### State: Loading Dashboard Tab Content
+**shadcn Components**: **Skeleton** component for loading states
+
 ```css
-/* Skeleton Loading State */
+/* Tab Content Loading State */
+.tab-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+}
+
+/* Skeleton Loading State (shadcn Skeleton) */
 .dashboard-skeleton {
   animation: shimmer 2s infinite;
   background: linear-gradient(
@@ -177,11 +226,17 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
 }
 ```
 
-## Lead Inbox States
+## Lead Inbox States (Leads Tab Content)
 
-### State: Lead List View
+### State: Lead List View Within Leads Tab
+**shadcn Components Used**:
+- **Card** for lead inbox container
+- **Input** with search icon for search functionality
+- **Select** for filter dropdowns
+- **Badge** for filter chips and lead status indicators
+
 ```css
-/* Lead Inbox Container */
+/* Lead Inbox Container (within Leads tab) */
 .lead-inbox {
   background: white;
   border-radius: 12px;
@@ -224,18 +279,20 @@ Comprehensive documentation of all screen states for the landlord dashboard feat
   border-color: #6366F1;
 }
 
-/* Lead Cards */
+/* Lead Cards (using shadcn Card component) */
 .lead-list {
   max-height: 600px;
   overflow-y: auto;
 }
 
+/* Base lead card - uses shadcn Card */
 .lead-card {
   padding: 20px 24px;
   border-bottom: 1px solid #F3F4F6;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  /* Applied via shadcn Card component */
 }
 
 .lead-card:hover {

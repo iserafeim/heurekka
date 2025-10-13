@@ -15,16 +15,158 @@ status: approved
 # Landlord Dashboard - Interaction Patterns
 
 ## Overview
-Complete interaction and animation specifications for the landlord dashboard feature, including lead management, response flows, real-time updates, and analytics interactions.
+Complete interaction and animation specifications for the landlord dashboard feature within the unified `/dashboard` tab-based interface. Covers tab navigation, lead management interactions, response flows, and real-time updates. Uses shadcn/ui components for consistent interaction patterns.
 
 ## Table of Contents
-1. [Lead Inbox Interactions](#lead-inbox-interactions)
-2. [Lead Card Behaviors](#lead-card-behaviors)
-3. [Response Flow Interactions](#response-flow-interactions)
-4. [Real-time Updates](#real-time-updates)
+1. [Tab Navigation Interactions](#tab-navigation-interactions)
+2. [Lead Inbox Interactions](#lead-inbox-interactions)
+3. [Lead Card Behaviors](#lead-card-behaviors)
+4. [Response Flow Interactions](#response-flow-interactions)
+5. [Real-time Updates](#real-time-updates)
 6. [Filtering & Sorting](#filtering-sorting)
 7. [Mobile Gestures](#mobile-gestures)
 8. [Performance Patterns](#performance-patterns)
+
+## Tab Navigation Interactions
+
+### Sidebar Tab Switching
+**shadcn Components**: **Tabs** component with custom styling
+
+```javascript
+// Tab navigation handler
+class TabNavigationController {
+  constructor() {
+    this.activeTab = 'leads'; // Default for landlord users
+    this.setupTabSwitching();
+  }
+
+  setupTabSwitching() {
+    const tabs = document.querySelectorAll('[data-tab-trigger]');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const tabId = e.currentTarget.dataset.tabTrigger;
+        this.switchTab(tabId);
+      });
+
+      // Keyboard navigation
+      tab.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          const tabId = e.currentTarget.dataset.tabTrigger;
+          this.switchTab(tabId);
+        }
+      });
+    });
+  }
+
+  switchTab(tabId) {
+    // Update URL without page reload
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabId);
+    window.history.pushState({}, '', url);
+
+    // Animate tab transition
+    this.animateTabSwitch(this.activeTab, tabId);
+
+    this.activeTab = tabId;
+
+    // Update aria-selected attributes
+    this.updateTabAria(tabId);
+  }
+
+  animateTabSwitch(fromTab, toTab) {
+    const fromContent = document.querySelector(`[data-tab-content="${fromTab}"]`);
+    const toContent = document.querySelector(`[data-tab-content="${toTab}"]`);
+
+    // Fade out current tab
+    fromContent.style.animation = 'tabFadeOut 0.2s ease forwards';
+
+    setTimeout(() => {
+      fromContent.style.display = 'none';
+      toContent.style.display = 'block';
+
+      // Fade in new tab
+      toContent.style.animation = 'tabFadeIn 0.3s ease forwards';
+    }, 200);
+  }
+
+  updateTabAria(activeTabId) {
+    const allTabs = document.querySelectorAll('[data-tab-trigger]');
+    allTabs.forEach(tab => {
+      const isActive = tab.dataset.tabTrigger === activeTabId;
+      tab.setAttribute('aria-selected', isActive);
+      tab.setAttribute('tabindex', isActive ? '0' : '-1');
+    });
+  }
+}
+
+@keyframes tabFadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+```
+
+### Profile Context Toggle (Dual-Context Users)
+**shadcn Components**: **Switch** component for toggle
+
+```javascript
+// Profile context switcher within Mi Perfil tab
+class ProfileContextToggle {
+  constructor() {
+    this.currentContext = 'tenant'; // or 'landlord'
+    this.setupToggle();
+  }
+
+  setupToggle() {
+    const toggle = document.querySelector('[data-profile-toggle]');
+
+    toggle.addEventListener('change', (e) => {
+      const newContext = e.target.checked ? 'landlord' : 'tenant';
+      this.switchContext(newContext);
+    });
+  }
+
+  switchContext(newContext) {
+    const profileContainer = document.querySelector('.profile-content');
+
+    // Animate context switch
+    profileContainer.style.animation = 'profileSwitch 0.4s ease';
+
+    setTimeout(() => {
+      // Update profile content
+      this.loadProfileData(newContext);
+      this.currentContext = newContext;
+
+      // Update labels
+      const contextLabel = document.querySelector('.context-label');
+      contextLabel.textContent = newContext === 'tenant' ? 'Perfil de Inquilino' : 'Perfil de Propietario';
+    }, 200);
+  }
+}
+
+@keyframes profileSwitch {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.98); }
+}
+```
 
 ## Lead Inbox Interactions
 

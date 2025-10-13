@@ -14,7 +14,7 @@ status: approved
 # Landlord Dashboard - User Journey
 
 ## Overview
-Complete user journey for landlords managing tenant inquiries and property leads through the dashboard.
+Complete user journey for landlords managing tenant inquiries and property leads through the unified dashboard's tab-based navigation system. This feature focuses exclusively on lead management - not property creation or listing management.
 
 ## User Personas
 
@@ -38,12 +38,16 @@ Complete user journey for landlords managing tenant inquiries and property leads
 
 ## Core User Flow
 
-### Stage 1: Lead Reception
-1. Receive notification of new lead
-2. Open dashboard (mobile/desktop)
-3. View lead in inbox with priority indicator
-4. Quick review of tenant profile
-5. Decision point: Respond or pass
+### Stage 1: Dashboard Access & Lead Reception
+1. User navigates to `/dashboard` route
+2. System renders role-appropriate tabs in sidebar
+3. Landlord-only users: See Leads, Analytics, Mi Perfil tabs
+4. Dual-context users: See tenant tabs + separator + landlord tabs
+5. Default tab: "Leads" for landlord users
+6. Receive notification of new lead (real-time update within active tab)
+7. Lead appears in inbox with priority indicator
+8. Quick review of tenant profile
+9. Decision point: Respond or pass
 
 ### Stage 2: Lead Evaluation
 1. Click to expand lead details
@@ -79,25 +83,26 @@ Complete user journey for landlords managing tenant inquiries and property leads
 
 ## Entry Points
 
+### Unified Dashboard Navigation
+- All users access `/dashboard` route
+- Landlord users see "Leads" tab in sidebar
+- Tab navigation for switching between Leads, Analytics, and Mi Perfil
+- No separate context switching - all tabs visible simultaneously for dual-context users
+
 ### Push Notification
-- Mobile app notification
-- Click to open specific lead
+- Mobile app notification for new lead
+- Click opens `/dashboard?tab=leads` with specific lead highlighted
 - Quick action buttons in notification
 
 ### Email Alert
 - Daily digest of new leads
-- Click through to dashboard
-- Filtered view of urgent items
+- Click through to `/dashboard?tab=leads`
+- Deep link to specific lead if applicable
 
-### Direct Dashboard Access
-- Bookmark/saved login
-- Homepage quick access
-- Mobile app icon
-
-### WhatsApp Message
-- Direct inquiry via WhatsApp
-- Link to view in dashboard
-- Auto-import to lead system
+### Direct Tab Access
+- Bookmark to `/dashboard` (defaults to appropriate tab)
+- Sidebar navigation between tabs
+- Deep links to specific tabs (e.g., `/dashboard?tab=analytics`)
 
 ## Key Interactions
 

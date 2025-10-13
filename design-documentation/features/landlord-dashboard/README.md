@@ -20,7 +20,9 @@ status: approved
 
 ## Overview
 
-The Landlord Dashboard is a comprehensive lead management system that enables property owners and agents to view, filter, and respond to qualified tenant inquiries efficiently. It provides real-time lead delivery, quality indicators, and response tracking to maximize conversion rates. The dashboard now integrates seamlessly with the new authentication system and supports dual-context users who operate as both landlords and tenants.
+The Landlord Dashboard is a comprehensive lead management system accessible via tab-based navigation within the unified `/dashboard` route. It enables property owners and agents to view, filter, and respond to qualified tenant inquiries efficiently through dedicated tabs in a single dashboard interface. The system provides real-time lead delivery, quality indicators, and response tracking to maximize conversion rates.
+
+**Important Scope**: This dashboard focuses EXCLUSIVELY on lead management - viewing tenant inquiries, reviewing profiles, and responding to contacts. Property listing creation, editing, photo management, and availability updates are handled separately in the property-listing-management feature.
 
 ## Feature Objectives
 
@@ -41,25 +43,37 @@ The Landlord Dashboard is a comprehensive lead management system that enables pr
 - **Profile Completion**: >70% of landlords complete profile within first week
 - **Upgrade Rate**: >20% of tenants upgrade to landlord accounts within 6 months
 
-## Entry Points and Authentication
+## Entry Points and Navigation Architecture
 
-### Access Flow
-The dashboard is accessed after successful landlord authentication:
-1. **Direct Landlord Login**: Users who authenticate as landlords land directly on dashboard
-2. **Context Switch**: Dual-context users can switch from tenant to landlord mode
-3. **Upgrade Path**: Tenants can upgrade to landlord status and access dashboard
-4. **Deep Links**: Direct property-specific dashboard access via shared links
+### Unified Dashboard Access
+All users access the dashboard through the single `/dashboard` route:
+1. **Landlord-Only Users**: See landlord tabs (Leads, Analytics, Mi Perfil)
+2. **Tenant-Only Users**: See tenant tabs (Búsquedas Guardadas, Favoritos, Conversaciones, Mi Perfil)
+3. **Dual-Context Users**: See ALL tabs from both roles with visual separators
+4. **Deep Links**: Direct links to specific tabs (e.g., `/dashboard?tab=leads`)
 
-### Context Awareness
+### Tab Visibility Logic
 ```typescript
-interface DashboardContext {
-  userType: 'landlord-only' | 'dual-context';
-  activeContext: 'landlord' | 'tenant';
-  profileCompletion: number;
-  verificationLevel: 'basic' | 'verified' | 'premium';
-  canSwitchContext: boolean;
+interface DashboardTabConfiguration {
+  userRole: 'tenant-only' | 'landlord-only' | 'dual-context';
+  visibleTabs: string[];
+
+  // Tenant tabs
+  tenantTabs?: ['búsquedas-guardadas', 'favoritos', 'conversaciones', 'mi-perfil'];
+
+  // Landlord tabs
+  landlordTabs?: ['leads', 'analytics', 'mi-perfil'];
+
+  // Dual-context: Shows both sets with separator
+  showRoleSeparator: boolean;
 }
 ```
+
+### Profile Context Switching
+For dual-context users, profile context switching happens WITHIN the "Mi Perfil" tab:
+- Toggle between tenant profile view and landlord profile view
+- No separate context switching at dashboard level
+- Single unified navigation experience
 
 ## Key User Stories
 
@@ -73,7 +87,7 @@ interface DashboardContext {
 "As someone managing 10+ properties, I want bulk management tools, so that I can efficiently handle high volumes of inquiries."
 
 ### Dual-Context User Perspective
-"As someone who both owns properties and looks for rentals, I want to easily switch between my landlord and tenant views without logging out."
+"As someone who both owns properties and looks for rentals, I want to see all my dashboard tabs in one place without needing to switch modes, with my profile tab letting me toggle between my tenant and landlord information."
 
 ## Design Principles
 
@@ -141,20 +155,28 @@ interface LeadData {
 
 ## Component Structure
 
-### Dashboard Layout
-- **Header**: Metrics summary, quick filters, and context switcher for dual-role users
-- **Sidebar**: Navigation, property selector, and upgrade CTA for tenant features
-- **Main Area**: Lead list/grid view with verification badges
-- **Detail Panel**: Expandable lead details with trust indicators
-- **Action Bar**: Bulk actions and tools
-- **Context Toggle**: Seamless switching between landlord/tenant modes (if applicable)
+### Unified Dashboard Layout
+- **Sidebar Navigation**:
+  - Role-aware tab list (tenant tabs, landlord tabs, or both)
+  - Visual separator for dual-context users
+  - Active tab highlighting
+  - Profile context indicator
+- **Main Content Area**:
+  - Tab content renders based on selection
+  - Leads tab: Lead list/grid view with verification badges
+  - Analytics tab: Metrics and performance data
+  - Mi Perfil tab: Profile management with context toggle (dual users only)
+- **Detail Panel**: Expandable lead details with trust indicators (within Leads tab)
+- **Action Bar**: Contextual actions based on active tab
 
-### Lead Card Design
-- Tenant avatar and verification badge
+### Lead Card Design (shadcn Components)
+- **Card** component from @shadcn for container structure
+- **Badge** components for verification, priority, and status indicators
+- **Avatar** component for tenant profile image
+- **Button** components for quick actions (WhatsApp, email, call)
 - Budget range with compatibility indicator
 - Move-in date with urgency flag
-- Property reference
-- Quick action buttons
+- Property reference with thumbnail
 - Unread message indicator
 
 ### Analytics Dashboard
@@ -168,11 +190,11 @@ interface LeadData {
 ## User Experience Flow
 
 ### Dashboard Entry
-1. Successful authentication as landlord
-2. Profile completion check (prompt if incomplete)
-3. Verification status display
-4. Context indicator for dual-role users
-5. Dashboard loads with personalized view
+1. User navigates to `/dashboard` route
+2. System determines user role(s) and renders appropriate tabs
+3. Landlord users default to "Leads" tab
+4. Profile completion check (prompt if incomplete)
+5. Tab-based navigation ready for exploration
 
 ### Lead Reception
 1. New lead notification received
@@ -198,13 +220,12 @@ interface LeadData {
 5. Update lead status
 6. Log interaction notes
 
-### Context Switching (Dual Users)
-1. Access context switcher in header
-2. Select "Modo Inquilino" option
-3. Confirm context switch
-4. Redirect to tenant search interface
-5. Maintain authentication state
-6. Quick return to landlord dashboard available
+### Profile Context Viewing (Dual Users)
+1. Navigate to "Mi Perfil" tab
+2. See profile context toggle (Inquilino/Propietario)
+3. Toggle to switch between tenant and landlord profile views
+4. Profile information updates based on selected context
+5. Other tabs remain visible and accessible at all times
 
 ## Responsive Behavior
 
@@ -351,11 +372,11 @@ interface DashboardFeatures {
 }
 ```
 
-### Context-Aware Navigation
-- **Landlord-Only Users**: Standard dashboard navigation
-- **Dual-Context Users**: Context switcher in header
-- **Upgraded Tenants**: Onboarding prompts on first visit
-- **Profile Incomplete**: Persistent completion reminder
+### Tab-Based Navigation
+- **Landlord-Only Users**: See landlord tabs only (Leads, Analytics, Mi Perfil)
+- **Tenant-Only Users**: See tenant tabs only (Búsquedas Guardadas, Favoritos, Conversaciones, Mi Perfil)
+- **Dual-Context Users**: See all tabs from both roles with visual separator
+- **Profile Toggle**: Context switching happens within Mi Perfil tab, not at dashboard level
 
 ### Upgrade Prompts
 - **For Tenants**: "Publica tus propiedades" CTA in sidebar

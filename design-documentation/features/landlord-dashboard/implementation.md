@@ -15,41 +15,50 @@ status: approved
 # Landlord Dashboard - Implementation Guide
 
 ## Overview
-Complete technical implementation guide for developers building the landlord dashboard feature, including lead management, real-time updates, WhatsApp integration, and analytics.
+Complete technical implementation guide for developers building the landlord dashboard feature within the unified `/dashboard` route. Covers tab-based navigation, lead management, real-time updates, WhatsApp integration, and extensive use of shadcn/ui components for consistent, accessible UI patterns.
+
+**Key Architecture**: This feature operates within a unified dashboard that serves multiple user roles via tab-based navigation. Landlord tabs (Leads, Analytics, Mi Perfil) integrate seamlessly with tenant tabs for dual-context users.
 
 ## Table of Contents
 1. [Component Architecture](#component-architecture)
-2. [State Management](#state-management)
-3. [API Integration](#api-integration)
-4. [Data Models](#data-models)
-5. [Real-time Implementation](#real-time-implementation)
-6. [WhatsApp Integration](#whatsapp-integration)
-7. [Performance Optimization](#performance-optimization)
-8. [Testing Strategy](#testing-strategy)
-9. [Deployment Checklist](#deployment-checklist)
+2. [shadcn Component Dependencies](#shadcn-component-dependencies)
+3. [Tab Navigation System](#tab-navigation-system)
+4. [State Management](#state-management)
+5. [API Integration](#api-integration)
+6. [Data Models](#data-models)
+7. [Real-time Implementation](#real-time-implementation)
+8. [WhatsApp Integration](#whatsapp-integration)
+9. [Performance Optimization](#performance-optimization)
+10. [Testing Strategy](#testing-strategy)
+11. [Deployment Checklist](#deployment-checklist)
 
 ## Component Architecture
 
 ### Component Hierarchy
 ```typescript
-// Main component structure
-LandlordDashboard/
-├── Dashboard.tsx                   // Main container
+// Main component structure - Integrated with Unified Dashboard
+UnifiedDashboard/
+├── Dashboard.tsx                   // Main container (shared tenant/landlord)
 ├── components/
-│   ├── Header/
-│   │   ├── DashboardHeader.tsx
-│   │   ├── MetricsBar.tsx
-│   │   └── NotificationBell.tsx
 │   ├── Sidebar/
-│   │   ├── Navigation.tsx
-│   │   ├── PropertySelector.tsx
-│   │   └── QuickStats.tsx
-│   ├── LeadInbox/
-│   │   ├── LeadList.tsx
-│   │   ├── LeadCard.tsx
-│   │   ├── LeadFilters.tsx
-│   │   ├── BulkActions.tsx
-│   │   └── EmptyState.tsx
+│   │   ├── TabNavigation.tsx      // Role-aware tab list
+│   │   ├── RoleSeparator.tsx      // Visual divider for dual-context
+│   │   └── ProfileIndicator.tsx   // Current context display
+│   ├── TabContent/
+│   │   ├── LeadsTab/              // Landlord Leads tab content
+│   │   │   ├── LeadList.tsx
+│   │   │   ├── LeadCard.tsx       // Uses shadcn Card, Badge, Avatar
+│   │   │   ├── LeadFilters.tsx    // Uses shadcn Select, Input
+│   │   │   ├── BulkActions.tsx    // Uses shadcn Button, Checkbox
+│   │   │   └── EmptyState.tsx
+│   │   ├── AnalyticsTab/          // Landlord Analytics tab content
+│   │   │   ├── MetricsOverview.tsx
+│   │   │   ├── ChartsSection.tsx
+│   │   │   └── InsightsPanel.tsx
+│   │   └── ProfileTab/            // Mi Perfil with context toggle
+│   │       ├── ProfileView.tsx
+│   │       ├── ContextToggle.tsx  // Uses shadcn Switch
+│   │       └── ProfileForm.tsx
 │   ├── LeadDetails/
 │   │   ├── DetailPanel.tsx
 │   │   ├── TenantProfile.tsx
@@ -83,23 +92,173 @@ LandlordDashboard/
     └── validators.ts
 ```
 
+## shadcn Component Dependencies
+
+### Required shadcn Components from @shadcn Registry
+
+Developers must install the following shadcn/ui components before implementing the landlord dashboard features:
+
+#### Core Layout Components
+```bash
+# Tab navigation system
+npx shadcn-ui@latest add tabs
+
+# Sidebar layout
+npx shadcn-ui@latest add scroll-area
+npx shadcn-ui@latest add separator
+```
+
+#### Lead Management Components
+```bash
+# Lead cards and containers
+npx shadcn-ui@latest add card
+npx shadcn-ui@latest add avatar
+npx shadcn-ui@latest add badge
+
+# Lead filtering and search
+npx shadcn-ui@latest add input
+npx shadcn-ui@latest add select
+npx shadcn-ui@latest add checkbox
+
+# Actions and buttons
+npx shadcn-ui@latest add button
+npx shadcn-ui@latest add dropdown-menu
+```
+
+#### Response and Modal Components
+```bash
+# Response modal
+npx shadcn-ui@latest add dialog
+npx shadcn-ui@latest add textarea
+
+# Template selector
+npx shadcn-ui@latest add command
+npx shadcn-ui@latest add popover
+```
+
+#### Profile and Settings Components
+```bash
+# Profile context toggle (dual-context users)
+npx shadcn-ui@latest add switch
+npx shadcn-ui@latest add label
+
+# Forms and inputs
+npx shadcn-ui@latest add form
+npx shadcn-ui@latest add radio-group
+```
+
+#### Feedback and Loading States
+```bash
+# Loading states
+npx shadcn-ui@latest add skeleton
+
+# Notifications and toasts
+npx shadcn-ui@latest add toast
+
+# Progress indicators
+npx shadcn-ui@latest add progress
+```
+
+#### Analytics Components
+```bash
+# Charts and data visualization
+npx shadcn-ui@latest add chart
+
+# Tables for data display
+npx shadcn-ui@latest add table
+```
+
+### Component Usage Map
+
+| Feature Area | shadcn Components Used |
+|--------------|------------------------|
+| **Tab Navigation** | Tabs, ScrollArea, Separator, Badge (for counts) |
+| **Lead Cards** | Card, Avatar, Badge (status/priority) |
+| **Lead Filtering** | Input (search), Select (dropdowns), Checkbox (multi-select) |
+| **Bulk Actions** | Checkbox, Button, DropdownMenu |
+| **Lead Details** | Card, Badge, Button, Separator |
+| **Response Modal** | Dialog, Textarea, Button, Command (templates) |
+| **Profile Toggle** | Switch, Label |
+| **Loading States** | Skeleton |
+| **Notifications** | Toast |
+| **Analytics** | Chart, Table, Card |
+
+### Component Customization Notes
+
+- **Tabs Component**: Customize for vertical sidebar layout instead of default horizontal
+- **Card Component**: Apply consistent shadows and hover states across all lead cards
+- **Badge Component**: Create custom variants for lead priority (high/medium/low)
+- **Switch Component**: Style to match brand colors for profile context toggle
+- **Dialog Component**: Ensure responsive behavior for response modal on mobile
+
+## Tab Navigation System
+
+### Unified Dashboard Tab Structure
+
+```typescript
+interface TabConfiguration {
+  id: string;
+  label: string;
+  icon: React.ComponentType;
+  role: 'tenant' | 'landlord' | 'shared';
+  component: React.ComponentType;
+  badge?: number; // Notification count
+}
+
+const landlordTabs: TabConfiguration[] = [
+  {
+    id: 'leads',
+    label: 'Leads',
+    icon: InboxIcon,
+    role: 'landlord',
+    component: LeadsTab,
+    badge: unreadLeadsCount
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: ChartBarIcon,
+    role: 'landlord',
+    component: AnalyticsTab
+  },
+  {
+    id: 'mi-perfil',
+    label: 'Mi Perfil',
+    icon: UserIcon,
+    role: 'shared',
+    component: ProfileTab
+  }
+];
+```
+
 ### Core Components Implementation
 
-#### Main Dashboard Component
+#### Main Dashboard Component with Tab System
 ```typescript
 interface DashboardProps {
   userId: string;
-  propertyId?: string;
-  initialView?: 'inbox' | 'analytics' | 'settings';
+  userRole: 'tenant-only' | 'landlord-only' | 'dual-context';
+  initialTab?: string;
 }
 
-const LandlordDashboard: React.FC<DashboardProps> = ({
+const UnifiedDashboard: React.FC<DashboardProps> = ({
   userId,
-  propertyId,
-  initialView = 'inbox'
+  userRole,
+  initialTab
 }) => {
-  const [currentView, setCurrentView] = useState(initialView);
-  const [selectedProperty, setSelectedProperty] = useState(propertyId);
+  // Determine visible tabs based on user role
+  const visibleTabs = useMemo(() => {
+    return getTabsForUserRole(userRole);
+  }, [userRole]);
+
+  // Parse initial tab from URL or prop
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabFromUrl = urlParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    tabFromUrl || initialTab || getDefaultTab(userRole)
+  );
+
+  // Lead management state (for Leads tab)
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [filters, setFilters] = useState<LeadFilters>(defaultFilters);
@@ -169,63 +328,131 @@ const LandlordDashboard: React.FC<DashboardProps> = ({
     }
   };
   
+  // Handle tab changes
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+
+    // Update URL
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabId);
+    window.history.pushState({}, '', url);
+  };
+
   return (
-    <DashboardContainer>
-      <DashboardHeader>
-        <MetricsBar metrics={metrics} loading={metricsLoading} />
-        <NotificationBell userId={userId} />
-      </DashboardHeader>
-      
-      <DashboardLayout>
-        <Sidebar>
-          <Navigation 
-            currentView={currentView}
-            onChange={setCurrentView}
-          />
-          <PropertySelector
-            selected={selectedProperty}
-            onChange={setSelectedProperty}
-          />
-        </Sidebar>
-        
-        <MainContent>
-          {currentView === 'inbox' && (
-            <LeadInbox
+    <div className="dashboard-container">
+      {/* Sidebar with Tabs - uses shadcn Tabs component */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} orientation="vertical">
+        <div className="dashboard-sidebar">
+          <ScrollArea className="h-full">
+            <TabsList className="sidebar-tabs">
+              {visibleTabs.map(tab => (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="tab-trigger"
+                  aria-label={tab.label}
+                >
+                  <tab.icon className="w-5 h-5 mr-2" />
+                  {tab.label}
+                  {tab.badge > 0 && (
+                    <Badge className="ml-auto" variant="secondary">
+                      {tab.badge}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              ))}
+
+              {/* Role separator for dual-context users */}
+              {userRole === 'dual-context' && (
+                <>
+                  <Separator className="role-separator" />
+                  <p className="role-label">Sección de Inquilino</p>
+                  {/* Tenant tabs would render here */}
+                </>
+              )}
+            </TabsList>
+          </ScrollArea>
+        </div>
+
+        {/* Main Content Area - renders active tab */}
+        <div className="dashboard-main">
+          <TabsContent value="leads" className="tab-content">
+            <LeadsTab
               leads={filteredLeads}
               filters={filters}
               onFilterChange={setFilters}
               onLeadSelect={setSelectedLead}
               selectedLead={selectedLead}
             />
-          )}
-          
-          {currentView === 'analytics' && (
-            <AnalyticsDashboard
-              propertyId={selectedProperty}
-              dateRange={filters.dateRange}
+          </TabsContent>
+
+          <TabsContent value="analytics" className="tab-content">
+            <AnalyticsTab userId={userId} />
+          </TabsContent>
+
+          <TabsContent value="mi-perfil" className="tab-content">
+            <ProfileTab
+              userId={userId}
+              userRole={userRole}
+              showContextToggle={userRole === 'dual-context'}
             />
-          )}
-          
-          {currentView === 'settings' && (
-            <SettingsPanel userId={userId} />
-          )}
-        </MainContent>
-        
-        {selectedLead && (
-          <LeadDetailPanel
-            lead={selectedLead}
-            onClose={() => setSelectedLead(null)}
-            onRespond={handleRespond}
-          />
-        )}
-      </DashboardLayout>
-    </DashboardContainer>
+          </TabsContent>
+        </div>
+      </Tabs>
+
+      {/* Lead Detail Panel (slides from right when lead selected) */}
+      {selectedLead && (
+        <LeadDetailPanel
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onRespond={handleRespond}
+        />
+      )}
+    </div>
   );
 };
+
+// Helper functions
+function getTabsForUserRole(role: string): TabConfiguration[] {
+  const landlordTabs = [
+    { id: 'leads', label: 'Leads', icon: InboxIcon, role: 'landlord' },
+    { id: 'analytics', label: 'Analytics', icon: ChartIcon, role: 'landlord' },
+    { id: 'mi-perfil', label: 'Mi Perfil', icon: UserIcon, role: 'shared' }
+  ];
+
+  const tenantTabs = [
+    { id: 'busquedas', label: 'Búsquedas Guardadas', icon: SearchIcon, role: 'tenant' },
+    { id: 'favoritos', label: 'Favoritos', icon: HeartIcon, role: 'tenant' },
+    { id: 'conversaciones', label: 'Conversaciones', icon: ChatIcon, role: 'tenant' },
+    { id: 'mi-perfil', label: 'Mi Perfil', icon: UserIcon, role: 'shared' }
+  ];
+
+  switch(role) {
+    case 'landlord-only':
+      return landlordTabs;
+    case 'tenant-only':
+      return tenantTabs;
+    case 'dual-context':
+      return [...landlordTabs, ...tenantTabs]; // Show all tabs
+    default:
+      return [];
+  }
+}
+
+function getDefaultTab(role: string): string {
+  return role === 'tenant-only' ? 'busquedas' : 'leads';
+}
 ```
 
-#### Lead Card Component
+#### Lead Card Component (Using shadcn Components)
+**Required Components**: Card, Avatar, Badge, Button
+
 ```typescript
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
 interface LeadCardProps {
   lead: Lead;
   isSelected: boolean;
@@ -242,23 +469,23 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
   const [isHovered, setIsHovered] = useState(false);
   const priorityLevel = useLeadPriority(lead);
   const timeAgo = useTimeAgo(lead.receivedAt);
-  
+
   // Swipe handlers for mobile
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => onQuickAction('archive', lead),
     onSwipedRight: () => onQuickAction('respond', lead),
     trackMouse: false
   });
-  
+
   return (
     <Card
       {...swipeHandlers}
       className={classNames(
-        'lead-card',
+        'lead-card cursor-pointer transition-all duration-200',
         {
-          'selected': isSelected,
-          'unread': !lead.isRead,
-          'high-priority': priorityLevel === 'high'
+          'ring-2 ring-primary': isSelected,
+          'bg-blue-50 border-l-4 border-l-primary': !lead.isRead,
+          'hover:shadow-lg hover:-translate-y-1': true
         }
       )}
       onClick={() => onSelect(lead)}
@@ -267,74 +494,113 @@ const LeadCard: React.FC<LeadCardProps> = memo(({
       role="article"
       aria-label={`Lead from ${lead.tenant.name}`}
     >
-      {!lead.isRead && <UnreadIndicator />}
-      
-      <CardHeader>
-        <TenantInfo>
-          <Avatar 
-            src={lead.tenant.avatar}
-            alt={lead.tenant.name}
-            fallback={lead.tenant.initials}
-          />
-          <div>
-            <TenantName>{lead.tenant.name}</TenantName>
-            <TenantOccupation>{lead.tenant.occupation}</TenantOccupation>
+      {!lead.isRead && (
+        <div className="absolute top-2 left-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
+      )}
+
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            {/* shadcn Avatar component */}
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={lead.tenant.avatar} alt={lead.tenant.name} />
+              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                {lead.tenant.initials}
+              </AvatarFallback>
+            </Avatar>
+
+            <div>
+              <h3 className="font-semibold text-base">{lead.tenant.name}</h3>
+              <p className="text-sm text-muted-foreground">{lead.tenant.occupation}</p>
+            </div>
           </div>
-        </TenantInfo>
-        
-        <Timestamp>{timeAgo}</Timestamp>
-        
-        <PriorityBadge level={priorityLevel} />
+
+          <div className="flex flex-col items-end gap-2">
+            <span className="text-xs text-muted-foreground">{timeAgo}</span>
+            {/* shadcn Badge for priority */}
+            <Badge
+              variant={priorityLevel === 'high' ? 'default' : 'secondary'}
+              className={classNames({
+                'bg-blue-100 text-blue-700': priorityLevel === 'high',
+                'bg-yellow-100 text-yellow-700': priorityLevel === 'medium',
+                'bg-gray-100 text-gray-700': priorityLevel === 'low'
+              })}
+            >
+              {priorityLevel.toUpperCase()}
+            </Badge>
+          </div>
+        </div>
       </CardHeader>
       
-      <CardDetails>
-        <DetailItem>
-          <Icon name="calendar" />
-          <span>Move: {formatDate(lead.moveDate)}</span>
-        </DetailItem>
-        <DetailItem>
-          <Icon name="currency" />
-          <span>Budget: {formatCurrency(lead.budget)}</span>
-        </DetailItem>
-        <DetailItem>
-          <Icon name="users" />
-          <span>{lead.occupants} occupants</span>
-        </DetailItem>
-      </CardDetails>
-      
-      <PropertyReference>
-        <PropertyThumb src={lead.property.image} />
-        <div>
-          <PropertyTitle>{lead.property.title}</PropertyTitle>
-          <CompatibilityScore score={lead.relevanceScore} />
+      <CardContent className="space-y-3">
+        {/* Lead details grid */}
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+            <span>Move: {formatDate(lead.moveDate)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <CurrencyIcon className="w-4 h-4 text-muted-foreground" />
+            <span>Budget: {formatCurrency(lead.budget)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <UsersIcon className="w-4 h-4 text-muted-foreground" />
+            <span>{lead.occupants} occupants</span>
+          </div>
         </div>
-      </PropertyReference>
-      
-      {isHovered && (
-        <QuickActions>
-          <ActionButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickAction('whatsapp', lead);
-            }}
-            aria-label="Send WhatsApp message"
-          >
-            <WhatsAppIcon />
-          </ActionButton>
-          <ActionButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onQuickAction('email', lead);
-            }}
-            aria-label="Send email"
-          >
-            <EmailIcon />
-          </ActionButton>
-        </QuickActions>
-      )}
+
+        {/* Property reference */}
+        <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+          <img
+            src={lead.property.image}
+            alt={lead.property.title}
+            className="w-16 h-16 rounded object-cover"
+          />
+          <div className="flex-1">
+            <p className="font-medium text-sm">{lead.property.title}</p>
+            <Badge variant="outline" className="mt-1">
+              {lead.relevanceScore}% match
+            </Badge>
+          </div>
+        </div>
+
+        {/* Quick actions - shown on hover using shadcn Buttons */}
+        {isHovered && (
+          <div className="flex gap-2 pt-2 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAction('whatsapp', lead);
+              }}
+              aria-label="Send WhatsApp message"
+            >
+              <WhatsAppIcon className="w-4 h-4 mr-2" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickAction('email', lead);
+              }}
+              aria-label="Send email"
+            >
+              <EmailIcon className="w-4 h-4 mr-2" />
+              Email
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 });
+
+export default LeadCard;
 ```
 
 ## State Management
