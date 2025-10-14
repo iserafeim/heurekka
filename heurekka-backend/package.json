@@ -26,7 +26,10 @@
     "setup": "bash scripts/dev-setup.sh",
     "local:setup": "cp .env.example .env && npm run services:up && echo 'Local environment ready! Update .env with your values.'",
     "local:dev": "npm run services:up && npm run dev",
-    "local:clean": "docker-compose down -v && docker system prune -f"
+    "local:clean": "docker-compose down -v && docker system prune -f",
+    "seed:analytics": "tsx -r dotenv/config scripts/seed-analytics-data.ts",
+    "clear:analytics": "tsx -r dotenv/config scripts/clear-analytics-data.ts",
+    "check:landlord": "tsx -r dotenv/config scripts/check-landlord-data.ts"
   },
   "keywords": [
     "trpc",
