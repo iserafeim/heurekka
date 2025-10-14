@@ -6,6 +6,7 @@ import { PropertyDetails, Property, SPANISH_TEXT } from '@/types/property';
 import { validatePhoneNumber, sanitizeText } from '@/lib/security/validation';
 import { PropertyMiniMap } from './PropertyMiniMap';
 import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow';
+import { trpc } from '@/lib/trpc/client';
 import styles from './PropertyDetailModal.module.css';
 
 interface PropertyDetailModalProps {
@@ -40,6 +41,26 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const timeStartRef = useRef<number>(Date.now());
+  const viewTrackedRef = useRef<boolean>(false);
+
+  // Track property view mutation
+  const trackViewMutation = trpc.property.trackView.useMutation();
+
+  // Track property view when modal opens
+  useEffect(() => {
+    if (isOpen && property && !viewTrackedRef.current) {
+      trackViewMutation.mutate({
+        propertyId: property.id,
+        source: 'modal',
+      });
+      viewTrackedRef.current = true;
+    }
+
+    // Reset tracking flag when modal closes
+    if (!isOpen) {
+      viewTrackedRef.current = false;
+    }
+  }, [isOpen, property?.id]);
 
   // Track time in modal
   useEffect(() => {

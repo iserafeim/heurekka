@@ -60,6 +60,14 @@ export default function UnifiedDashboardPage() {
     }
   }, [tabFromUrl]);
 
+  // Update active tab when user role changes (after data loads)
+  useEffect(() => {
+    if (!tabFromUrl && !isLoading) {
+      const defaultTab = getDefaultTab(userRole);
+      setActiveTab(defaultTab);
+    }
+  }, [userRole, isLoading, tabFromUrl]);
+
   // Update URL when tab changes
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
