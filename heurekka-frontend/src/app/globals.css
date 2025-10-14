@@ -380,6 +380,13 @@
   --sidebar-accent-foreground: hsl(240 5.9% 10%);
   --sidebar-border: hsl(220 13% 91%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* Chart colors - Blue theme for light mode */
+  --chart-1: 220 98% 61%; /* Bright blue for primary data (#2563eb) */
+  --chart-2: 217 91% 60%; /* Sky blue for secondary data (#3b82f6) */
+  --chart-3: 30 80% 55%;
+  --chart-4: 280 65% 60%;
+  --chart-5: 340 75% 55%;
 }
 
 .dark {
