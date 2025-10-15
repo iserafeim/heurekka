@@ -142,22 +142,120 @@ export function LeadCard({
       )}
     >
       <CardHeader
-        className="p-5 cursor-pointer relative"
+        className="p-3 sm:p-5 cursor-pointer relative"
         onClick={handleToggleExpand}
       >
-        {/* Selection Checkbox - Top Right */}
-        {onSelect && (
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => {
-              onSelect(lead.id, checked as boolean);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="absolute top-5 right-5"
-          />
-        )}
+        {/* Mobile Layout */}
+        <div className="sm:hidden">
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            {/* Left side: Avatar + Name */}
+            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarImage src={lead.tenant?.avatar} />
+                <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold text-sm">
+                  {tenantName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .substring(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <h3 className="text-base font-semibold text-gray-900 truncate">
+                    {tenantName}
+                  </h3>
+                  {lead.unreadCount > 0 && (
+                    <Badge variant="destructive" className="h-4 px-1.5 text-[10px] flex-shrink-0">
+                      {lead.unreadCount}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500 block">{timeAgo}</span>
+              </div>
+            </div>
+            {/* Right side: Chevron */}
+            <div className="flex-shrink-0">
+              {isExpanded ? (
+                <ChevronUp className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-400" />
+              )}
+            </div>
+          </div>
 
-        <div className="flex items-start gap-3 pr-8">
+          {/* Budget */}
+          <div className="text-base font-semibold text-gray-900 mb-1.5">
+            L.{tenantBudgetMin.toLocaleString()} - L.{tenantBudgetMax.toLocaleString()}
+          </div>
+
+          {/* Property Title */}
+          <div className="flex items-start gap-1.5 text-sm text-gray-600 mb-2">
+            <Home className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <span className="break-words">{propertyTitle}</span>
+          </div>
+
+          {/* Status Badges */}
+          <div className="flex flex-wrap gap-1 mb-2">
+            {lead.status === 'new' && (
+              <Badge className="bg-blue-50 text-blue-700 border-0 text-xs px-2 py-0.5 font-medium">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Nuevo
+              </Badge>
+            )}
+            {isBudgetCompatible && (
+              <Badge className="bg-emerald-50 text-emerald-700 border-0 text-xs px-2 py-0.5 font-medium">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Presupuesto compatible
+              </Badge>
+            )}
+            {tenantIsVerified && (
+              <Badge className="bg-blue-50 text-blue-700 border-0 text-xs px-2 py-0.5 font-medium">
+                <Shield className="h-3 w-3 mr-1" />
+                Verificado
+              </Badge>
+            )}
+            {tenantMoveDate && (
+              <Badge className="bg-blue-50 text-blue-700 border-0 text-xs px-2 py-0.5 font-medium">
+                {urgencyMap[lead.urgency] || tenantMoveDate}
+              </Badge>
+            )}
+          </div>
+
+          {/* Status Management Actions */}
+          {(lead.status === 'new' || lead.status === 'contacted') && (
+            <div className="flex flex-col items-stretch gap-1.5 mt-2.5">
+              {lead.status === 'new' && (
+                <Button
+                  size="sm"
+                  className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 h-8 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange?.(lead.id, 'contacted');
+                  }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                  Marcar como Contactado
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl shadow-sm hover:shadow-md hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200 h-8 border-gray-300 text-xs w-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStatusChange?.(lead.id, 'archived');
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                Archivar
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex items-start gap-3 pr-8">
           {/* Tenant Avatar */}
           <Avatar className="h-10 w-10 flex-shrink-0">
             <AvatarImage src={lead.tenant?.avatar} />
@@ -193,8 +291,8 @@ export function LeadCard({
             </div>
 
             {/* Property Title */}
-            <div className="flex items-center gap-1.5 text-sm text-gray-600 mb-2.5">
-              <Home className="h-4 w-4 flex-shrink-0" />
+            <div className="flex items-start gap-1.5 text-sm text-gray-600 mb-2.5">
+              <Home className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <span className="truncate">{propertyTitle}</span>
             </div>
 
@@ -238,11 +336,11 @@ export function LeadCard({
 
             {/* Status Management Actions */}
             {(lead.status === 'new' || lead.status === 'contacted') && (
-              <div className="flex items-center gap-3 mt-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mt-4">
                 {lead.status === 'new' && (
                   <Button
                     size="sm"
-                    className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 h-9 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs"
+                    className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 h-9 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs w-full sm:w-auto"
                     onClick={(e) => {
                       e.stopPropagation();
                       onStatusChange?.(lead.id, 'contacted');
@@ -255,7 +353,7 @@ export function LeadCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="rounded-xl shadow-sm hover:shadow-md hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200 h-9 border-gray-300 text-xs"
+                  className="rounded-xl shadow-sm hover:shadow-md hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-all duration-200 h-9 border-gray-300 text-xs w-full sm:w-auto"
                   onClick={(e) => {
                     e.stopPropagation();
                     onStatusChange?.(lead.id, 'archived');
