@@ -22,16 +22,16 @@ export interface TenantProfileFormProps {
 interface TenantProfileData {
   fullName: string;
   phone: string;
-  occupation: string;
   budgetMin: number;
   budgetMax: number;
   moveDate: string;
-  occupants: string;
   preferredAreas: string[];
   propertyTypes: ('apartment' | 'house' | 'room')[];
+  desiredBedrooms: number[];
+  desiredBathrooms: number[];
+  desiredParkingSpaces: number[];
   hasPets: boolean;
   petDetails: string;
-  hasReferences: boolean;
   messageToLandlords: string;
 }
 
@@ -51,8 +51,10 @@ export function TenantProfileForm({
   const [formData, setFormData] = useState<Partial<TenantProfileData>>({
     propertyTypes: ['apartment'],
     hasPets: false,
-    hasReferences: false,
-    preferredAreas: []
+    preferredAreas: [],
+    desiredBedrooms: [],
+    desiredBathrooms: [],
+    desiredParkingSpaces: []
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newArea, setNewArea] = useState('');
@@ -127,16 +129,16 @@ export function TenantProfileForm({
       const result = await createProfileMutation.mutateAsync({
         fullName: formData.fullName!,
         phone: formData.phone!,
-        occupation: formData.occupation,
         budgetMin: formData.budgetMin,
         budgetMax: formData.budgetMax,
         moveDate: formData.moveDate,
-        occupants: formData.occupants,
         preferredAreas: formData.preferredAreas,
         propertyTypes: formData.propertyTypes,
+        desiredBedrooms: formData.desiredBedrooms,
+        desiredBathrooms: formData.desiredBathrooms,
+        desiredParkingSpaces: formData.desiredParkingSpaces,
         hasPets: formData.hasPets,
         petDetails: formData.petDetails,
-        hasReferences: formData.hasReferences,
         messageToLandlords: formData.messageToLandlords
       });
 
@@ -226,13 +228,6 @@ export function TenantProfileForm({
               placeholder="9999-9999"
               helperText="Formato: 9999-9999"
             />
-
-            <FormInput
-              label="Ocupación"
-              value={formData.occupation || ''}
-              onChange={(e) => updateField('occupation', e.target.value)}
-              placeholder="Ingeniera en Sistemas"
-            />
           </div>
         </section>
 
@@ -282,25 +277,6 @@ export function TenantProfileForm({
                 <option value="3-6 meses">3-6 meses</option>
                 <option value="Más de 6 meses">Más de 6 meses</option>
                 <option value="Flexible">Flexible</option>
-              </select>
-            </div>
-
-            {/* Occupants */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Número de Ocupantes
-              </label>
-              <select
-                value={formData.occupants || ''}
-                onChange={(e) => updateField('occupants', e.target.value)}
-                className="flex h-12 w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-              >
-                <option value="">Seleccionar...</option>
-                <option value="1 adulto">1 adulto</option>
-                <option value="2 adultos">2 adultos</option>
-                <option value="3+ adultos">3+ adultos</option>
-                <option value="Familia con niños">Familia con niños</option>
-                <option value="Estudiantes">Estudiantes</option>
               </select>
             </div>
 
@@ -384,6 +360,120 @@ export function TenantProfileForm({
                 ))}
               </div>
             </div>
+
+            {/* Desired Bedrooms */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-3">
+                Número de Habitaciones
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <label
+                    key={num}
+                    className={cn(
+                      'flex items-center justify-center px-4 py-2 rounded-lg border-2 cursor-pointer transition-all',
+                      formData.desiredBedrooms?.includes(num)
+                        ? 'border-primary bg-primary/10 text-primary font-semibold'
+                        : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.desiredBedrooms?.includes(num)}
+                      onChange={() => {
+                        const current = formData.desiredBedrooms || [];
+                        if (current.includes(num)) {
+                          updateField('desiredBedrooms', current.filter(n => n !== num));
+                        } else {
+                          updateField('desiredBedrooms', [...current, num].sort((a, b) => a - b));
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <span className="text-base">{num === 5 ? '5+' : num}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-neutral-500">
+                Selecciona todas las opciones que te interesen
+              </p>
+            </div>
+
+            {/* Desired Bathrooms */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-3">
+                Número de Baños
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4].map((num) => (
+                  <label
+                    key={num}
+                    className={cn(
+                      'flex items-center justify-center px-4 py-2 rounded-lg border-2 cursor-pointer transition-all',
+                      formData.desiredBathrooms?.includes(num)
+                        ? 'border-primary bg-primary/10 text-primary font-semibold'
+                        : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.desiredBathrooms?.includes(num)}
+                      onChange={() => {
+                        const current = formData.desiredBathrooms || [];
+                        if (current.includes(num)) {
+                          updateField('desiredBathrooms', current.filter(n => n !== num));
+                        } else {
+                          updateField('desiredBathrooms', [...current, num].sort((a, b) => a - b));
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <span className="text-base">{num === 4 ? '4+' : num}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-neutral-500">
+                Selecciona todas las opciones que te interesen
+              </p>
+            </div>
+
+            {/* Desired Parking Spaces */}
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-3">
+                Espacios de Parqueo
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[0, 1, 2, 3].map((num) => (
+                  <label
+                    key={num}
+                    className={cn(
+                      'flex items-center justify-center px-4 py-2 rounded-lg border-2 cursor-pointer transition-all',
+                      formData.desiredParkingSpaces?.includes(num)
+                        ? 'border-primary bg-primary/10 text-primary font-semibold'
+                        : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.desiredParkingSpaces?.includes(num)}
+                      onChange={() => {
+                        const current = formData.desiredParkingSpaces || [];
+                        if (current.includes(num)) {
+                          updateField('desiredParkingSpaces', current.filter(n => n !== num));
+                        } else {
+                          updateField('desiredParkingSpaces', [...current, num].sort((a, b) => a - b));
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <span className="text-base">{num === 3 ? '3+' : num === 0 ? 'Sin parqueo' : num}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-neutral-500">
+                Selecciona todas las opciones que te interesen
+              </p>
+            </div>
           </div>
         </section>
 
@@ -432,24 +522,6 @@ export function TenantProfileForm({
                 )}
               </div>
             </div>
-
-            {/* References */}
-            <label className="flex items-start gap-3 p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50 cursor-pointer transition-colors">
-              <input
-                type="checkbox"
-                checked={formData.hasReferences}
-                onChange={(e) => updateField('hasReferences', e.target.checked)}
-                className="mt-0.5 h-5 w-5 text-primary focus:ring-primary border-neutral-300 rounded"
-              />
-              <div>
-                <span className="text-base text-neutral-900 block">
-                  Puedo proporcionar referencias
-                </span>
-                <span className="text-sm text-neutral-500">
-                  Esto aumenta tus posibilidades de ser contactado
-                </span>
-              </div>
-            </label>
 
             {/* Message to Landlords */}
             <div>

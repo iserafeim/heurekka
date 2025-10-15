@@ -7,10 +7,12 @@ import { trpc } from '@/lib/trpc/client';
 import { toast } from 'sonner';
 
 export interface LeadFilters {
-  status?: 'new' | 'viewed' | 'contacted' | 'scheduled' | 'completed' | 'rejected' | 'expired';
-  priority?: ('high' | 'medium' | 'low')[];
-  quality?: ('high' | 'medium' | 'low')[];
+  status?: 'new' | 'archived';
   propertyId?: string;
+  urgency?: 'immediate' | 'planned' | 'flexible';
+  budgetCompatible?: boolean;
+  hasPets?: boolean;
+  isVerified?: boolean;
   dateRange?: {
     from?: Date;
     to?: Date;

@@ -5,16 +5,13 @@ import { TRPCError } from '@trpc/server';
 export interface TenantProfileInput {
   fullName: string;
   phone: string;
-  occupation?: string;
   budgetMin?: number;
   budgetMax?: number;
   moveDate?: string; // Text like "menos de 1 mes", "1-3 meses", "más de 3 meses"
-  occupants?: string;
   preferredAreas?: string[];
   propertyTypes?: string[];
   hasPets?: boolean;
   petDetails?: string;
-  hasReferences?: boolean;
   messageToLandlords?: string;
   // New fields for search preferences
   desiredBedrooms?: number[];
@@ -29,17 +26,14 @@ export interface TenantProfile {
   phone: string;
   email?: string; // Email from auth.users
   phoneVerified: boolean;
-  occupation?: string;
   profilePhotoUrl?: string;
   budgetMin?: number;
   budgetMax?: number;
   moveDate?: string;
-  occupants?: string;
   preferredAreas?: string[];
   propertyTypes?: string[];
   hasPets: boolean;
   petDetails?: string;
-  hasReferences: boolean;
   messageToLandlords?: string;
   desiredBedrooms?: number[];
   desiredBathrooms?: number[];
@@ -114,16 +108,13 @@ class TenantProfileService {
           user_id: userId,
           full_name: input.fullName,
           phone: input.phone,
-          occupation: input.occupation,
           budget_min: input.budgetMin,
           budget_max: input.budgetMax,
           move_date: input.moveDate,
-          occupants: input.occupants,
           preferred_areas: input.preferredAreas || [],
           property_types: input.propertyTypes || ['apartment', 'house'],
           has_pets: input.hasPets || false,
           pet_details: input.petDetails,
-          has_references: input.hasReferences || false,
           message_to_landlords: input.messageToLandlords,
           desired_bedrooms: input.desiredBedrooms || [],
           desired_bathrooms: input.desiredBathrooms || [],
@@ -258,17 +249,14 @@ class TenantProfileService {
         .update({
           full_name: input.fullName,
           phone: input.phone,
-          occupation: input.occupation,
           profile_photo_url: input.profilePhotoUrl,
           budget_min: input.budgetMin,
           budget_max: input.budgetMax,
           move_date: input.moveDate,
-          occupants: input.occupants,
           preferred_areas: input.preferredAreas,
           property_types: input.propertyTypes,
           has_pets: input.hasPets,
           pet_details: input.petDetails,
-          has_references: input.hasReferences,
           message_to_landlords: input.messageToLandlords,
           desired_bedrooms: input.desiredBedrooms,
           desired_bathrooms: input.desiredBathrooms,
@@ -519,17 +507,14 @@ class TenantProfileService {
       phone: data.phone,
       email: authUser?.email || undefined,
       phoneVerified: data.phone_verified || false,
-      occupation: data.occupation,
       profilePhotoUrl: data.profile_photo_url,
       budgetMin: data.budget_min,
       budgetMax: data.budget_max,
       moveDate: data.move_date,
-      occupants: data.occupants,
       preferredAreas: data.preferred_areas || [],
       propertyTypes: data.property_types || [],
       hasPets: data.has_pets || false,
       petDetails: data.pet_details,
-      hasReferences: data.has_references || false,
       messageToLandlords: data.message_to_landlords,
       desiredBedrooms: data.desired_bedrooms || [],
       desiredBathrooms: data.desired_bathrooms || [],

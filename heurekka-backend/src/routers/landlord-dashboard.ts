@@ -14,7 +14,7 @@ const landlordProfileService = getLandlordProfileService();
 
 // Validation schemas
 const LeadFiltersSchema = z.object({
-  status: z.enum(['new', 'viewed', 'contacted', 'scheduled', 'completed', 'rejected', 'expired']).optional(),
+  status: z.enum(['new', 'contacted', 'archived']).optional(),
   priority: z.array(z.enum(['high', 'medium', 'low'])).optional(),
   quality: z.array(z.enum(['high', 'medium', 'low'])).optional(),
   propertyId: z.string().uuid().optional(),
@@ -252,7 +252,7 @@ export const landlordDashboardRouter = router({
   updateLeadStatus: protectedProcedure
     .input(z.object({
       leadId: z.string().uuid(),
-      status: z.enum(['new', 'viewed', 'contacted', 'scheduled', 'completed', 'rejected', 'expired']),
+      status: z.enum(['new', 'contacted', 'archived']),
     }))
     .mutation(async ({ ctx, input }) => {
       try {
@@ -331,7 +331,7 @@ export const landlordDashboardRouter = router({
     .input(z.object({
       leadIds: z.array(z.string().uuid()).min(1, 'Selecciona al menos un lead'),
       updates: z.object({
-        status: z.enum(['new', 'viewed', 'contacted', 'scheduled', 'completed', 'rejected', 'expired']).optional(),
+        status: z.enum(['new', 'contacted', 'archived']).optional(),
         priority: z.enum(['high', 'medium', 'low']).optional(),
       }),
     }))

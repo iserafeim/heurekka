@@ -9,7 +9,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Inbox, RefreshCcw, Trash2, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Inbox, RefreshCcw, Trash2, CheckCircle2, AlertCircle, Clock, Sparkles } from 'lucide-react';
 import { useLandlordLeads, LeadFilters as LeadFiltersType } from '@/hooks/landlord/useLandlordLeads';
 import { LeadCard, Lead } from './LeadCard';
 import { LeadFilters } from './LeadFilters';
@@ -23,6 +24,21 @@ export function LeadsTab() {
   const [detailLeadId, setDetailLeadId] = React.useState<string | null>(null);
   const [responseLeadId, setResponseLeadId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
+
+  // Initialize viewedUrgentLeads from localStorage
+  const [viewedUrgentLeads, setViewedUrgentLeads] = React.useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('viewedUrgentLeads');
+      if (stored) {
+        try {
+          return new Set(JSON.parse(stored));
+        } catch {
+          return new Set();
+        }
+      }
+    }
+    return new Set();
+  });
 
   const {
     leads,
@@ -40,6 +56,29 @@ export function LeadsTab() {
   } = useLandlordLeads(filters, { page, limit: 20 });
 
   const responseLead = leads.find((l) => l.id === responseLeadId) || null;
+
+  // Persist viewedUrgentLeads to localStorage whenever it changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('viewedUrgentLeads', JSON.stringify(Array.from(viewedUrgentLeads)));
+    }
+  }, [viewedUrgentLeads]);
+
+  // Extract unique properties from leads for the property filter
+  const uniqueProperties = React.useMemo(() => {
+    const propertyMap = new Map<string, { id: string; title: string }>();
+
+    leads.forEach((lead) => {
+      if (lead.property && lead.property.id && lead.property.title) {
+        propertyMap.set(lead.property.id, {
+          id: lead.property.id,
+          title: lead.property.title,
+        });
+      }
+    });
+
+    return Array.from(propertyMap.values());
+  }, [leads]);
 
   const handleSelectLead = (leadId: string, selected: boolean) => {
     const newSelection = new Set(selectedLeads);
@@ -117,43 +156,122 @@ export function LeadsTab() {
     setPage(1);
   };
 
+  const handleLeadExpand = (leadId: string, isExpanded: boolean) => {
+    if (isExpanded) {
+      // Check if this lead is an urgent lead
+      const lead = leads.find(l => l.id === leadId);
+      if (lead && lead.status === 'new' && lead.urgency === 'immediate') {
+        // Check budget compatibility
+        const propertyPrice = lead.property?.priceAmount || 0;
+        const budgetMin = lead.tenantSnapshot?.budgetMin || lead.tenant?.budgetMin || 0;
+        const budgetMax = lead.tenantSnapshot?.budgetMax || lead.tenant?.budgetMax || 0;
+        const isBudgetCompatible = propertyPrice >= budgetMin && propertyPrice <= budgetMax;
+
+        if (isBudgetCompatible) {
+          // Mark this urgent lead as viewed
+          setViewedUrgentLeads(prev => new Set([...prev, leadId]));
+        }
+      }
+    }
+  };
+
+  // Calculate urgent leads (immediate urgency + new status + budget compatible)
+  const urgentLeads = leads.filter(lead => {
+    if (lead.status !== 'new') return false;
+    if (lead.urgency !== 'immediate') return false;
+    if (viewedUrgentLeads.has(lead.id)) return false; // Exclude already viewed leads
+
+    // Check budget compatibility (prioritize snapshot)
+    const propertyPrice = lead.property?.priceAmount || 0;
+    const budgetMin = lead.tenantSnapshot?.budgetMin || lead.tenant?.budgetMin || 0;
+    const budgetMax = lead.tenantSnapshot?.budgetMax || lead.tenant?.budgetMax || 0;
+    const isBudgetCompatible = propertyPrice >= budgetMin && propertyPrice <= budgetMax;
+
+    return isBudgetCompatible;
+  });
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Filters Sidebar */}
-      <div className="lg:col-span-1">
-        <LeadFilters
-          filters={filters}
-          onFilterChange={(newFilters) => {
-            setFilters(newFilters);
-            setPage(1);
-          }}
-          onReset={handleResetFilters}
-        />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Leads</h1>
+          <p className="text-gray-600 mt-1">Gestiona tus contactos e inquilinos potenciales</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-xl shadow-sm hover:shadow-md transition-all"
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
+          <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Actualizar
+        </Button>
       </div>
 
-      {/* Leads List */}
-      <div className="lg:col-span-3 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">Leads</h2>
-            {!isLoading && (
-              <span className="text-sm text-muted-foreground">
-                {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
-              </span>
-            )}
+      {/* Filters Bar */}
+      <LeadFilters
+        filters={filters}
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          setPage(1);
+        }}
+        onReset={handleResetFilters}
+        properties={uniqueProperties}
+      />
+
+      {/* Leads Content */}
+      <div className="space-y-4">
+        {/* Urgent Leads Alert */}
+        {urgentLeads.length > 0 && !filters.status && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 shadow-lg shadow-blue-100/40 hover:shadow-xl hover:shadow-blue-200/50 transition-all duration-300">
+            <div className="flex items-start gap-4">
+              <div className="bg-blue-100 p-2.5 rounded-xl flex-shrink-0">
+                <AlertCircle className="h-6 w-6 text-blue-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <h3 className="text-lg font-bold text-blue-900">
+                    Atención Inmediata
+                  </h3>
+                  <Badge className="bg-blue-600 text-white border-0 px-2.5 py-0.5 text-sm font-semibold">
+                    {urgentLeads.length}
+                  </Badge>
+                </div>
+                <p className="text-sm text-blue-800 mb-3 leading-relaxed">
+                  {urgentLeads.length === 1
+                    ? 'Tienes 1 lead urgente con mudanza inmediata y presupuesto compatible'
+                    : `Tienes ${urgentLeads.length} leads urgentes con mudanza inmediata y presupuesto compatible`}
+                </p>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-sm text-blue-700 font-medium">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
+                    <span>Mudanza: menos de 1 mes</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm text-blue-700 font-medium">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                    <span>Presupuesto compatible</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm text-blue-700 font-medium">
+                    <Sparkles className="h-4 w-4 flex-shrink-0" />
+                    <span>Nuevos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="rounded-xl shadow-sm hover:shadow-md transition-all"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-        </div>
+        )}
+
+        {/* Opportunities Header */}
+        {!isLoading && leads.length > 0 && (
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-900">Oportunidades</h2>
+            <span className="text-sm text-gray-500">
+              {totalCount} {totalCount === 1 ? 'oportunidad' : 'oportunidades'}
+            </span>
+          </div>
+        )}
 
         {/* Bulk Actions Bar */}
         {selectedLeads.size > 0 && (
@@ -236,6 +354,10 @@ export function LeadsTab() {
                 onWhatsApp={handleWhatsApp}
                 onEmail={handleEmail}
                 onMarkAsRead={markAsRead}
+                onStatusChange={(leadId, status) => {
+                  updateStatus({ leadId, status });
+                }}
+                onExpandChange={handleLeadExpand}
               />
             ))}
           </div>

@@ -3,6 +3,8 @@ import { TRPCError } from '@trpc/server';
 import type { Context } from '../server';
 import { PropertyService } from '../services/property.service';
 import { CacheService } from '../services/cache.service';
+import { getLeadService } from '../services/lead.service';
+import { getTenantProfileService } from '../services/tenant-profile.service';
 import { router, publicProcedure, protectedProcedure, landlordProcedure } from '../lib/trpc';
 import { createSupabaseContext } from '../middleware/auth';
 
@@ -480,13 +482,16 @@ export const propertyRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const propertyService = new PropertyService();
-      
+      const leadService = getLeadService();
+      const tenantProfileService = getTenantProfileService();
+
       try {
+        // 1. Track the contact event (analytics)
         await propertyService.trackPropertyContact({
           propertyId: input.propertyId,
           source: input.source,
           contactMethod: input.contactMethod,
-          userId: ctx.user.id, // Use authenticated user ID
+          userId: ctx.user.id,
           sessionId: ctx.req.headers['x-session-id'] as string,
           phoneNumber: input.phoneNumber,
           success: input.success,
@@ -494,7 +499,79 @@ export const propertyRouter = router({
           ipAddress: ctx.req.ip,
           userAgent: ctx.req.get('user-agent'),
         });
-        
+
+        // 2. Create a lead automatically
+        if (input.success) {
+          try {
+            // Get tenant profile to capture snapshot
+            const tenantProfile = await tenantProfileService.getTenantProfileByUserId(ctx.user.id);
+
+            if (tenantProfile) {
+              // Get property details using supabase directly
+              const { createClient } = await import('@supabase/supabase-js');
+              const supabase = createClient(
+                process.env.SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_KEY!
+              );
+
+              const propertyResult = await supabase
+                .from('properties')
+                .select('*, landlords(*)')
+                .eq('id', input.propertyId)
+                .single();
+
+              if (propertyResult.data) {
+                const property = propertyResult.data;
+
+                // Determine urgency from tenant's move date
+                let urgency: 'immediate' | 'planned' | 'flexible' = 'flexible';
+                if (tenantProfile.moveDate) {
+                  const moveDateText = tenantProfile.moveDate.toLowerCase();
+                  if (moveDateText.includes('inmediato') || moveDateText.includes('urgente') || moveDateText.includes('ya')) {
+                    urgency = 'immediate';
+                  } else if (moveDateText.includes('mes') || moveDateText.includes('semana')) {
+                    urgency = 'planned';
+                  }
+                }
+
+                // Create lead with tenant snapshot
+                await leadService.createLead({
+                  tenantId: tenantProfile.id,
+                  landlordId: property.landlord_id,
+                  propertyId: input.propertyId,
+                  status: 'new',
+                  source: input.source === 'modal' ? 'direct' : 'marketplace',
+                  urgency,
+                  contactPhone: tenantProfile.phone,
+                  contactEmail: ctx.user.email,
+                  inquiryMessage: `Contacto vía ${input.contactMethod}`,
+                  tenantSnapshot: {
+                    fullName: tenantProfile.fullName,
+                    phone: tenantProfile.phone,
+                    budgetMin: tenantProfile.budgetMin,
+                    budgetMax: tenantProfile.budgetMax,
+                    moveDate: tenantProfile.moveDate,
+                    preferredAreas: tenantProfile.preferredAreas,
+                    propertyTypes: tenantProfile.propertyTypes,
+                    desiredBedrooms: tenantProfile.desiredBedrooms,
+                    desiredBathrooms: tenantProfile.desiredBathrooms,
+                    desiredParkingSpaces: tenantProfile.desiredParkingSpaces,
+                    hasPets: tenantProfile.hasPets,
+                    petDetails: tenantProfile.petDetails,
+                    isVerified: tenantProfile.isVerified,
+                    profileCompletionPercentage: tenantProfile.profileCompletionPercentage,
+                  },
+                });
+
+                console.log('✅ Lead created automatically for property:', input.propertyId);
+              }
+            }
+          } catch (leadError) {
+            // Log but don't fail the contact tracking if lead creation fails
+            console.error('Error creating lead automatically:', leadError);
+          }
+        }
+
         return { success: true };
       } catch (error) {
         console.error('Error tracking property contact:', error);

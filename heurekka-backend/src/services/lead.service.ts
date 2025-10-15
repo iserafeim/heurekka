@@ -10,9 +10,7 @@ export interface Lead {
   inquiryId?: string;
 
   // Status & Priority
-  status: 'new' | 'viewed' | 'contacted' | 'scheduled' | 'completed' | 'rejected' | 'expired';
-  priority: 'high' | 'medium' | 'low';
-  quality: 'high' | 'medium' | 'low';
+  status: 'new' | 'contacted' | 'archived';
   source: 'direct' | 'marketplace' | 'search' | 'referral';
   urgency: 'immediate' | 'planned' | 'flexible';
 
@@ -47,10 +45,12 @@ export interface Lead {
 }
 
 export interface LeadFilters {
-  status?: 'new' | 'viewed' | 'contacted' | 'scheduled' | 'completed' | 'rejected' | 'expired';
-  priority?: 'high' | 'medium' | 'low'[];
-  quality?: 'high' | 'medium' | 'low'[];
+  status?: 'new' | 'contacted' | 'archived';
   propertyId?: string;
+  urgency?: 'immediate' | 'planned' | 'flexible';
+  budgetCompatible?: boolean;
+  hasPets?: boolean;
+  isVerified?: boolean;
   dateRange?: {
     from?: Date;
     to?: Date;
@@ -129,12 +129,10 @@ class LeadService {
             id,
             full_name,
             phone,
-            occupation,
             profile_photo_url,
             budget_min,
             budget_max,
             move_date,
-            occupants,
             preferred_areas,
             property_types,
             has_pets,
@@ -160,16 +158,12 @@ class LeadService {
         query = query.eq('status', filters.status);
       }
 
-      if (filters.priority && filters.priority.length > 0) {
-        query = query.in('priority', filters.priority);
-      }
-
-      if (filters.quality && filters.quality.length > 0) {
-        query = query.in('quality', filters.quality);
-      }
-
       if (filters.propertyId) {
         query = query.eq('property_id', filters.propertyId);
+      }
+
+      if (filters.urgency) {
+        query = query.eq('urgency', filters.urgency);
       }
 
       if (filters.dateRange?.from) {
@@ -195,8 +189,13 @@ class LeadService {
                        sorting.field;
       query = query.order(sortField, { ascending: sorting.direction === 'asc' });
 
+      // For post-query filters, we need to fetch more data to compensate
+      // Fetch 3x the limit if we have post-query filters
+      const hasPostQueryFilters = filters.budgetCompatible || filters.hasPets !== undefined || filters.isVerified;
+      const fetchLimit = hasPostQueryFilters ? limit * 3 : limit;
+
       // Apply pagination
-      query = query.range(offset, offset + limit - 1);
+      query = query.range(offset, offset + fetchLimit - 1);
 
       const { data, error, count } = await query;
 
@@ -208,15 +207,44 @@ class LeadService {
         });
       }
 
-      const leads = (data || []).map(this.transformLead);
-      const total = count || 0;
+      let allLeads = (data || []).map(lead => this.transformLead(lead));
+      const totalFromDB = count || 0;
+
+      // Apply post-query filters (prioritize tenantSnapshot which always has data)
+      if (filters.budgetCompatible !== undefined && filters.budgetCompatible) {
+        allLeads = allLeads.filter(lead => {
+          const propertyPrice = lead.property?.price_amount || lead.property?.priceAmount || 0;
+          // Prioritize snapshot which was saved when lead was created
+          const budgetMin = lead.tenantSnapshot?.budgetMin || lead.tenant?.budget_min || lead.tenant?.budgetMin || 0;
+          const budgetMax = lead.tenantSnapshot?.budgetMax || lead.tenant?.budget_max || lead.tenant?.budgetMax || 0;
+          return propertyPrice >= budgetMin && propertyPrice <= budgetMax;
+        });
+      }
+
+      if (filters.hasPets !== undefined) {
+        allLeads = allLeads.filter(lead => {
+          const hasPets = lead.tenantSnapshot?.hasPets || lead.tenant?.has_pets || lead.tenant?.hasPets || false;
+          return hasPets === filters.hasPets;
+        });
+      }
+
+      if (filters.isVerified !== undefined && filters.isVerified) {
+        allLeads = allLeads.filter(lead => {
+          const isVerified = lead.tenantSnapshot?.isVerified || lead.tenant?.is_verified || lead.tenant?.isVerified || false;
+          return isVerified === true;
+        });
+      }
+
+      // Now paginate the filtered results
+      const leads = allLeads.slice(0, limit);
+      const total = allLeads.length;
 
       return {
         leads,
-        total,
+        total: totalFromDB, // Total in DB (before post-filters)
         page,
         limit,
-        hasMore: offset + limit < total
+        hasMore: allLeads.length > limit // Has more in filtered results
       };
     } catch (error) {
       if (error instanceof TRPCError) {
@@ -245,17 +273,14 @@ class LeadService {
             full_name,
             phone,
             email,
-            occupation,
             profile_photo_url,
             budget_min,
             budget_max,
             move_date,
-            occupants,
             preferred_areas,
             property_types,
             has_pets,
             pet_details,
-            has_references,
             message_to_landlords,
             profile_completion_percentage,
             is_verified,
@@ -308,6 +333,63 @@ class LeadService {
   }
 
   /**
+   * Create a new lead
+   */
+  async createLead(input: {
+    tenantId: string;
+    landlordId: string;
+    propertyId: string;
+    status: Lead['status'];
+    source: Lead['source'];
+    urgency: Lead['urgency'];
+    contactPhone?: string;
+    contactEmail?: string;
+    inquiryMessage?: string;
+    tenantSnapshot: any;
+  }): Promise<Lead> {
+    try {
+      const { data, error } = await this.supabase
+        .from('leads')
+        .insert({
+          tenant_id: input.tenantId,
+          landlord_id: input.landlordId,
+          property_id: input.propertyId,
+          status: input.status,
+          source: input.source,
+          urgency: input.urgency,
+          contact_phone: input.contactPhone,
+          contact_email: input.contactEmail,
+          inquiry_message: input.inquiryMessage,
+          tenant_snapshot: input.tenantSnapshot,
+          unread_count: 1, // New lead starts with unread count of 1
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating lead:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al crear el lead'
+        });
+      }
+
+      return this.transformLead(data);
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error('Error in createLead:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al crear el lead'
+      });
+    }
+  }
+
+  /**
    * Mark a lead as read
    */
   async markAsRead(leadId: string, landlordId: string): Promise<Lead> {
@@ -331,10 +413,8 @@ class LeadService {
         updates.first_viewed_at = new Date().toISOString();
       }
 
-      // Update status from 'new' to 'viewed'
-      if (currentLead?.status === 'new') {
-        updates.status = 'viewed';
-      }
+      // Note: We no longer auto-update status when marking as read
+      // Status changes are now explicit actions by the landlord
 
       const { data, error } = await this.supabase
         .from('leads')
@@ -379,27 +459,8 @@ class LeadService {
         updated_at: new Date().toISOString()
       };
 
-      // If status is 'contacted', set responded_at and calculate response time
-      if (status === 'contacted') {
-        const { data: currentLead } = await this.supabase
-          .from('leads')
-          .select('responded_at, created_at')
-          .eq('id', leadId)
-          .single();
-
-        if (!currentLead?.responded_at) {
-          const now = new Date();
-          updates.responded_at = now.toISOString();
-
-          // Calculate response time in minutes
-          const createdAt = new Date(currentLead.created_at);
-          const responseTimeMinutes = Math.round((now.getTime() - createdAt.getTime()) / (1000 * 60));
-          updates.response_time_minutes = responseTimeMinutes;
-        }
-      }
-
-      // If status is completed or rejected, set closed_at
-      if (status === 'completed' || status === 'rejected') {
+      // If status is 'archived', set closed_at
+      if (status === 'archived') {
         updates.closed_at = new Date().toISOString();
       }
 
@@ -445,17 +506,56 @@ class LeadService {
     try {
       await this.verifyLeadOwnership(input.leadId, landlordId);
 
-      // Update lead status to 'contacted' if not already
-      const lead = await this.updateLeadStatus(input.leadId, 'contacted', landlordId);
-
-      // Log the response (could be extended to create a conversation record)
-      await this.supabase
+      // Get current lead
+      const { data: currentLead, error: fetchError } = await this.supabase
         .from('leads')
-        .update({
-          last_message: input.message,
-          last_message_at: new Date().toISOString()
-        })
-        .eq('id', input.leadId);
+        .select('*')
+        .eq('id', input.leadId)
+        .single();
+
+      if (fetchError || !currentLead) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Lead no encontrado'
+        });
+      }
+
+      // Update with response info
+      const now = new Date();
+      const updates: any = {
+        last_message: input.message,
+        last_message_at: now.toISOString(),
+        updated_at: now.toISOString()
+      };
+
+      // Set responded_at if not already set
+      if (!currentLead.responded_at) {
+        updates.responded_at = now.toISOString();
+
+        // Calculate response time in minutes
+        const createdAt = new Date(currentLead.created_at);
+        const responseTimeMinutes = Math.round((now.getTime() - createdAt.getTime()) / (1000 * 60));
+        updates.response_time_minutes = responseTimeMinutes;
+      }
+
+      // Auto-update status to 'contacted' if currently 'new'
+      if (currentLead.status === 'new') {
+        updates.status = 'contacted';
+      }
+
+      const { data, error } = await this.supabase
+        .from('leads')
+        .update(updates)
+        .eq('id', input.leadId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al responder al lead'
+        });
+      }
 
       // If template was used, increment its usage count
       if (input.templateId) {
@@ -464,7 +564,7 @@ class LeadService {
         });
       }
 
-      return { success: true, lead };
+      return { success: true, lead: this.transformLead(data) };
     } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
@@ -484,7 +584,6 @@ class LeadService {
     leadIds: string[],
     updates: {
       status?: Lead['status'];
-      priority?: Lead['priority'];
     },
     landlordId: string
   ): Promise<{ success: boolean; updatedCount: number }> {
@@ -508,7 +607,6 @@ class LeadService {
       };
 
       if (updates.status) updateData.status = updates.status;
-      if (updates.priority) updateData.priority = updates.priority;
 
       const { error } = await this.supabase
         .from('leads')
@@ -541,11 +639,10 @@ class LeadService {
   async calculateLeadPriority(lead: any): Promise<'high' | 'medium' | 'low'> {
     let score = 0;
     const weights = {
-      verified: 30,
-      budgetMatch: 25,
-      urgency: 20,
-      profileCompleteness: 15,
-      hasReferences: 10
+      verified: 35,
+      budgetMatch: 30,
+      urgency: 25,
+      profileCompleteness: 10
     };
 
     // Tenant verification
@@ -581,11 +678,6 @@ class LeadService {
       score += weights.profileCompleteness;
     } else if (completionPercentage >= 60) {
       score += weights.profileCompleteness * 0.6;
-    }
-
-    // Has references
-    if (lead.tenant?.has_references || lead.tenant_snapshot?.hasReferences) {
-      score += weights.hasReferences;
     }
 
     // Determine priority based on score
@@ -625,8 +717,6 @@ class LeadService {
       inquiryId: data.inquiry_id,
 
       status: data.status,
-      priority: data.priority,
-      quality: data.quality,
       source: data.source,
       urgency: data.urgency,
 
@@ -649,10 +739,71 @@ class LeadService {
       updatedAt: data.updated_at,
       closedAt: data.closed_at,
 
-      // Populated relationships
-      tenant: data.tenant,
-      property: data.property,
-      landlord: data.landlord
+      // Populated relationships (transform to camelCase)
+      tenant: data.tenant ? this.transformTenant(data.tenant) : undefined,
+      property: data.property ? this.transformProperty(data.property) : undefined,
+      landlord: data.landlord ? this.transformLandlord(data.landlord) : undefined
+    };
+  }
+
+  /**
+   * Transform tenant data from snake_case to camelCase
+   */
+  private transformTenant(tenant: any): any {
+    return {
+      id: tenant.id,
+      userId: tenant.user_id,
+      fullName: tenant.full_name,
+      phone: tenant.phone,
+      email: tenant.email,
+      profilePhotoUrl: tenant.profile_photo_url,
+      budgetMin: tenant.budget_min,
+      budgetMax: tenant.budget_max,
+      moveDate: tenant.move_date,
+      preferredAreas: tenant.preferred_areas,
+      propertyTypes: tenant.property_types,
+      hasPets: tenant.has_pets,
+      petDetails: tenant.pet_details,
+      messageToLandlords: tenant.message_to_landlords,
+      profileCompletionPercentage: tenant.profile_completion_percentage,
+      isVerified: tenant.is_verified,
+      phoneVerified: tenant.phone_verified,
+      desiredBedrooms: tenant.desired_bedrooms,
+      desiredBathrooms: tenant.desired_bathrooms,
+      desiredParkingSpaces: tenant.desired_parking_spaces
+    };
+  }
+
+  /**
+   * Transform property data from snake_case to camelCase
+   */
+  private transformProperty(property: any): any {
+    return {
+      id: property.id,
+      title: property.title,
+      description: property.description,
+      type: property.type,
+      priceAmount: property.price_amount,
+      priceCurrency: property.price_currency,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      amenities: property.amenities,
+      address: property.address,
+      availableFrom: property.available_from
+    };
+  }
+
+  /**
+   * Transform landlord data from snake_case to camelCase
+   */
+  private transformLandlord(landlord: any): any {
+    return {
+      id: landlord.id,
+      fullName: landlord.full_name,
+      businessName: landlord.business_name,
+      email: landlord.email,
+      phone: landlord.phone,
+      whatsappNumber: landlord.whatsapp_number
     };
   }
 }

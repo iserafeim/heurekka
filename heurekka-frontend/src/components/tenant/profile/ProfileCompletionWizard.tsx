@@ -21,6 +21,7 @@ import { useCreateTenantProfile, useUpdateTenantProfile } from '@/hooks/tenant/u
 import { toast } from 'sonner';
 import type { ProfileCompletionFormData } from '@/types/tenant';
 import { PROPERTY_TYPE_OPTIONS, TEGUCIGALPA_AREAS } from '@/types/tenant';
+import { trpc } from '@/lib/trpc/client';
 
 // Schemas de validación por paso
 const step1Schema = z.object({
@@ -69,6 +70,7 @@ export function ProfileCompletionWizard({
 
   const createProfile = useCreateTenantProfile();
   const updateProfile = useUpdateTenantProfile();
+  const trackContactMutation = trpc.property.trackContact.useMutation();
 
   const steps = [
     {
@@ -121,6 +123,48 @@ export function ProfileCompletionWizard({
 
       await createProfile.mutateAsync(flattenedData);
       toast.success('¡Perfil completado exitosamente!');
+
+      // Check if there's a pending contact from WhatsApp button click
+      const pendingContactStr = localStorage.getItem('pendingContact');
+      if (pendingContactStr) {
+        try {
+          const pendingContact = JSON.parse(pendingContactStr);
+          const { propertyId, landlordPhone, timestamp } = pendingContact;
+
+          // Check if the pending contact is recent (within 1 hour)
+          const isRecent = Date.now() - timestamp < 60 * 60 * 1000;
+
+          if (isRecent && propertyId) {
+            // Call trackContact mutation to create the lead
+            await trackContactMutation.mutateAsync({
+              propertyId,
+              source: 'modal',
+              contactMethod: 'whatsapp',
+              success: true,
+            });
+
+            // Clear the pending contact
+            localStorage.removeItem('pendingContact');
+
+            // Open WhatsApp with landlord's phone number
+            if (landlordPhone) {
+              const cleanPhone = landlordPhone.replace(/[^0-9]/g, '');
+              const whatsappUrl = `https://wa.me/${cleanPhone}`;
+              window.open(whatsappUrl, '_blank');
+              toast.success('Lead creado. Abriendo WhatsApp...');
+            }
+          } else {
+            // Expired or invalid, just clear it
+            localStorage.removeItem('pendingContact');
+          }
+        } catch (contactError) {
+          console.error('Error creating lead or opening WhatsApp:', contactError);
+          // Don't show error to user, just log it
+          // Clear the pending contact anyway
+          localStorage.removeItem('pendingContact');
+        }
+      }
+
       onComplete?.();
       router.push('/tenant/dashboard');
     } catch (error) {

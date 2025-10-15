@@ -173,6 +173,13 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   const handleWhatsAppClick = useCallback(() => {
     if (!property) return;
 
+    // Store property context for after onboarding completes
+    localStorage.setItem('pendingContact', JSON.stringify({
+      propertyId: property.id,
+      landlordPhone: property.contactPhone || property.landlord?.phone || '',
+      timestamp: Date.now()
+    }));
+
     // Open tenant authentication flow
     setShowTenantAuth(true);
   }, [property]);

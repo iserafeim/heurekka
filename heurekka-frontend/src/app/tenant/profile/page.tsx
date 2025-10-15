@@ -82,7 +82,6 @@ export default function TenantProfilePage() {
       preferredAreas: profile.data.preferredAreas?.join(', ') || '',
       moveDate: getMoveDateValue(profile.data.moveDate),
       hasPets: profile.data.hasPets?.toString() || 'false',
-      hasReferences: profile.data.hasReferences?.toString() || 'false',
     } : {},
   });
 
@@ -145,7 +144,6 @@ export default function TenantProfilePage() {
         propertyTypes: Array.isArray(data.propertyTypes) ? data.propertyTypes : [],
         hasPets: hasPets,
         petDetails: petDetails,
-        hasReferences: data.hasReferences === 'true' || data.hasReferences === true,
         desiredBedrooms: desiredBedrooms,
         desiredBathrooms: desiredBathrooms,
         desiredParkingSpaces: desiredParkingSpaces,
@@ -582,28 +580,6 @@ export default function TenantProfilePage() {
                       </div>
                     )}
                   </div>
-                )}
-
-                {/* Referencias */}
-                {isEditing ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ¿Tienes referencias?
-                    </label>
-                    <select
-                      {...register('hasReferences')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="false">No</option>
-                      <option value="true">Sí</option>
-                    </select>
-                  </div>
-                ) : (
-                  <InfoField
-                    label="Referencias"
-                    value={profile?.data?.hasReferences ? 'Sí' : 'No'}
-                    isEditing={false}
-                  />
                 )}
               </div>
             </section>
