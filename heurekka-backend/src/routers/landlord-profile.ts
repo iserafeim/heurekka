@@ -170,11 +170,12 @@ export const landlordProfileRouter = router({
 
         const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
 
+        // Return null data instead of throwing error for tenant-only users
         if (!profile) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Perfil de arrendador no encontrado'
-          });
+          return {
+            success: true,
+            data: null
+          };
         }
 
         return {

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ProfileCompletionProgress } from '@/components/tenant/profile/ProfileCompletionProgress';
+import { TenantProfileTab } from '@/components/tenant/tabs/TenantProfileTab';
 import { trpc } from '@/lib/trpc/react';
 import {
   HONDURAS_CITIES,
@@ -1436,26 +1437,9 @@ export function ProfileTab({ userRole }: ProfileTabProps) {
         </>
       )}
 
-      {/* Tenant Profile - Show existing tenant profile view if needed */}
-      {profileView === 'tenant' && tenantProfile && (
-        <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 shadow-xl shadow-blue-100/50 p-8">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-inner">
-            <User className="h-12 w-12 text-blue-600" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            Vista de Perfil de Inquilino
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Para ver y editar tu perfil de inquilino, ve a la sección de inquilinos.
-          </p>
-          <Button
-            onClick={() => window.location.href = '/tenant/dashboard?tab=profile'}
-            size="lg"
-            className="rounded-xl shadow-lg hover:shadow-xl px-6 py-6 bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Ir al Perfil de Inquilino
-          </Button>
-        </div>
+      {/* Tenant Profile - Only show if user has tenant role */}
+      {profileView === 'tenant' && tenantProfile && (userRole === 'tenant-only' || userRole === 'dual-context') && (
+        <TenantProfileTab />
       )}
     </div>
   );

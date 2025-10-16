@@ -3,9 +3,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
 import { createTRPCReact } from '@trpc/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import superjson from 'superjson';
 import type { AppRouter } from './client';
+import { secureAuth } from '@/lib/auth/secure-auth';
 
 /**
  * Create tRPC React hooks
@@ -50,6 +51,36 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         },
       })
   );
+
+  // SECURITY FIX: Clear cache when user authentication changes
+  useEffect(() => {
+    const { data: subscription } = secureAuth.onAuthStateChange((event, session) => {
+      console.log('[Cache Security] Auth state changed:', event);
+
+      // Clear all queries when user signs out or token changes
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        console.log('[Cache Security] Clearing query cache due to sign out');
+        queryClient.clear();
+      }
+
+      // Also clear cache when a new user signs in (to prevent showing previous user's data)
+      if (event === 'SIGNED_IN') {
+        console.log('[Cache Security] Clearing query cache for new sign in');
+        queryClient.clear();
+      }
+
+      // Handle token refresh - only clear cache if user ID changed
+      if (event === 'TOKEN_REFRESHED') {
+        // We could check if user ID changed here, but for security, clear cache
+        console.log('[Cache Security] Clearing query cache due to token refresh');
+        queryClient.clear();
+      }
+    });
+
+    return () => {
+      subscription?.subscription?.unsubscribe();
+    };
+  }, [queryClient]);
 
   const [trpcClient] = useState(() =>
     trpc.createClient({

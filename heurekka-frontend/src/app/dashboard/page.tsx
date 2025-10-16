@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
 import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
@@ -15,31 +15,27 @@ import { LeadsTab } from '@/components/landlord/LeadsTab';
 import { AnalyticsTab } from '@/components/landlord/AnalyticsTab';
 import { ProfileTab } from '@/components/dashboard/ProfileTab';
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { getDefaultTab, UserRole, hasLandlordAccess } from '@/lib/dashboard-tabs';
+import { getDefaultTab, UserRole } from '@/lib/dashboard-tabs';
 
-// Import existing tenant tab content
-// Note: For this example, I'm creating placeholder imports
-// In production, you'd refactor the existing tenant dashboard components
-import dynamic from 'next/dynamic';
-
-// Dynamically import tenant components to avoid circular dependencies
-const SavedSearchesContent = dynamic(() => import('@/app/tenant/dashboard/page').then(mod => ({ default: () => null })), { ssr: false });
+// Import tenant tab components
+import { SavedSearchesTab } from '@/components/tenant/tabs/SavedSearchesTab';
+import { FavoritesTab } from '@/components/tenant/tabs/FavoritesTab';
+import { ConversationsTab } from '@/components/tenant/tabs/ConversationsTab';
 
 export default function UnifiedDashboardPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
 
-  // First, check landlord profile to determine if we need tenant data
-  const { data: landlordData, isLoading: landlordLoading } = useLandlordProfile();
-
-  // Fetch tenant data, but don't let errors block the UI
+  // Fetch both profiles, don't let errors block the UI
+  const { data: landlordData, isLoading: landlordLoading, error: landlordError } = useLandlordProfile();
   const { data: dashboardData, isLoading: tenantLoading, error: tenantError } = useTenantDashboard();
 
   // Determine user role from actual backend data
   const userRole: UserRole = React.useMemo(() => {
     const hasTenantProfile = !!dashboardData?.data?.profile;
-    const hasLandlordProfile = !!landlordData?.data;
+    // CRITICAL FIX: Check for actual landlord profile AND no error
+    // If there's an error, it means the user doesn't have a landlord profile
+    const hasLandlordProfile = !landlordError && !!landlordData?.data && landlordData.data !== null;
 
     if (hasTenantProfile && hasLandlordProfile) return 'dual-context';
     if (hasLandlordProfile) return 'landlord-only';
@@ -48,12 +44,15 @@ export default function UnifiedDashboardPage() {
     // If loading, wait
     if (tenantLoading || landlordLoading) return 'tenant-only';
 
+    // If landlord query errored but we have tenant profile, user is tenant-only
+    if (landlordError && hasTenantProfile) return 'tenant-only';
+
     // If tenant query errored but we have landlord profile, user is landlord-only
     if (tenantError && hasLandlordProfile) return 'landlord-only';
 
     // If no profiles found after loading, default to tenant
     return 'tenant-only';
-  }, [dashboardData, landlordData, tenantLoading, landlordLoading, tenantError]);
+  }, [dashboardData, landlordData, tenantLoading, landlordLoading, tenantError, landlordError]);
 
   const isLoading = tenantLoading || landlordLoading;
 
@@ -153,52 +152,12 @@ export default function UnifiedDashboardPage() {
               {activeTab === 'leads' && <LeadsTab />}
               {activeTab === 'analytics' && <AnalyticsTab />}
 
-              {/* Tenant Tabs - Placeholder for migration */}
-              {activeTab === 'saved-searches' && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                    Búsquedas Guardadas
-                  </h2>
-                  <p className="text-gray-600">
-                    Este contenido se migrará del dashboard de inquilino existente.
-                  </p>
-                  <button
-                    onClick={() => router.push('/tenant/dashboard')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Ir al Dashboard de Inquilino (temporal)
-                  </button>
-                </div>
-              )}
+              {/* Tenant Tabs */}
+              {activeTab === 'saved-searches' && <SavedSearchesTab />}
+              {activeTab === 'favorites' && <FavoritesTab />}
+              {activeTab === 'conversations' && <ConversationsTab />}
 
-              {activeTab === 'favorites' && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                    Favoritos
-                  </h2>
-                  <p className="text-gray-600">
-                    Este contenido se migrará del dashboard de inquilino existente.
-                  </p>
-                  <button
-                    onClick={() => router.push('/tenant/dashboard')}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Ir al Dashboard de Inquilino (temporal)
-                  </button>
-                </div>
-              )}
-
-              {activeTab === 'conversations' && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                    Conversaciones
-                  </h2>
-                  <p className="text-gray-600">
-                    Este contenido se migrará del dashboard de inquilino existente.
-                  </p>
-                </div>
-              )}
-
+              {/* Shared Profile Tab */}
               {activeTab === 'profile' && <ProfileTab userRole={userRole} />}
 
             </div>

@@ -8,11 +8,17 @@ import type { LandlordType, LandlordFormData } from '@/types/landlord';
 
 /**
  * Hook para obtener el perfil actual del landlord
+ * No muestra error si el usuario no tiene perfil de landlord
  */
 export function useLandlordProfile() {
   return trpc.landlordProfile.getCurrent.useQuery(undefined, {
-    retry: 1,
+    retry: false, // Don't retry if profile doesn't exist
     staleTime: 5 * 60 * 1000, // 5 minutos
+    // Don't log errors to console - expected for tenant-only users
+    useErrorBoundary: false,
+    onError: () => {
+      // Silently handle error - this is expected for tenant-only users
+    }
   });
 }
 
