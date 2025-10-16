@@ -43,12 +43,30 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 
 export function AnalyticsTab() {
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
   const [timeRange, setTimeRange] = React.useState<'7d' | '30d' | '90d' | 'custom'>('7d');
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   const [tempDateRange, setTempDateRange] = React.useState<DateRange | undefined>(undefined);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  // Detect mobile
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const {
     metrics,
@@ -121,7 +139,7 @@ export function AnalyticsTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1 hidden sm:block">
             Métricas y rendimiento de tus propiedades
           </p>
         </div>
@@ -133,100 +151,159 @@ export function AnalyticsTab() {
             onClick={() => refetch()}
             disabled={isLoading}
           >
-            <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
+            <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''} sm:mr-2`} />
+            <span className="hidden sm:inline">Actualizar</span>
           </Button>
         </div>
       </div>
 
       {/* Date Range Filters */}
-      <div className="flex flex-wrap gap-2">
+      <div
+        className="flex gap-2 pb-2 overflow-x-auto scrollbar-hide overscroll-x-contain"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          touchAction: 'pan-x',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
         <button
           onClick={() => handleTimeRangeChange('7d')}
-          className={`px-4 py-2 text-sm font-medium !rounded-xl border shadow-sm hover:shadow-md transition-all ${
+          className={`flex-shrink-0 px-4 py-2 text-sm font-medium !rounded-xl border transition-all ${
             timeRange === '7d'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
           Últimos 7 días
         </button>
         <button
           onClick={() => handleTimeRangeChange('30d')}
-          className={`px-4 py-2 text-sm font-medium !rounded-xl border shadow-sm hover:shadow-md transition-all ${
+          className={`flex-shrink-0 px-4 py-2 text-sm font-medium !rounded-xl border transition-all ${
             timeRange === '30d'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
           Último mes
         </button>
         <button
           onClick={() => handleTimeRangeChange('90d')}
-          className={`px-4 py-2 text-sm font-medium !rounded-xl border shadow-sm hover:shadow-md transition-all ${
+          className={`flex-shrink-0 px-4 py-2 text-sm font-medium !rounded-xl border transition-all ${
             timeRange === '90d'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
           }`}
         >
           Últimos 3 meses
         </button>
-        <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
-          <PopoverTrigger asChild>
+        {/* Mobile: Sheet, Desktop: Popover */}
+        {isMobile ? (
+          <>
             <button
               onClick={() => handleTimeRangeChange('custom')}
-              className={`px-4 py-2 text-sm font-medium !rounded-xl border shadow-sm hover:shadow-md transition-all flex items-center gap-2 ${
+              className={`flex-shrink-0 px-4 py-2 text-sm font-medium !rounded-xl border transition-all flex items-center gap-2 ${
                 timeRange === 'custom'
                   ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
               }`}
             >
               <CalendarIcon className="h-4 w-4" />
               Rango personalizado
             </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-white border-gray-200 rounded-xl" align="start">
-            <div className="p-3 space-y-3 bg-white rounded-xl">
-              <div className="space-y-2">
-                <div className="text-sm font-medium mb-2">Seleccionar rango de fechas</div>
-                <Calendar
-                  mode="range"
-                  selected={tempDateRange}
-                  onSelect={setTempDateRange}
-                  locale={es}
-                  className="rounded-xl border border-gray-200"
-                  disabled={(date) => date > new Date()}
-                  numberOfMonths={1}
-                />
+            <Sheet open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <SheetContent side="bottom" className="h-auto max-h-[90vh] overflow-y-auto bg-white border-t border-gray-200 rounded-t-3xl">
+                <SheetHeader className="mb-6">
+                  <SheetTitle className="text-center">Seleccionar rango de fechas</SheetTitle>
+                </SheetHeader>
+                <div className="flex justify-center space-y-4">
+                  <Calendar
+                    mode="range"
+                    selected={tempDateRange}
+                    onSelect={setTempDateRange}
+                    locale={es}
+                    className="rounded-xl border border-gray-200"
+                    disabled={(date) => date > new Date()}
+                    numberOfMonths={1}
+                    modifiersClassNames={{
+                      outside: "text-gray-400"
+                    }}
+                  />
+                </div>
+                <SheetFooter className="mt-6 pt-4 border-t border-gray-200">
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={applyCustomDateRange}
+                    disabled={!tempDateRange?.from || !tempDateRange?.to}
+                  >
+                    Aplicar
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+          </>
+        ) : (
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <button
+                onClick={() => handleTimeRangeChange('custom')}
+                className={`flex-shrink-0 px-4 py-2 text-sm font-medium !rounded-xl border transition-all flex items-center gap-2 ${
+                  timeRange === 'custom'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <CalendarIcon className="h-4 w-4" />
+                Rango personalizado
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-white border-gray-200 rounded-xl" align="start">
+              <div className="p-3 space-y-3 bg-white rounded-xl">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium mb-2">Seleccionar rango de fechas</div>
+                  <Calendar
+                    mode="range"
+                    selected={tempDateRange}
+                    onSelect={setTempDateRange}
+                    locale={es}
+                    className="rounded-xl border border-gray-200"
+                    disabled={(date) => date > new Date()}
+                    numberOfMonths={1}
+                    modifiersClassNames={{
+                      outside: "text-gray-400"
+                    }}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDatePicker(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={applyCustomDateRange}
+                    disabled={!tempDateRange?.from || !tempDateRange?.to}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDatePicker(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={applyCustomDateRange}
-                  disabled={!tempDateRange?.from || !tempDateRange?.to}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Aplicar
-                </Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-white flex items-center justify-center z-40 min-h-[500px]">
-          <div className="flex flex-col items-center gap-4">
-            <RefreshCcw className="h-12 w-12 text-blue-600 animate-spin" />
-            <p className="text-sm text-gray-600 font-medium">Cargando datos...</p>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+            <p className="text-lg font-medium text-gray-900">Cargando dashboard...</p>
+            <p className="text-sm text-gray-500 mt-2">Solo un momento</p>
           </div>
         </div>
       )}

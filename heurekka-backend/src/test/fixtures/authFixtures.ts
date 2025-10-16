@@ -167,7 +167,6 @@ export const mockLandlordProfiles = {
     whatsappNumber: '9999-9999',
     propertyCountRange: '2-5',
     propertyLocation: 'Tegucigalpa',
-    rentalReason: 'investment',
     verificationStatus: 'verified',
     rating: 4.5,
     totalReviews: 12,
@@ -249,8 +248,7 @@ export const validLandlordProfileInputs = {
     phone: '9999-9999',
     whatsappNumber: '9999-9999',
     propertyCountRange: '1',
-    propertyLocation: 'Tegucigalpa',
-    rentalReason: 'investment'
+    propertyLocation: 'Tegucigalpa'
   },
   realEstateAgent: {
     landlordType: 'real_estate_agent' as const,

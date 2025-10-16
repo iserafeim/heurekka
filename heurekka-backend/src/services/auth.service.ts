@@ -42,6 +42,13 @@ export interface UpdatePasswordInput {
   token: string;
 }
 
+export interface ChangePasswordInput {
+  userId: string;
+  currentPassword: string;
+  newPassword: string;
+  token: string;
+}
+
 export interface AuthResponse {
   user: {
     id: string;
@@ -623,6 +630,78 @@ class AuthService {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to update password'
+      });
+    }
+  }
+
+  /**
+   * Change password for authenticated user
+   * Requires verification of current password
+   */
+  async changePassword(input: ChangePasswordInput): Promise<{ success: boolean }> {
+    try {
+      // Validate new password
+      this.validatePassword(input.newPassword);
+
+      // Verify that new password is different from current password
+      if (input.currentPassword === input.newPassword) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'La nueva contraseña debe ser diferente de la contraseña actual'
+        });
+      }
+
+      // Get user's email to verify current password
+      const { data: { user }, error: getUserError } = await this.supabase.auth.getUser(input.token);
+
+      if (getUserError || !user || !user.email) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Sesión inválida'
+        });
+      }
+
+      // Verify current password by attempting to sign in
+      const { error: signInError } = await this.supabase.auth.signInWithPassword({
+        email: user.email,
+        password: input.currentPassword
+      });
+
+      if (signInError) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'La contraseña actual es incorrecta'
+        });
+      }
+
+      // Update to new password using admin API
+      const { error: updateError } = await this.supabaseAdmin.auth.admin.updateUserById(
+        input.userId,
+        { password: input.newPassword }
+      );
+
+      if (updateError) {
+        throw this.handleAuthError(updateError);
+      }
+
+      // Log password change
+      await this.auditLogger.log({
+        event_type: AuditEventType.PASSWORD_CHANGE,
+        user_id: input.userId,
+        success: true,
+        metadata: { email: user.email },
+        severity: 'medium'
+      });
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error('Change password error:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Error al cambiar la contraseña'
       });
     }
   }

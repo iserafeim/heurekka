@@ -40,7 +40,6 @@ export function IndividualOwnerForm({
       whatsappNumber: '',
       primaryLocation: '',
       propertyCountRange: undefined,
-      rentingReason: '',
     },
     mode: 'onChange',
   });
@@ -155,28 +154,6 @@ export function IndividualOwnerForm({
             </label>
           ))}
         </div>
-      </FormField>
-
-      {/* Razón de Renta (Opcional) */}
-      <FormField
-        label="¿Por qué rentas tu propiedad?"
-        error={errors.rentingReason?.message}
-        helperText="Opcional - Ayuda a entender mejor tus necesidades"
-      >
-        <select
-          {...register('rentingReason')}
-          className={cn(
-            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
-            errors.rentingReason ? 'border-red-300' : 'border-gray-300'
-          )}
-        >
-          <option value="">Selecciona una razón</option>
-          <option value="ingreso_adicional">Ingreso adicional</option>
-          <option value="propiedad_heredada">Propiedad heredada</option>
-          <option value="inversion">Inversión</option>
-          <option value="viaje_reubicacion">Viaje o reubicación</option>
-          <option value="otra">Otra</option>
-        </select>
       </FormField>
 
       {/* Submit button (hidden - el padre maneja la navegación) */}

@@ -175,18 +175,47 @@ async function protectTenantRoutes(request: NextRequest): Promise<NextResponse |
       return response;
     }
 
-    // Check if user has a tenant profile
-    const { data: profile, error } = await supabase
-      .from('tenant_profiles')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .single();
+    // Check if user has a tenant profile OR a landlord profile
+    const [tenantProfileResult, landlordProfileResult] = await Promise.all([
+      supabase
+        .from('tenant_profiles')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle(),
+      supabase
+        .from('landlords')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+    ]);
 
-    // No profile found - redirect to profile completion
-    if (error || !profile) {
+    const hasTenantProfile = !!tenantProfileResult.data;
+    const hasLandlordProfile = !!landlordProfileResult.data;
+
+    console.log('🔍 Middleware profile check:', {
+      pathname,
+      userId: session.user.id,
+      hasTenantProfile,
+      hasLandlordProfile,
+      tenantError: tenantProfileResult.error?.message,
+      landlordError: landlordProfileResult.error?.message
+    });
+
+    // If user is landlord-only, don't force tenant profile completion
+    // If user has neither profile or is tenant-only without profile, redirect to profile completion
+    if (!hasTenantProfile && !hasLandlordProfile) {
+      console.log('⚠️ No profile found, redirecting to tenant profile complete');
+      // No profile at all - redirect to tenant profile completion
       const completeUrl = new URL('/tenant/profile/complete', request.url);
       return NextResponse.redirect(completeUrl);
     }
+
+    if (hasLandlordProfile && !hasTenantProfile) {
+      console.log('✅ Landlord-only user, allowing access to', pathname);
+    }
+
+    // If user has landlord profile but no tenant profile, allow access but don't force profile completion
+    // This allows landlord-only users to navigate the site without being forced into tenant onboarding
 
     return response;
   } catch (error) {

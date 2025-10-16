@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { SearchFilters, ViewMode, Property, PropertyDiscoveryState, SPANISH_TEXT } from '@/types/property';
 import { SearchBar } from './SearchBar';
 import { FilterBar } from './FilterBar';
@@ -17,6 +18,8 @@ import { Menu, X, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow';
 import { useAuthStore } from '@/lib/stores/auth';
+import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
+import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
 import { usePropertySearch } from '@/hooks/usePropertySearch';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePropertyModal } from '@/hooks/usePropertyModal';
@@ -83,7 +86,33 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Auth state
+  const router = useRouter();
   const { isAuthenticated, user, signOut } = useAuthStore();
+
+  // Check user profiles to determine correct dashboard
+  const { data: landlordData } = useLandlordProfile();
+  const { data: tenantData } = useTenantDashboard();
+
+  const getDashboardUrl = () => {
+    const hasLandlordProfile = !!landlordData?.data;
+    const hasTenantProfile = !!tenantData?.data?.profile;
+
+    // Priority: Landlord dashboard > Unified dashboard
+    if (hasLandlordProfile) {
+      return '/dashboard?tab=leads';
+    }
+    if (hasTenantProfile) {
+      return '/dashboard?tab=saved-searches';
+    }
+    return '/dashboard';
+  };
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowUserMenu(false);
+    handleMobileMenuClose();
+    router.push(getDashboardUrl());
+  };
 
   // Custom hooks
   const { 
@@ -565,15 +594,14 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
                   <div className="px-4 py-2 text-sm text-gray-700 font-medium">
                     {user?.email}
                   </div>
-                  <Link href="/tenant/dashboard" onClick={handleMobileMenuClose} className="block">
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="w-full justify-start text-base">
-                      <User className="h-4 w-4 mr-2" />
-                      Mi Perfil
-                    </Button>
-                  </Link>
+                  <Button
+                    onClick={handleProfileClick}
+                    variant="ghost"
+                    size="lg"
+                    className="w-full justify-start text-base">
+                    <User className="h-4 w-4 mr-2" />
+                    Mi Perfil
+                  </Button>
                   <Button
                     onClick={() => {
                       handleLogout();
@@ -673,12 +701,12 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <Link href="/tenant/dashboard" onClick={() => setShowUserMenu(false)}>
-                      <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Mi Perfil
-                      </button>
-                    </Link>
+                    <button
+                      onClick={handleProfileClick}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Mi Perfil
+                    </button>
                     <button
                       onClick={handleLogout}
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">

@@ -30,8 +30,11 @@ export default function UnifiedDashboardPage() {
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
 
-  const { data: dashboardData, isLoading: tenantLoading } = useTenantDashboard();
+  // First, check landlord profile to determine if we need tenant data
   const { data: landlordData, isLoading: landlordLoading } = useLandlordProfile();
+
+  // Fetch tenant data, but don't let errors block the UI
+  const { data: dashboardData, isLoading: tenantLoading, error: tenantError } = useTenantDashboard();
 
   // Determine user role from actual backend data
   const userRole: UserRole = React.useMemo(() => {
@@ -42,9 +45,15 @@ export default function UnifiedDashboardPage() {
     if (hasLandlordProfile) return 'landlord-only';
     if (hasTenantProfile) return 'tenant-only';
 
-    // Default to tenant-only if no profiles found yet
+    // If loading, wait
+    if (tenantLoading || landlordLoading) return 'tenant-only';
+
+    // If tenant query errored but we have landlord profile, user is landlord-only
+    if (tenantError && hasLandlordProfile) return 'landlord-only';
+
+    // If no profiles found after loading, default to tenant
     return 'tenant-only';
-  }, [dashboardData, landlordData]);
+  }, [dashboardData, landlordData, tenantLoading, landlordLoading, tenantError]);
 
   const isLoading = tenantLoading || landlordLoading;
 
@@ -88,8 +97,18 @@ export default function UnifiedDashboardPage() {
     );
   }
 
-  const userName = dashboardData?.data?.profile?.fullName || 'Usuario';
-  const userEmail = dashboardData?.data?.profile?.phone || '';
+  // Get user name and email from appropriate profile
+  const userName =
+    landlordData?.data?.fullName ||
+    landlordData?.data?.companyName ||
+    dashboardData?.data?.profile?.fullName ||
+    'Usuario';
+
+  const userEmail =
+    landlordData?.data?.email ||
+    landlordData?.data?.phone ||
+    dashboardData?.data?.profile?.phone ||
+    '';
 
   const getTabTitle = () => {
     const titles: Record<string, string> = {

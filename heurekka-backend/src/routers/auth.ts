@@ -63,6 +63,17 @@ const verifyEmailSchema = z.object({
   email: z.string().email('Correo electrónico inválido').max(255, 'Correo demasiado largo')
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'La contraseña actual es requerida').max(128, 'Contraseña demasiado larga'),
+  newPassword: z.string()
+    .min(12, 'La contraseña debe tener al menos 12 caracteres')
+    .max(128, 'La contraseña es demasiado larga')
+    .regex(/[A-Z]/, 'La contraseña debe incluir al menos una mayúscula')
+    .regex(/[a-z]/, 'La contraseña debe incluir al menos una minúscula')
+    .regex(/[0-9]/, 'La contraseña debe incluir al menos un número')
+    .regex(/[^a-zA-Z0-9]/, 'La contraseña debe incluir al menos un carácter especial')
+});
+
 /**
  * Authentication router
  */
@@ -434,6 +445,44 @@ export const authRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error al verificar el estado del perfil'
+        });
+      }
+    }),
+
+  /**
+   * Change password for authenticated user
+   * Requires current password verification
+   */
+  changePassword: protectedProcedure
+    .input(changePasswordSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        if (!ctx.auth.isAuthenticated || !ctx.auth.user || !ctx.auth.token) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Usuario no autenticado'
+          });
+        }
+
+        await authService.changePassword({
+          userId: ctx.auth.user.id,
+          currentPassword: input.currentPassword,
+          newPassword: input.newPassword,
+          token: ctx.auth.token
+        });
+
+        return {
+          success: true,
+          message: 'Contraseña actualizada exitosamente'
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error('Router changePassword error:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Error al cambiar la contraseña'
         });
       }
     })

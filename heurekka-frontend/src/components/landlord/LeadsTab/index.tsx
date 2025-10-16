@@ -196,7 +196,7 @@ export function LeadsTab() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Leads</h1>
-          <p className="text-gray-600 mt-1">Gestiona tus contactos e inquilinos potenciales</p>
+          <p className="text-gray-600 mt-1 hidden sm:block">Gestiona tus contactos e inquilinos potenciales</p>
         </div>
         <Button
           variant="outline"
@@ -205,46 +205,68 @@ export function LeadsTab() {
           onClick={() => refetch()}
           disabled={isLoading}
         >
-          <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Actualizar
+          <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''} sm:mr-2`} />
+          <span className="hidden sm:inline">Actualizar</span>
         </Button>
       </div>
 
-      {/* Filters Bar */}
-      <LeadFilters
-        filters={filters}
-        onFilterChange={(newFilters) => {
-          setFilters(newFilters);
-          setPage(1);
-        }}
-        onReset={handleResetFilters}
-        properties={uniqueProperties}
-      />
-
       {/* Leads Content */}
       <div className="space-y-4">
-        {/* Total Opportunity Value Card */}
+        {/* Valor de Oportunidades - Mobile Only */}
         {!isLoading && leads.length > 0 && (
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-5 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-100 p-2.5 rounded-xl flex-shrink-0">
-                <svg className="h-6 w-6 text-emerald-700" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+          <div className="md:hidden bg-white border border-gray-200 rounded-xl p-5">
+            <div className="text-xs text-gray-500 mb-1">Valor de Oportunidades</div>
+            <div className="flex items-end justify-between">
+              <div className="text-3xl font-bold text-gray-900">
+                L.{leads.reduce((sum, lead) => {
+                  const budgetMin = lead.tenantSnapshot?.budgetMin || lead.tenant?.budgetMin || 0;
+                  const budgetMax = lead.tenantSnapshot?.budgetMax || lead.tenant?.budgetMax || 0;
+                  const averageBudget = (budgetMin + budgetMax) / 2;
+                  return sum + averageBudget;
+                }, 0).toLocaleString()}
               </div>
-              <div>
-                <h3 className="text-sm font-medium text-emerald-900 mb-0.5">
-                  Valor Total de Oportunidades
-                </h3>
-                <p className="text-2xl font-bold text-emerald-700">
+              {/* TODO: Add historical data from backend to calculate real changes */}
+              {/* <div className="text-right">
+                <div className="text-sm font-semibold text-emerald-600">+L.2,879.23</div>
+                <div className="text-xs font-medium text-emerald-600">+156.82%</div>
+              </div> */}
+            </div>
+          </div>
+        )}
+
+        {/* Stats Cards - Desktop Only */}
+        {!isLoading && leads.length > 0 && (
+          <div className="hidden md:grid md:grid-cols-3 gap-4">
+            {/* Leads Totales */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="text-sm text-gray-500 mb-1">Leads Totales</div>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold text-gray-900">{totalCount.toLocaleString()}</div>
+              </div>
+            </div>
+
+            {/* Leads Nuevos */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="text-sm text-gray-500 mb-1">Leads Nuevos</div>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold text-gray-900">
+                  {leads.filter(lead => lead.status === 'new').length.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            {/* Valor de Oportunidades */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5">
+              <div className="text-sm text-gray-500 mb-1">Valor de Oportunidades</div>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold text-gray-900">
                   L.{leads.reduce((sum, lead) => {
-                    // Sum the average budget from each tenant (midpoint of their budget range)
                     const budgetMin = lead.tenantSnapshot?.budgetMin || lead.tenant?.budgetMin || 0;
                     const budgetMax = lead.tenantSnapshot?.budgetMax || lead.tenant?.budgetMax || 0;
                     const averageBudget = (budgetMin + budgetMax) / 2;
                     return sum + averageBudget;
                   }, 0).toLocaleString()}
-                </p>
+                </div>
               </div>
             </div>
           </div>
@@ -300,6 +322,17 @@ export function LeadsTab() {
           </div>
         )}
 
+        {/* Filters Bar */}
+        <LeadFilters
+          filters={filters}
+          onFilterChange={(newFilters) => {
+            setFilters(newFilters);
+            setPage(1);
+          }}
+          onReset={handleResetFilters}
+          properties={uniqueProperties}
+        />
+
         {/* Bulk Actions Bar */}
         {selectedLeads.size > 0 && (
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
@@ -339,9 +372,9 @@ export function LeadsTab() {
 
         {/* Loading State */}
         {isLoading && leads.length === 0 && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48 w-full rounded-xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-48 w-full rounded-2xl" />
             ))}
           </div>
         )}
@@ -370,7 +403,7 @@ export function LeadsTab() {
 
         {/* Leads Grid */}
         {!isLoading && leads.length > 0 && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {leads.map((lead) => (
               <LeadCard
                 key={lead.id}
@@ -387,6 +420,13 @@ export function LeadsTab() {
                 onExpandChange={handleLeadExpand}
               />
             ))}
+
+            {/* Skeleton cards to fill empty spaces in desktop view */}
+            {leads.length % 2 === 1 && (
+              <div className="hidden md:block">
+                <Skeleton className="h-48 w-full rounded-2xl" />
+              </div>
+            )}
           </div>
         )}
 

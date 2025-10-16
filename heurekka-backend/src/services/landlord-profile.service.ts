@@ -11,7 +11,6 @@ export interface IndividualOwnerInput {
   whatsappNumber: string;
   propertyCountRange?: string;
   propertyLocation?: string;
-  rentalReason?: string;
 }
 
 export interface RealEstateAgentInput {
@@ -436,8 +435,7 @@ class LandlordProfileService {
           full_name: input.fullName,
           phone: input.phone,
           property_count_range: input.propertyCountRange,
-          property_location: input.propertyLocation,
-          rental_reason: input.rentalReason
+          property_location: input.propertyLocation
         };
 
       case 'real_estate_agent':
@@ -1008,10 +1006,6 @@ class LandlordProfileService {
         if (onboardingData.primaryLocation) {
           updateData.property_location = onboardingData.primaryLocation;
           providedFields.push('primaryLocation');
-        }
-        if (onboardingData.rentingReason) {
-          updateData.rental_reason = onboardingData.rentingReason;
-          providedFields.push('rentingReason');
         }
       } else if (landlordType === 'real_estate_agent') {
         // Required fields for real estate agent

@@ -37,7 +37,6 @@ describe('LandlordProfileService', () => {
     whatsapp_number: '8888-8888',
     property_count_range: '2-5',
     property_location: 'Tegucigalpa',
-    rental_reason: 'investment',
     verification_status: 'pending',
     rating: 0,
     total_reviews: 0,
@@ -181,8 +180,7 @@ describe('LandlordProfileService', () => {
       phone: '9999-9999',
       whatsappNumber: '8888-8888',
       propertyCountRange: '2-5',
-      propertyLocation: 'Tegucigalpa',
-      rentalReason: 'investment'
+      propertyLocation: 'Tegucigalpa'
     };
 
     beforeEach(() => {

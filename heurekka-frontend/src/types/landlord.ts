@@ -22,7 +22,6 @@ export interface IndividualOwnerFormData {
   whatsappNumber?: string;
   primaryLocation: string;
   propertyCountRange?: '1' | '2-3' | '4-5' | '5+';
-  rentingReason?: string;
 }
 
 // Real Estate Agent Profile

@@ -19,8 +19,7 @@ const individualOwnerSchema = z.object({
   phone: z.string().regex(/^[0-9]{4}-[0-9]{4}$/, 'Formato de teléfono inválido: 9999-9999'),
   whatsappNumber: z.string().regex(/^[0-9]{4}-[0-9]{4}$/, 'Formato de WhatsApp inválido'),
   propertyCountRange: z.enum(['1', '2-5', '6-10', '10+']).optional(),
-  propertyLocation: z.string().max(200).optional(),
-  rentalReason: z.enum(['investment', 'temporary_move', 'inherited', 'other']).optional()
+  propertyLocation: z.string().max(200).optional()
 });
 
 const realEstateAgentSchema = z.object({
@@ -82,20 +81,41 @@ const createLandlordProfileSchema = z.union([
 
 // Update schema allows partial updates
 const updateLandlordProfileSchema = z.object({
+  // Personal info
   fullName: z.string().min(3).optional(),
   phone: z.string().regex(/^[0-9]{4}-[0-9]{4}$/).optional(),
   whatsappNumber: z.string().regex(/^[0-9]{4}-[0-9]{4}$/).optional(),
+  email: z.string().email().optional(),
+
+  // Landlord type (allow switching type)
+  landlordType: z.enum(['individual_owner', 'real_estate_agent', 'property_company']).optional(),
+
+  // Company info
   companyName: z.string().min(3).optional(),
   companyRtn: z.string().regex(/^[0-9]{14}$/).optional(),
-  agentType: z.enum(['independent', 'company_agent']).optional(),
+
+  // Individual Owner fields
+  propertyLocation: z.string().max(200).optional(),
+  propertyCountRange: z.string().optional(),
+
+  // Real Estate Agent fields
+  agentType: z.enum(['independent', 'agency_agent']).optional(),
+  agencyName: z.string().max(200).optional(),
   yearsExperience: z.string().optional(),
   specializations: z.array(z.string()).optional(),
-  coverageAreas: z.array(z.string()).optional(),
-  operationZones: z.array(z.string()).optional(),
+  coverageAreas: z.array(z.string()).max(10).optional(),
+  propertiesInManagement: z.string().optional(),
   professionalBio: z.string().max(300).optional(),
+
+  // Property Company fields
+  foundedYear: z.number().int().min(1900).max(new Date().getFullYear()).optional(),
+  website: z.string().url().optional(),
+  officeAddress: z.string().optional(),
+  operationZones: z.array(z.string()).max(20).optional(),
+  portfolioSize: z.string().optional(),
+  portfolioTypes: z.array(z.string()).optional(),
   companyDescription: z.string().max(500).optional(),
-  contactEmail: z.string().email().optional(),
-  website: z.string().url().optional()
+  contactEmail: z.string().email().optional()
 });
 
 /**

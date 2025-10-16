@@ -30,12 +30,6 @@ export const individualOwnerSchema = z.object({
   propertyCountRange: z
     .enum(['1', '2-3', '4-5', '5+'])
     .optional(),
-
-  rentingReason: z
-    .string()
-    .max(200, 'La razón no puede exceder 200 caracteres')
-    .optional()
-    .or(z.literal('')),
 });
 
 export type IndividualOwnerInput = z.infer<typeof individualOwnerSchema>;

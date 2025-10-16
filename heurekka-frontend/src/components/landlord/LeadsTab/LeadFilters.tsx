@@ -126,8 +126,8 @@ export function LeadFilters({ filters, onFilterChange, onReset, properties = [] 
         {/* Status Filter */}
         <div className="flex-shrink-0">
           <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
-            <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border shadow-sm hover:shadow-md transition-all ${
-              filters.status ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'
+            <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border transition-all ${
+              filters.status ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600'
             }`}>
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
@@ -143,8 +143,8 @@ export function LeadFilters({ filters, onFilterChange, onReset, properties = [] 
         {properties.length > 0 && (
           <div className="flex-shrink-0">
             <Select value={filters.propertyId || 'all'} onValueChange={handlePropertyChange}>
-              <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border shadow-sm hover:shadow-md transition-all ${
-                filters.propertyId ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'
+              <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border transition-all ${
+                filters.propertyId ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600'
               }`}>
                 <SelectValue placeholder="Propiedad" />
               </SelectTrigger>
@@ -163,8 +163,8 @@ export function LeadFilters({ filters, onFilterChange, onReset, properties = [] 
         {/* Urgency Filter */}
         <div className="flex-shrink-0">
           <Select value={filters.urgency || 'all'} onValueChange={handleUrgencyChange}>
-            <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border shadow-sm hover:shadow-md transition-all ${
-              filters.urgency ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'
+            <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border transition-all ${
+              filters.urgency ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600'
             }`}>
               <SelectValue placeholder="Urgencia" />
             </SelectTrigger>
@@ -183,10 +183,10 @@ export function LeadFilters({ filters, onFilterChange, onReset, properties = [] 
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className={`rounded-xl border shadow-sm hover:shadow-md transition-all ${
+                className={`rounded-xl border transition-all ${
                   (filters.budgetCompatible || filters.hasPets || filters.isVerified)
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white border-gray-200'
+                    : 'bg-white border-gray-200 text-gray-600'
                 }`}
               >
                 Más filtros
@@ -267,23 +267,13 @@ export function LeadFilters({ filters, onFilterChange, onReset, properties = [] 
       </div>
 
       {/* Desktop: Normal flex-wrap layout */}
-      <div className="hidden md:flex md:flex-wrap md:gap-2 md:items-center">
-        {/* Search Bar */}
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            id="search-desktop"
-            placeholder="Buscar por nombre o mensaje..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 rounded-xl"
-          />
-        </div>
-
-        {/* Status Filter */}
-        <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
-          <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border shadow-sm hover:shadow-md transition-all ${
-            filters.status ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'
+      <div className="hidden md:flex md:gap-2 md:items-center md:justify-between">
+        {/* Left: Filters */}
+        <div className="flex gap-2 items-center flex-wrap">
+          {/* Status Filter */}
+          <Select value={filters.status || 'all'} onValueChange={handleStatusChange}>
+          <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border transition-all ${
+            filters.status ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600'
           }`}>
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
@@ -294,123 +284,136 @@ export function LeadFilters({ filters, onFilterChange, onReset, properties = [] 
           </SelectContent>
         </Select>
 
-        {/* Property Filter */}
-        {properties.length > 0 && (
-          <Select value={filters.propertyId || 'all'} onValueChange={handlePropertyChange}>
-            <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border shadow-sm hover:shadow-md transition-all ${
-              filters.propertyId ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'
+          {/* Property Filter */}
+          {properties.length > 0 && (
+            <Select value={filters.propertyId || 'all'} onValueChange={handlePropertyChange}>
+              <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border transition-all ${
+                filters.propertyId ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600'
+              }`}>
+                <SelectValue placeholder="Propiedad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las propiedades</SelectItem>
+                {properties.map((property) => (
+                  <SelectItem key={property.id} value={property.id}>
+                    {property.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Urgency Filter */}
+          <Select value={filters.urgency || 'all'} onValueChange={handleUrgencyChange}>
+            <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border transition-all ${
+              filters.urgency ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600'
             }`}>
-              <SelectValue placeholder="Propiedad" />
+              <SelectValue placeholder="Urgencia" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas las propiedades</SelectItem>
-              {properties.map((property) => (
-                <SelectItem key={property.id} value={property.id}>
-                  {property.title}
-                </SelectItem>
-              ))}
+              <SelectItem value="all">Todas las urgencias</SelectItem>
+              <SelectItem value="immediate">⚡ Urgente</SelectItem>
+              <SelectItem value="planned">📅 Pronto</SelectItem>
+              <SelectItem value="flexible">🕐 Flexible</SelectItem>
             </SelectContent>
           </Select>
-        )}
 
-        {/* Urgency Filter */}
-        <Select value={filters.urgency || 'all'} onValueChange={handleUrgencyChange}>
-          <SelectTrigger className={`w-auto min-w-[140px] rounded-xl border shadow-sm hover:shadow-md transition-all ${
-            filters.urgency ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'
-          }`}>
-            <SelectValue placeholder="Urgencia" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las urgencias</SelectItem>
-            <SelectItem value="immediate">⚡ Urgente</SelectItem>
-            <SelectItem value="planned">📅 Pronto</SelectItem>
-            <SelectItem value="flexible">🕐 Flexible</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* More Filters Popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`rounded-xl border transition-all ${
+                  (filters.budgetCompatible || filters.hasPets || filters.isVerified)
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white border-gray-200 text-gray-600'
+                }`}
+              >
+                Más filtros
+                {(filters.budgetCompatible || filters.hasPets || filters.isVerified) && (
+                  <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs rounded-full bg-white text-blue-600">
+                    {[filters.budgetCompatible, filters.hasPets, filters.isVerified].filter(Boolean).length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-4 bg-white border-gray-200 rounded-xl" align="start">
+              <div className="space-y-4">
+                <h4 className="font-semibold text-sm">Filtros adicionales</h4>
 
-        {/* More Filters Popover */}
-        <Popover>
-          <PopoverTrigger asChild>
+                {/* Budget Compatible */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="budgetCompatible-desktop"
+                    checked={filters.budgetCompatible || false}
+                    onCheckedChange={handleBudgetCompatibleToggle}
+                  />
+                  <Label
+                    htmlFor="budgetCompatible-desktop"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    💰 Presupuesto compatible
+                  </Label>
+                </div>
+
+                {/* Has Pets */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasPets-desktop"
+                    checked={filters.hasPets || false}
+                    onCheckedChange={handleHasPetsToggle}
+                  />
+                  <Label
+                    htmlFor="hasPets-desktop"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    🐕 Con mascotas
+                  </Label>
+                </div>
+
+                {/* Verified */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isVerified-desktop"
+                    checked={filters.isVerified || false}
+                    onCheckedChange={handleIsVerifiedToggle}
+                  />
+                  <Label
+                    htmlFor="isVerified-desktop"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    ✅ Verificados
+                  </Label>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Clear Filters Button */}
+          {activeFiltersCount > 0 && (
             <Button
-              variant="outline"
-              className={`rounded-xl border shadow-sm hover:shadow-md transition-all ${
-                (filters.budgetCompatible || filters.hasPets || filters.isVerified)
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white border-gray-200'
-              }`}
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              className="rounded-xl hover:bg-red-50 text-red-600 hover:text-red-700"
             >
-              Más filtros
-              {(filters.budgetCompatible || filters.hasPets || filters.isVerified) && (
-                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs rounded-full bg-white text-blue-600">
-                  {[filters.budgetCompatible, filters.hasPets, filters.isVerified].filter(Boolean).length}
-                </Badge>
-              )}
+              <X className="h-4 w-4 mr-1" />
+              Limpiar ({activeFiltersCount})
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4 bg-white border-gray-200 rounded-xl" align="start">
-            <div className="space-y-4">
-              <h4 className="font-semibold text-sm">Filtros adicionales</h4>
+          )}
+        </div>
 
-              {/* Budget Compatible */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="budgetCompatible-desktop"
-                  checked={filters.budgetCompatible || false}
-                  onCheckedChange={handleBudgetCompatibleToggle}
-                />
-                <Label
-                  htmlFor="budgetCompatible-desktop"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  💰 Presupuesto compatible
-                </Label>
-              </div>
-
-              {/* Has Pets */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hasPets-desktop"
-                  checked={filters.hasPets || false}
-                  onCheckedChange={handleHasPetsToggle}
-                />
-                <Label
-                  htmlFor="hasPets-desktop"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  🐕 Con mascotas
-                </Label>
-              </div>
-
-              {/* Verified */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isVerified-desktop"
-                  checked={filters.isVerified || false}
-                  onCheckedChange={handleIsVerifiedToggle}
-                />
-                <Label
-                  htmlFor="isVerified-desktop"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  ✅ Verificados
-                </Label>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Clear Filters Button */}
-        {activeFiltersCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onReset}
-            className="rounded-xl hover:bg-red-50 text-red-600 hover:text-red-700"
-          >
-            <X className="h-4 w-4 mr-1" />
-            Limpiar ({activeFiltersCount})
-          </Button>
-        )}
+        {/* Right: Search Bar */}
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="search-desktop"
+            placeholder="Buscar por nombre o mensaje..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 rounded-xl"
+          />
+        </div>
       </div>
     </div>
   );

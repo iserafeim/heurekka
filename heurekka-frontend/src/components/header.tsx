@@ -1,11 +1,14 @@
 'use client'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Logo, LogoIcon } from '@/components/logo'
 import { Menu, X, User, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LandlordAuthFlow } from '@/components/auth/LandlordAuthFlow'
 import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile'
+import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard'
 import React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +18,7 @@ const menuItems = [
 ]
 
 export const HeroHeader = () => {
+    const router = useRouter()
     const [menuState, setMenuState] = React.useState(false)
     const [isScrolled, setIsScrolled] = React.useState(false)
     const [showLandlordAuth, setShowLandlordAuth] = React.useState(false)
@@ -22,6 +26,31 @@ export const HeroHeader = () => {
     const [showUserMenu, setShowUserMenu] = React.useState(false)
 
     const { isAuthenticated, user, signOut } = useAuthStore()
+
+    // Check user profiles to determine correct dashboard
+    const { data: landlordData } = useLandlordProfile()
+    const { data: tenantData } = useTenantDashboard()
+
+    const getDashboardUrl = () => {
+        const hasLandlordProfile = !!landlordData?.data
+        const hasTenantProfile = !!tenantData?.data?.profile
+
+        // Priority: Landlord dashboard > Unified dashboard
+        if (hasLandlordProfile) {
+            return '/dashboard?tab=leads'
+        }
+        if (hasTenantProfile) {
+            return '/dashboard?tab=saved-searches'
+        }
+        return '/dashboard'
+    }
+
+    const handleProfileClick = (e: React.MouseEvent) => {
+        e.preventDefault()
+        setShowUserMenu(false)
+        setMenuState(false)
+        router.push(getDashboardUrl())
+    }
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -99,12 +128,12 @@ export const HeroHeader = () => {
 
                                     {showUserMenu && (
                                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                                            <Link href="/dashboard" onClick={() => setShowUserMenu(false)}>
-                                                <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
-                                                    <User className="h-4 w-4" />
-                                                    Mi Perfil
-                                                </button>
-                                            </Link>
+                                            <button
+                                                onClick={handleProfileClick}
+                                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                                                <User className="h-4 w-4" />
+                                                Mi Perfil
+                                            </button>
                                             <button
                                                 onClick={handleLogout}
                                                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
@@ -184,15 +213,14 @@ export const HeroHeader = () => {
                                         <div className="px-4 py-2 text-sm text-gray-700 font-medium">
                                             {user?.email}
                                         </div>
-                                        <Link href="/dashboard" onClick={() => setMenuState(false)} className="block">
-                                            <Button
-                                                variant="ghost"
-                                                size="lg"
-                                                className="w-full justify-start text-base">
-                                                <User className="h-4 w-4 mr-2" />
-                                                Mi Perfil
-                                            </Button>
-                                        </Link>
+                                        <Button
+                                            onClick={handleProfileClick}
+                                            variant="ghost"
+                                            size="lg"
+                                            className="w-full justify-start text-base">
+                                            <User className="h-4 w-4 mr-2" />
+                                            Mi Perfil
+                                        </Button>
                                         <Button
                                             onClick={() => {
                                                 handleLogout();
