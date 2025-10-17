@@ -135,6 +135,11 @@ export function useFeaturedProperties(
       }
     } catch (err) {
       console.error('❌ Error fetching featured properties:', err);
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        raw: err
+      });
       console.log('📦 Using sample properties while backend is being fixed...');
 
       // Generate sample properties that look realistic for Honduras

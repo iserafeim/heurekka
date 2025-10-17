@@ -86,6 +86,128 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 }
 
 /**
+ * Protect landlord routes - check authentication and profile existence
+ */
+async function protectLandlordRoutes(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+
+  // Only protect /landlord/* routes
+  if (!pathname.startsWith('/landlord')) {
+    return null;
+  }
+
+  // Create a Supabase client configured to use cookies
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase environment variables not configured');
+    return null; // Allow access if not configured (development mode)
+  }
+
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: any) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  try {
+    // Check authentication
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    // Not authenticated - redirect to login
+    if (!session) {
+      const loginUrl = new URL('/', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Allow access to landlord onboarding routes without profile check
+    if (pathname.startsWith('/landlord/onboarding')) {
+      return response;
+    }
+
+    // For other landlord routes, check if user has a landlord profile
+    const landlordProfileResult = await supabase
+      .from('landlords')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    const hasLandlordProfile = !!landlordProfileResult.data;
+
+    console.log('🔍 Middleware landlord profile check:', {
+      pathname,
+      userId: session.user.id,
+      hasLandlordProfile,
+      landlordError: landlordProfileResult.error?.message
+    });
+
+    // If user doesn't have a landlord profile, redirect to onboarding
+    if (!hasLandlordProfile) {
+      console.log('⚠️ No landlord profile found, redirecting to landlord onboarding');
+      const onboardingUrl = new URL('/landlord/onboarding/welcome', request.url);
+      return NextResponse.redirect(onboardingUrl);
+    }
+
+    console.log('✅ Landlord profile exists, allowing access to', pathname);
+
+    return response;
+  } catch (error) {
+    console.error('Error in landlord route protection:', error);
+    // On error, allow access but log the issue
+    return null;
+  }
+}
+
+/**
  * Protect tenant routes - check authentication and profile existence
  */
 async function protectTenantRoutes(request: NextRequest): Promise<NextResponse | null> {
@@ -165,57 +287,47 @@ async function protectTenantRoutes(request: NextRequest): Promise<NextResponse |
 
     // Not authenticated - redirect to login
     if (!session) {
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      console.log('🔐 No session found for tenant route, redirecting to home');
+      const homeUrl = new URL('/', request.url);
+      return NextResponse.redirect(homeUrl);
     }
+
+    console.log('✅ Session found for tenant route:', {
+      userId: session.user.id,
+      email: session.user.email
+    });
 
     // Skip profile check for the profile completion route itself
     if (pathname === '/tenant/profile/complete') {
       return response;
     }
 
-    // Check if user has a tenant profile OR a landlord profile
-    const [tenantProfileResult, landlordProfileResult] = await Promise.all([
-      supabase
-        .from('tenant_profiles')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle(),
-      supabase
-        .from('landlords')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-    ]);
+    // Check if user has a tenant profile
+    const tenantProfileResult = await supabase
+      .from('tenant_profiles')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
 
     const hasTenantProfile = !!tenantProfileResult.data;
-    const hasLandlordProfile = !!landlordProfileResult.data;
 
-    console.log('🔍 Middleware profile check:', {
+    console.log('🔍 Middleware tenant profile check:', {
       pathname,
       userId: session.user.id,
+      email: session.user.email,
       hasTenantProfile,
-      hasLandlordProfile,
-      tenantError: tenantProfileResult.error?.message,
-      landlordError: landlordProfileResult.error?.message
+      tenantError: tenantProfileResult.error?.message
     });
 
-    // If user is landlord-only, don't force tenant profile completion
-    // If user has neither profile or is tenant-only without profile, redirect to profile completion
-    if (!hasTenantProfile && !hasLandlordProfile) {
-      console.log('⚠️ No profile found, redirecting to tenant profile complete');
-      // No profile at all - redirect to tenant profile completion
+    // If user doesn't have a tenant profile, redirect to profile completion
+    // This is specifically for /tenant/* routes only
+    if (!hasTenantProfile) {
+      console.log('⚠️ No tenant profile found, redirecting to tenant profile complete from:', pathname);
       const completeUrl = new URL('/tenant/profile/complete', request.url);
       return NextResponse.redirect(completeUrl);
     }
 
-    if (hasLandlordProfile && !hasTenantProfile) {
-      console.log('✅ Landlord-only user, allowing access to', pathname);
-    }
-
-    // If user has landlord profile but no tenant profile, allow access but don't force profile completion
-    // This allows landlord-only users to navigate the site without being forced into tenant onboarding
+    console.log('✅ Tenant profile exists, allowing access to:', pathname);
 
     return response;
   } catch (error) {
@@ -288,6 +400,12 @@ export async function middleware(request: NextRequest) {
     const tenantProtection = await protectTenantRoutes(request);
     if (tenantProtection) {
       return addSecurityHeaders(tenantProtection);
+    }
+
+    // Protect landlord routes (authentication and profile check)
+    const landlordProtection = await protectLandlordRoutes(request);
+    if (landlordProtection) {
+      return addSecurityHeaders(landlordProtection);
     }
 
     // Apply rate limiting to API routes

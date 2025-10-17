@@ -90,7 +90,12 @@ export function PropertyCard({
   };
 
   // Utility function to ensure image URL is properly formatted with fallbacks
-  const ensureValidImageUrl = (url: string, withFallback: boolean = true): string => {
+  const ensureValidImageUrl = (url: string | any, withFallback: boolean = true): string => {
+    // Handle non-string inputs (objects, null, undefined)
+    if (typeof url !== 'string') {
+      return withFallback ? getDefaultImageUrl() : '';
+    }
+
     if (!url || url.trim() === '') {
       return withFallback ? getDefaultImageUrl() : '';
     }

@@ -149,7 +149,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     try {
       await completeOnboardingMutation.mutateAsync();
       toast.success('¡Perfil creado exitosamente!');
-      router.push('/landlord/dashboard');
+      router.push('/dashboard?tab=leads');
     } catch (error: any) {
       toast.error(error?.message || 'Error al completar el onboarding');
       throw error;
