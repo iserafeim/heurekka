@@ -55,6 +55,7 @@ export function PropertyCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
   const [retryCount, setRetryCount] = useState(0)
+  const [imageKey, setImageKey] = useState(0); // Force re-render of Image component
 
   // Determine the actual favorited state (supports both prop names)
   const actualIsFavorited = isFavorited || isFavorite;
@@ -66,6 +67,7 @@ export function PropertyCard({
     setImageLoading(true);
     setFailedImages(new Set());
     setRetryCount(0);
+    setImageKey(prev => prev + 1); // Force Image component to remount
   }, [property.id]);
 
   // Check if this is a Property Discovery property
@@ -348,6 +350,7 @@ export function PropertyCard({
             )}
 
             <Image
+              key={`${property.id}-${currentImageIndex}-${imageKey}`} // Force remount with unique key
               src={currentImage.url}
               alt={currentImage.alt || normalizedProperty.title}
               fill
