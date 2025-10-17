@@ -136,16 +136,15 @@ export function LandlordAuthFlow({
           return;
         }
 
-        // Close modal
-        onClose();
+        // CRITICAL: Do NOT close modal or call onSuccess until AFTER redirect
+        // After signup, always redirect to onboarding (new users don't have profiles yet)
+        console.log('[LandlordAuth] ✅ Signup successful, redirecting to landlord onboarding...');
+        console.log('[LandlordAuth] 🚀 REDIRECTING NOW...');
 
-        // Call success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
-
-        // Redirect to landlord onboarding
-        router.push('/landlord/onboarding/welcome');
+        // Use window.location.href for immediate redirect to prevent middleware interception
+        window.location.href = '/landlord/onboarding/welcome';
+        // Do NOT close modal or do anything after this
+        return;
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Error al crear la cuenta. Por favor, intenta nuevamente.';
@@ -194,13 +193,70 @@ export function LandlordAuthFlow({
           return;
         }
 
-        // Check if has landlord profile
-        // If yes, go to success
-        // If no, go to type selection
-        if (onSuccess) {
-          onSuccess();
+        // CRITICAL: Do NOT close modal or call onSuccess until AFTER redirect
+        // Check if user has a complete landlord profile
+        console.log('[LandlordAuth] ✅ Login successful, checking landlord profile...');
+
+        try {
+          const token = await secureAuth.getAccessToken();
+          const backendUrl = process.env.NEXT_PUBLIC_TRPC_URL || 'http://localhost:3001/trpc';
+
+          const landlordProfile = await fetch(`${backendUrl}/landlordProfile.getCurrent?batch=1&input=%7B%7D`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          }).then(async (res) => {
+            if (!res.ok) {
+              console.log('[LandlordAuth] Landlord profile not found or error:', res.status);
+              return null;
+            }
+            const data = await res.json();
+            // tRPC batch response is an array, extract first element
+            const result = Array.isArray(data) ? data[0] : data;
+            console.log('[LandlordAuth] Landlord profile response:', result);
+
+            // Check for tRPC errors
+            if (result?.error) {
+              console.log('[LandlordAuth] Landlord profile error:', result.error?.json?.message);
+              return null;
+            }
+
+            // Extract data from tRPC response format: result.data.json
+            return result?.result?.data?.json || null;
+          }).catch((e) => {
+            console.log('[LandlordAuth] Landlord profile query error:', e.message);
+            return null;
+          });
+
+          // Check if profile exists by looking for key identifying fields
+          // Landlord profile exists if we got a profile object back with id, city, or propertyLocation
+          const hasLandlordProfile = !!(landlordProfile && (landlordProfile.id || landlordProfile.city || landlordProfile.propertyLocation));
+
+          if (hasLandlordProfile) {
+            // Profile exists, go to unified dashboard
+            console.log('[LandlordAuth] Profile exists, redirecting to dashboard');
+            console.log('[LandlordAuth] 🚀 REDIRECTING NOW...');
+            window.location.href = '/dashboard?tab=leads';
+            // Do NOT close modal or do anything after this
+            return;
+          } else {
+            // No profile found, go to onboarding
+            console.log('[LandlordAuth] No profile found, redirecting to onboarding');
+            console.log('[LandlordAuth] 🚀 REDIRECTING NOW...');
+            window.location.href = '/landlord/onboarding/welcome';
+            // Do NOT close modal or do anything after this
+            return;
+          }
+        } catch (error) {
+          console.error('[LandlordAuth] Error checking profile:', error);
+          console.log('[LandlordAuth] 🚀 REDIRECTING NOW (error fallback)...');
+          // On error, go to onboarding to be safe
+          window.location.href = '/landlord/onboarding/welcome';
+          // Do NOT close modal or do anything after this
+          return;
         }
-        onClose();
       }
     } catch (error: any) {
       // Generic error message to prevent information leakage

@@ -145,16 +145,13 @@ export function TenantAuthFlow({
           return;
         }
 
-        // Close modal
-        onClose();
-
-        // Call success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
-
-        // Redirect to tenant profile completion
-        router.push('/tenant/profile/complete');
+        // CRITICAL: Do NOT close modal or call onSuccess until AFTER redirect
+        // New tenant users always go to profile completion
+        console.log('[TenantAuth] ✅ Signup successful, redirecting to profile completion...');
+        console.log('[TenantAuth] 🚀 REDIRECTING NOW...');
+        window.location.href = '/tenant/profile/complete';
+        // Do NOT close modal or do anything after this
+        return;
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Error al crear la cuenta. Por favor, intenta nuevamente.';
@@ -212,43 +209,134 @@ export function TenantAuthFlow({
           return;
         }
 
-        // Close modal
-        onClose();
-
-        // Call success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
-
-        // Check if user has a complete profile
-        // If they don't have a profile, redirect to complete it
-        // If they do, redirect to dashboard
+        // CRITICAL: Do NOT close modal or call onSuccess until AFTER redirect
+        // Check BOTH tenant AND landlord profiles - this modal can be used by both types of users
         try {
-          const profileResponse = await fetch('/api/trpc/tenantProfile.getCurrent', {
-            headers: {
-              'Authorization': `Bearer ${await secureAuth.getAccessToken()}`,
-            },
+          console.log('[TenantAuth] Checking user profiles (both tenant and landlord)...');
+
+          const token = await secureAuth.getAccessToken();
+          const backendUrl = process.env.NEXT_PUBLIC_TRPC_URL || 'http://localhost:3001/trpc';
+
+          // Check both profiles in parallel using direct fetch to tRPC backend
+          const [tenantProfileResult, landlordProfileResult] = await Promise.allSettled([
+            fetch(`${backendUrl}/tenantProfile.getCurrent?batch=1&input=%7B%7D`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+            }).then(async (res) => {
+              if (!res.ok) {
+                console.log('[TenantAuth] Tenant profile not found or error:', res.status);
+                return null;
+              }
+              const data = await res.json();
+              // tRPC batch response is an array, extract first element
+              const result = Array.isArray(data) ? data[0] : data;
+              console.log('[TenantAuth] Tenant profile response:', result);
+
+              // Check for tRPC errors
+              if (result?.error) {
+                console.log('[TenantAuth] Tenant profile error:', result.error?.json?.message);
+                return null;
+              }
+
+              // Extract data from tRPC response format: result.data.json
+              return result?.result?.data?.json || null;
+            }).catch((e) => {
+              console.log('[TenantAuth] Tenant profile query error:', e.message);
+              return null;
+            }),
+
+            fetch(`${backendUrl}/landlordProfile.getCurrent?batch=1&input=%7B%7D`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+            }).then(async (res) => {
+              if (!res.ok) {
+                console.log('[TenantAuth] Landlord profile not found or error:', res.status);
+                return null;
+              }
+              const data = await res.json();
+              // tRPC batch response is an array, extract first element
+              const result = Array.isArray(data) ? data[0] : data;
+              console.log('[TenantAuth] Landlord profile response:', result);
+
+              // Check for tRPC errors
+              if (result?.error) {
+                console.log('[TenantAuth] Landlord profile error:', result.error?.json?.message);
+                return null;
+              }
+
+              // Extract data from tRPC response format: result.data.json
+              return result?.result?.data?.json || null;
+            }).catch((e) => {
+              console.log('[TenantAuth] Landlord profile query error:', e.message);
+              return null;
+            })
+          ]);
+
+          const tenantProfile = tenantProfileResult.status === 'fulfilled' ? tenantProfileResult.value : null;
+          const landlordProfile = landlordProfileResult.status === 'fulfilled' ? landlordProfileResult.value : null;
+
+          // DEBUGGING: Log the actual profile objects to see their structure
+          console.log('[TenantAuth] 🔍 DEBUG - Tenant profile object:', JSON.stringify(tenantProfile, null, 2));
+          console.log('[TenantAuth] 🔍 DEBUG - Landlord profile object:', JSON.stringify(landlordProfile, null, 2));
+
+          // Check if profiles exist by looking for key identifying fields
+          const hasTenantProfile = !!tenantProfile?.fullName;
+          // Landlord profile exists if we got a profile object back (even if some fields are null)
+          // We check for city OR propertyLocation OR userId as indicators of a real profile
+          const hasLandlordProfile = !!(landlordProfile && (landlordProfile.city || landlordProfile.propertyLocation || landlordProfile.userId));
+
+          console.log('[TenantAuth] 🔍 DEBUG - Checking landlordProfile fields:', {
+            hasProfile: !!landlordProfile,
+            city: landlordProfile?.city,
+            propertyLocation: landlordProfile?.propertyLocation,
+            userId: landlordProfile?.userId,
+            hasLandlordProfile
           });
 
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
+          console.log('[TenantAuth] Profile check results:', {
+            hasTenantProfile,
+            hasLandlordProfile,
+            tenantProfile: tenantProfile ? 'exists' : 'null',
+            landlordProfile: landlordProfile ? 'exists' : 'null'
+          });
 
-            // Check if profile exists and has required fields
-            if (profileData?.result?.data?.data?.fullName && profileData?.result?.data?.data?.phone) {
-              // Profile is complete, go to dashboard
-              router.push('/tenant/dashboard');
-            } else {
-              // Profile is incomplete, go to complete it
-              router.push('/tenant/profile/complete');
-            }
-          } else {
-            // No profile found, redirect to complete it
-            router.push('/tenant/profile/complete');
+          // If user is a landlord (with or without tenant profile), redirect to landlord dashboard
+          if (hasLandlordProfile) {
+            console.log('[TenantAuth] User is landlord, redirecting to landlord dashboard');
+            console.log('[TenantAuth] 🚀 REDIRECTING NOW...');
+            window.location.href = '/dashboard?tab=leads';
+            // Do NOT close modal or do anything after this
+            return;
           }
+
+          // If user is tenant-only
+          if (hasTenantProfile) {
+            console.log('[TenantAuth] User is tenant, redirecting to tenant dashboard');
+            console.log('[TenantAuth] 🚀 REDIRECTING NOW...');
+            window.location.href = '/dashboard?tab=saved-searches';
+            // Do NOT close modal or do anything after this
+            return;
+          }
+
+          // No profile found, redirect to tenant profile completion
+          console.log('[TenantAuth] No profile found, redirecting to profile completion');
+          console.log('[TenantAuth] 🚀 REDIRECTING NOW...');
+          window.location.href = '/tenant/profile/complete';
+          // Do NOT close modal or do anything after this
+          return;
         } catch (error) {
           console.error('[TenantAuth] Error checking profile:', error);
+          console.log('[TenantAuth] 🚀 REDIRECTING NOW (error fallback)...');
           // On error, assume profile needs completion
-          router.push('/tenant/profile/complete');
+          window.location.href = '/tenant/profile/complete';
+          // Do NOT close modal or do anything after this
+          return;
         }
       }
     } catch (error: any) {

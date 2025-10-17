@@ -5,7 +5,7 @@ import { Logo, LogoIcon } from '@/components/logo'
 import { Menu, X, User, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LandlordAuthFlow } from '@/components/auth/LandlordAuthFlow'
-import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow'
+import { UniversalAuthFlow } from '@/components/auth/UniversalAuthFlow'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile'
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard'
@@ -23,6 +23,7 @@ export const HeroHeader = () => {
     const [isScrolled, setIsScrolled] = React.useState(false)
     const [showLandlordAuth, setShowLandlordAuth] = React.useState(false)
     const [showLoginModal, setShowLoginModal] = React.useState(false)
+    const [showSignupModal, setShowSignupModal] = React.useState(false)
     const [showUserMenu, setShowUserMenu] = React.useState(false)
 
     const { isAuthenticated, user, signOut } = useAuthStore()
@@ -144,23 +145,32 @@ export const HeroHeader = () => {
                                     )}
                                 </div>
                             ) : (
-                                <Button
-                                    size="sm"
-                                    onClick={() => setShowLoginModal(true)}
-                                    className="text-sm font-medium transition-colors duration-200"
-                                    style={{
-                                        backgroundColor: '#000000',
-                                        color: 'white',
-                                        border: 'none'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = '#374151'
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = '#000000'
-                                    }}>
-                                    <span>Iniciar Sesión</span>
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setShowLoginModal(true)}
+                                        className="text-sm font-medium text-gray-700 hover:text-gray-900">
+                                        <span>Iniciar Sesión</span>
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setShowSignupModal(true)}
+                                        className="text-sm font-medium transition-colors duration-200"
+                                        style={{
+                                            backgroundColor: '#000000',
+                                            color: 'white',
+                                            border: 'none'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#374151'
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#000000'
+                                        }}>
+                                        <span>Registrarse</span>
+                                    </Button>
+                                </div>
                             )}
                         </div>
 
@@ -234,26 +244,38 @@ export const HeroHeader = () => {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <Button
-                                        size="lg"
-                                        onClick={() => {
-                                            setShowLoginModal(true);
-                                            setMenuState(false);
-                                        }}
-                                        className="w-full text-base font-medium transition-colors duration-200"
-                                        style={{
-                                            backgroundColor: '#000000',
-                                            color: 'white',
-                                            border: 'none'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#374151'
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#000000'
-                                        }}>
-                                        <span>Iniciar Sesión</span>
-                                    </Button>
+                                    <div className="space-y-2">
+                                        <Button
+                                            variant="outline"
+                                            size="lg"
+                                            onClick={() => {
+                                                setShowLoginModal(true);
+                                                setMenuState(false);
+                                            }}
+                                            className="w-full text-base font-medium">
+                                            <span>Iniciar Sesión</span>
+                                        </Button>
+                                        <Button
+                                            size="lg"
+                                            onClick={() => {
+                                                setShowSignupModal(true);
+                                                setMenuState(false);
+                                            }}
+                                            className="w-full text-base font-medium transition-colors duration-200"
+                                            style={{
+                                                backgroundColor: '#000000',
+                                                color: 'white',
+                                                border: 'none'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#374151'
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#000000'
+                                            }}>
+                                            <span>Registrarse</span>
+                                        </Button>
+                                    </div>
                                 )}</div>
                         </div>
                     </div>
@@ -270,13 +292,25 @@ export const HeroHeader = () => {
                 }}
             />
 
-            {/* Login Modal - General authentication */}
-            <TenantAuthFlow
+            {/* Login Modal - Universal login */}
+            <UniversalAuthFlow
                 isOpen={showLoginModal}
                 onClose={() => setShowLoginModal(false)}
+                initialStep="login"
                 onSuccess={() => {
                     setShowLoginModal(false);
                     console.log('Login successful');
+                }}
+            />
+
+            {/* Signup Modal - Universal signup with type selection */}
+            <UniversalAuthFlow
+                isOpen={showSignupModal}
+                onClose={() => setShowSignupModal(false)}
+                initialStep="select-type"
+                onSuccess={() => {
+                    setShowSignupModal(false);
+                    console.log('Signup successful');
                 }}
             />
         </header>
