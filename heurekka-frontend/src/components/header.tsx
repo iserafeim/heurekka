@@ -29,15 +29,29 @@ export const HeroHeader = () => {
     const { isAuthenticated, user, signOut } = useAuthStore()
 
     // Check user profiles to determine correct dashboard
-    const { data: landlordData } = useLandlordProfile()
-    const { data: tenantData } = useTenantDashboard()
+    const { data: landlordData, isLoading: landlordLoading } = useLandlordProfile()
+    const { data: tenantData, isLoading: tenantLoading } = useTenantDashboard()
+
+    // Debug logging - log profile state on mount and updates
+    React.useEffect(() => {
+        console.log('🔍 Profile State Update:', {
+            landlordLoading,
+            tenantLoading,
+            landlordData: landlordData,
+            tenantData: tenantData,
+            hasLandlordProfile: !!landlordData?.data,
+            hasTenantProfile: !!tenantData?.data?.profile,
+            landlordType: landlordData?.data?.landlordType,
+        })
+    }, [landlordData, tenantData, landlordLoading, tenantLoading])
 
     const getDashboardUrl = () => {
         const hasLandlordProfile = !!landlordData?.data
         const hasTenantProfile = !!tenantData?.data?.profile
+        const landlordOnboardingComplete = hasLandlordProfile && landlordData.data.onboardingCompleted
 
-        // Priority: Landlord dashboard > Unified dashboard
-        if (hasLandlordProfile) {
+        // Priority: Landlord dashboard > Unified dashboard (only if onboarding complete)
+        if (landlordOnboardingComplete) {
             return '/dashboard?tab=leads'
         }
         if (hasTenantProfile) {
@@ -92,12 +106,61 @@ export const HeroHeader = () => {
                             {/* Navigation Menu */}
                             {menuItems.map((item, index) => {
                                 if (item.name === 'Publicar') {
+                                    const hasLandlordProfile = !!landlordData?.data
+                                    const hasTenantProfile = !!tenantData?.data?.profile
+                                    const isLoadingProfiles = landlordLoading || tenantLoading
+                                    // ✅ FIXED: Check if onboarding is truly complete (onboardingCompleted flag)
+                                    const landlordOnboardingComplete = hasLandlordProfile && landlordData.data.onboardingCompleted === true
+
+                                    const handlePublicarClick = () => {
+                                        // Don't do anything while loading
+                                        if (isLoadingProfiles) {
+                                            console.log('⏳ Still loading profiles...')
+                                            return
+                                        }
+
+                                        console.log('🔍 Publicar clicked:', {
+                                            isAuthenticated,
+                                            hasTenantProfile,
+                                            hasLandlordProfile,
+                                            landlordOnboardingComplete,
+                                            onboardingCompletedFlag: landlordData?.data?.onboardingCompleted,
+                                            landlordType: landlordData?.data?.landlordType
+                                        })
+
+                                        if (!isAuthenticated) {
+                                            // Not authenticated - show landlord auth
+                                            setShowLandlordAuth(true)
+                                        } else if (!landlordOnboardingComplete) {
+                                            // Either no landlord profile OR incomplete onboarding
+                                            // If has tenant profile, pre-fill data before redirecting
+                                            if (hasTenantProfile && tenantData?.data?.profile) {
+                                                console.log('✅ Tenant profile detected, storing data for upgrade')
+
+                                                // Store tenant data directly from the hook we already have
+                                                sessionStorage.setItem('landlord_upgrade_from_tenant', 'true')
+                                                sessionStorage.setItem('tenant_profile_data', JSON.stringify({
+                                                    fullName: tenantData.data.profile.fullName,
+                                                    phone: tenantData.data.profile.phone,
+                                                    email: user?.email || '',
+                                                }))
+                                            }
+
+                                            console.log('➡️ Redirecting to landlord onboarding')
+                                            router.push('/landlord/onboarding/type')
+                                        } else {
+                                            // Landlord onboarding is complete - go to dashboard
+                                            console.log('✅ Landlord complete, go to dashboard')
+                                            router.push('/dashboard?tab=leads')
+                                        }
+                                    }
+
                                     return (
                                         <Button
                                             key={index}
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => setShowLandlordAuth(true)}
+                                            onClick={handlePublicarClick}
                                             className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors duration-200">
                                             <span>{item.name}</span>
                                         </Button>
@@ -147,27 +210,16 @@ export const HeroHeader = () => {
                             ) : (
                                 <div className="flex items-center gap-2">
                                     <Button
-                                        variant="ghost"
+                                        variant="outline"
                                         size="sm"
                                         onClick={() => setShowLoginModal(true)}
-                                        className="text-sm font-medium text-gray-700 hover:text-gray-900">
+                                        className="text-sm font-medium text-gray-700 hover:text-gray-900 border-gray-300">
                                         <span>Iniciar Sesión</span>
                                     </Button>
                                     <Button
                                         size="sm"
                                         onClick={() => setShowSignupModal(true)}
-                                        className="text-sm font-medium transition-colors duration-200"
-                                        style={{
-                                            backgroundColor: '#000000',
-                                            color: 'white',
-                                            border: 'none'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#374151'
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.backgroundColor = '#000000'
-                                        }}>
+                                        className="text-sm font-medium transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white border-none">
                                         <span>Registrarse</span>
                                     </Button>
                                 </div>
@@ -191,13 +243,45 @@ export const HeroHeader = () => {
                             <ul className="space-y-4">
                                 {menuItems.map((item, index) => {
                                     if (item.name === 'Publicar') {
+                                        const hasLandlordProfile = !!landlordData?.data
+                                        const hasTenantProfile = !!tenantData?.data?.profile
+                                        const isLoadingProfiles = landlordLoading || tenantLoading
+                                        // ✅ FIXED: Check onboardingCompleted flag
+                                        const landlordOnboardingComplete = hasLandlordProfile && landlordData.data.onboardingCompleted === true
+
+                                        const handlePublicarClickMobile = () => {
+                                            setMenuState(false)
+
+                                            // Don't do anything while loading
+                                            if (isLoadingProfiles) {
+                                                return
+                                            }
+
+                                            if (!isAuthenticated) {
+                                                // Not authenticated - show landlord auth
+                                                setShowLandlordAuth(true)
+                                            } else if (!landlordOnboardingComplete) {
+                                                // Either no landlord profile OR incomplete onboarding
+                                                // If has tenant profile, pre-fill data
+                                                if (hasTenantProfile && tenantData?.data?.profile) {
+                                                    sessionStorage.setItem('landlord_upgrade_from_tenant', 'true')
+                                                    sessionStorage.setItem('tenant_profile_data', JSON.stringify({
+                                                        fullName: tenantData.data.profile.fullName,
+                                                        phone: tenantData.data.profile.phone,
+                                                        email: user?.email || '',
+                                                    }))
+                                                }
+                                                router.push('/landlord/onboarding/type')
+                                            } else {
+                                                // Landlord onboarding is complete
+                                                router.push('/dashboard?tab=leads')
+                                            }
+                                        }
+
                                         return (
                                             <li key={index}>
                                                 <button
-                                                    onClick={() => {
-                                                        setShowLandlordAuth(true);
-                                                        setMenuState(false);
-                                                    }}
+                                                    onClick={handlePublicarClickMobile}
                                                     className="text-gray-700 hover:text-gray-900 block text-lg font-medium py-2 w-full text-left">
                                                     <span>{item.name}</span>
                                                 </button>
@@ -261,18 +345,7 @@ export const HeroHeader = () => {
                                                 setShowSignupModal(true);
                                                 setMenuState(false);
                                             }}
-                                            className="w-full text-base font-medium transition-colors duration-200"
-                                            style={{
-                                                backgroundColor: '#000000',
-                                                color: 'white',
-                                                border: 'none'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.backgroundColor = '#374151'
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.backgroundColor = '#000000'
-                                            }}>
+                                            className="w-full text-base font-medium transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white border-none">
                                             <span>Registrarse</span>
                                         </Button>
                                     </div>

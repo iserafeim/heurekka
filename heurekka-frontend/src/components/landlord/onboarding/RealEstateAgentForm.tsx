@@ -37,6 +37,7 @@ export function RealEstateAgentForm({
     watch,
     setValue,
     control,
+    reset,
     formState: { errors },
   } = useForm<RealEstateAgentInput>({
     resolver: zodResolver(realEstateAgentSchema),
@@ -58,6 +59,16 @@ export function RealEstateAgentForm({
   const formValues = watch();
   const agentType = watch('agentType');
   const [selectedCoverageAreas, setSelectedCoverageAreas] = useState<string[]>(defaultValues?.coverageAreas || []);
+
+  // Update form values when defaultValues change (for pre-filling from tenant data)
+  useEffect(() => {
+    if (defaultValues) {
+      reset(defaultValues);
+      if (defaultValues.coverageAreas) {
+        setSelectedCoverageAreas(defaultValues.coverageAreas);
+      }
+    }
+  }, [defaultValues, reset]);
 
   // Auto-save con debounce local
   useEffect(() => {

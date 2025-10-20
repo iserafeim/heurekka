@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
-import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
+import { trpc } from '@/lib/trpc/react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { TenantHeader } from '@/components/tenant/TenantHeader';
 import { LeadsTab } from '@/components/landlord/LeadsTab';
@@ -27,15 +27,42 @@ export default function UnifiedDashboardPage() {
   const tabFromUrl = searchParams.get('tab');
 
   // Fetch both profiles, don't let errors block the UI
-  const { data: landlordData, isLoading: landlordLoading, error: landlordError } = useLandlordProfile();
+  // For landlord profile, we need fresh data on every mount to detect role changes
+  const landlordQuery = trpc.landlordProfile.getCurrent.useQuery(undefined, {
+    retry: false,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    useErrorBoundary: false,
+    onError: () => {
+      // Silently handle error - expected for tenant-only users
+    }
+  });
+  const landlordData = landlordQuery.data;
+  const landlordLoading = landlordQuery.isLoading;
+  const landlordError = landlordQuery.error;
+
   const { data: dashboardData, isLoading: tenantLoading, error: tenantError } = useTenantDashboard();
 
   // Determine user role from actual backend data
   const userRole: UserRole = React.useMemo(() => {
     const hasTenantProfile = !!dashboardData?.data?.profile;
-    // CRITICAL FIX: Check for actual landlord profile AND no error
-    // If there's an error, it means the user doesn't have a landlord profile
-    const hasLandlordProfile = !landlordError && !!landlordData?.data && landlordData.data !== null;
+    // ✅ CRITICAL FIX: Check for actual landlord profile AND onboarding completed
+    // Only consider them a landlord if onboarding is complete
+    const hasLandlordProfile = !landlordError
+      && !!landlordData?.data
+      && landlordData.data !== null
+      && landlordData.data.onboardingCompleted === true;
+
+    console.log('🔍 Dashboard - Role Calculation:', {
+      hasTenantProfile,
+      hasLandlordProfile,
+      landlordError: !!landlordError,
+      landlordData,
+      onboardingCompleted: landlordData?.data?.onboardingCompleted,
+      calculatedRole: hasTenantProfile && hasLandlordProfile ? 'dual-context' : hasLandlordProfile ? 'landlord-only' : 'tenant-only'
+    });
 
     if (hasTenantProfile && hasLandlordProfile) return 'dual-context';
     if (hasLandlordProfile) return 'landlord-only';
@@ -55,6 +82,13 @@ export default function UnifiedDashboardPage() {
   }, [dashboardData, landlordData, tenantLoading, landlordLoading, tenantError, landlordError]);
 
   const isLoading = tenantLoading || landlordLoading;
+
+  console.log('📊 Dashboard Page - Render:', {
+    userRole,
+    landlordLoading,
+    tenantLoading,
+    isLoading,
+  });
 
   // Set initial tab based on role and URL param
   const [activeTab, setActiveTab] = useState<string>(
@@ -84,7 +118,8 @@ export default function UnifiedDashboardPage() {
     window.history.pushState({}, '', url.toString());
   };
 
-  if (isLoading) {
+  // Wait for landlord profile to load before rendering to ensure correct role detection
+  if (isLoading || landlordLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

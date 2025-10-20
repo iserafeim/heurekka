@@ -59,6 +59,12 @@ export default function DetailsPage() {
   const renderForm = () => {
     const formData = state.formData;
 
+    console.log('📋 Details Page - Rendering form with data:', {
+      landlordType: state.landlordType,
+      formData,
+      hasFormData: Object.keys(formData).length > 0,
+    });
+
     switch (state.landlordType) {
       case 'individual_owner':
         return (

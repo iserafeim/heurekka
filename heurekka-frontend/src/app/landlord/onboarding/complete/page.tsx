@@ -31,6 +31,12 @@ export default function CompletePage() {
         await completeOnboarding();
         setShowConfetti(true);
         toast.success('¡Perfil completado exitosamente!');
+
+        // Clean up tenant upgrade flags
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('landlord_upgrade_from_tenant');
+          sessionStorage.removeItem('tenant_profile_data');
+        }
       } catch (error) {
         console.error('Error completing onboarding:', error);
         toast.error('Error al completar el perfil. Por favor, intenta de nuevo.');
@@ -45,7 +51,8 @@ export default function CompletePage() {
   };
 
   const handleExploreDashboard = () => {
-    router.push('/dashboard?tab=leads');
+    // Force a hard navigation to refresh all caches
+    window.location.href = '/dashboard?tab=leads';
   };
 
   const getLandlordTypeLabel = () => {

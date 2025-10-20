@@ -36,6 +36,7 @@ export function PropertyCompanyForm({
     watch,
     setValue,
     control,
+    reset,
     formState: { errors },
   } = useForm<PropertyCompanyInput>({
     resolver: zodResolver(propertyCompanySchema),
@@ -62,6 +63,16 @@ export function PropertyCompanyForm({
   const [selectedOperatingAreas, setSelectedOperatingAreas] = useState<string[]>(
     defaultValues?.operatingAreas || []
   );
+
+  // Update form values when defaultValues change (for pre-filling from tenant data)
+  useEffect(() => {
+    if (defaultValues) {
+      reset(defaultValues);
+      if (defaultValues.operatingAreas) {
+        setSelectedOperatingAreas(defaultValues.operatingAreas);
+      }
+    }
+  }, [defaultValues, reset]);
 
   // Auto-save con debounce local
   useEffect(() => {

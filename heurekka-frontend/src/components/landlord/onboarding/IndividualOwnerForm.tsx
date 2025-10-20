@@ -31,6 +31,7 @@ export function IndividualOwnerForm({
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors, isValid },
   } = useForm<IndividualOwnerInput>({
     resolver: zodResolver(individualOwnerSchema),
@@ -43,6 +44,20 @@ export function IndividualOwnerForm({
     },
     mode: 'onChange',
   });
+
+  // Update form values when defaultValues change (for pre-filling from tenant data)
+  useEffect(() => {
+    console.log('📝 IndividualOwnerForm - defaultValues changed:', {
+      hasDefaultValues: !!defaultValues,
+      defaultValues,
+      currentFormValues: watch(),
+    });
+
+    if (defaultValues && Object.keys(defaultValues).length > 0) {
+      console.log('✅ Resetting form with defaultValues');
+      reset(defaultValues);
+    }
+  }, [defaultValues, reset]);
 
   // Auto-save en cada cambio con debounce local
   const formValues = watch();

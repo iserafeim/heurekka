@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { PropertyDetails, Property, SPANISH_TEXT } from '@/types/property';
 import { validatePhoneNumber, sanitizeText } from '@/lib/security/validation';
 import { PropertyMiniMap } from './PropertyMiniMap';
 import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow';
 import { trpc } from '@/lib/trpc/client';
+import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
 import styles from './PropertyDetailModal.module.css';
 
 interface PropertyDetailModalProps {
@@ -28,6 +30,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
   onClose,
   locale = 'es'
 }) => {
+  const router = useRouter();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isGalleryFullscreen, setGalleryFullscreen] = useState(false);
   const [timeInModal, setTimeInModal] = useState(0);
@@ -45,6 +48,9 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
   // Track property view mutation
   const trackViewMutation = trpc.property.trackView.useMutation();
+
+  // Check if user has landlord profile
+  const { data: landlordProfile } = useLandlordProfile();
 
   // Track property view when modal opens
   useEffect(() => {
@@ -169,7 +175,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
     }
   }, [activeImageIndex, property?.images?.length]);
 
-  // Handle WhatsApp contact - Opens auth modal first
+  // Handle WhatsApp contact - Redirect landlords to tenant onboarding, others to auth modal
   const handleWhatsAppClick = useCallback(() => {
     if (!property) return;
 
@@ -180,9 +186,15 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
       timestamp: Date.now()
     }));
 
-    // Open tenant authentication flow
+    // If user has landlord profile, redirect to tenant onboarding
+    if (landlordProfile) {
+      router.push('/tenant/profile/complete');
+      return;
+    }
+
+    // Otherwise, open tenant authentication flow
     setShowTenantAuth(true);
-  }, [property]);
+  }, [property, landlordProfile, router]);
 
   // Handle successful authentication - just close the modal
   const handleAuthSuccess = useCallback(() => {

@@ -58,14 +58,28 @@ const step3Schema = z.object({
 interface ProfileCompletionWizardProps {
   onComplete?: () => void;
   onCancel?: () => void;
+  landlordProfile?: any; // Landlord profile data to pre-fill
 }
 
 export function ProfileCompletionWizard({
   onComplete,
   onCancel,
+  landlordProfile,
 }: ProfileCompletionWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<Partial<ProfileCompletionFormData>>({});
+  // If landlord profile exists, pre-fill personal info and skip to step 2
+  const hasLandlordData = landlordProfile?.fullName && landlordProfile?.phone;
+  const initialStep = hasLandlordData ? 2 : 1;
+
+  const [currentStep, setCurrentStep] = useState(initialStep);
+  const [formData, setFormData] = useState<Partial<ProfileCompletionFormData>>({
+    // Pre-fill with landlord data if available
+    ...(hasLandlordData && {
+      personalInfo: {
+        fullName: landlordProfile.fullName,
+        phone: landlordProfile.phone,
+      }
+    })
+  });
   const router = useRouter();
 
   const createProfile = useCreateTenantProfile();
@@ -81,7 +95,9 @@ export function ProfileCompletionWizard({
     {
       number: 2,
       title: 'Preferencias de Búsqueda',
-      subtitle: 'Ayúdanos a encontrar la propiedad perfecta para ti'
+      subtitle: hasLandlordData
+        ? 'Solo un paso más para activar tu perfil de inquilino'
+        : 'Ayúdanos a encontrar la propiedad perfecta para ti'
     },
     {
       number: 3,
@@ -97,6 +113,13 @@ export function ProfileCompletionWizard({
   };
 
   const handleBack = () => {
+    // If we have landlord data and we're on step 2, don't go back to step 1
+    if (hasLandlordData && currentStep === 2) {
+      // Could cancel or do nothing
+      onCancel?.();
+      return;
+    }
+
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
@@ -166,7 +189,8 @@ export function ProfileCompletionWizard({
       }
 
       onComplete?.();
-      router.push('/tenant/dashboard');
+      // Redirect to unified dashboard instead of tenant-only dashboard
+      router.push('/dashboard');
     } catch (error) {
       toast.error('Error al crear el perfil');
       console.error(error);
@@ -190,22 +214,29 @@ export function ProfileCompletionWizard({
 
         {/* Progress Indicator */}
         <div className="flex items-center justify-center gap-2">
-          {steps.map((step, index) => (
-            <div
-              key={step.number}
-              className={`
-                h-1.5 rounded-full transition-all duration-300
-                ${
-                  index === currentStep - 1
-                    ? 'bg-blue-600 w-12' // Active: longer and blue
-                    : index < currentStep - 1
-                    ? 'bg-blue-400 w-8' // Completed: medium blue
-                    : 'bg-gray-300 w-8' // Pending: gray
-                }
-              `}
-              aria-label={`Paso ${index + 1}${index === currentStep - 1 ? ' (actual)' : index < currentStep - 1 ? ' (completado)' : ''}`}
-            />
-          ))}
+          {steps.map((step, index) => {
+            // If landlord data exists and this is step 1, mark as completed
+            const isPreCompleted = hasLandlordData && index === 0;
+            const isActive = index === currentStep - 1;
+            const isCompleted = index < currentStep - 1 || isPreCompleted;
+
+            return (
+              <div
+                key={step.number}
+                className={`
+                  h-1.5 rounded-full transition-all duration-300
+                  ${
+                    isActive
+                      ? 'bg-blue-600 w-12' // Active: longer and blue
+                      : isCompleted
+                      ? 'bg-blue-400 w-8' // Completed: medium blue
+                      : 'bg-gray-300 w-8' // Pending: gray
+                  }
+                `}
+                aria-label={`Paso ${index + 1}${isActive ? ' (actual)' : isCompleted ? ' (completado)' : ''}`}
+              />
+            );
+          })}
         </div>
 
         {/* Step Content */}
@@ -214,7 +245,25 @@ export function ProfileCompletionWizard({
           <Step1PersonalInfo onNext={handleStepComplete} initialData={formData} />
         )}
         {currentStep === 2 && (
-          <Step2SearchPreferences onNext={handleStepComplete} onBack={handleBack} initialData={formData} />
+          <>
+            {/* Show info banner if we pre-filled from landlord profile */}
+            {hasLandlordData && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">
+                    Usamos tu información de arrendador
+                  </p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Ya tenemos tu nombre y teléfono de tu perfil de arrendador. Solo necesitamos tus preferencias de búsqueda.
+                  </p>
+                </div>
+              </div>
+            )}
+            <Step2SearchPreferences onNext={handleStepComplete} onBack={handleBack} initialData={formData} />
+          </>
         )}
         {currentStep === 3 && (
           <Step3OptionalDetails onNext={handleStepComplete} onBack={handleBack} onSkip={() => handleFinalSubmit(formData)} initialData={formData} />

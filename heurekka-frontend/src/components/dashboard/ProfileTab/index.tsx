@@ -4,13 +4,14 @@ import React, { useState } from 'react';
 import { useLandlordProfile, useUpdateLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
 import { UserRole } from '@/lib/dashboard-tabs';
-import { User, Building2, Mail, Phone, MapPin, Award, Sparkles, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Building2, Mail, Phone, MapPin, Award, Sparkles, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ProfileCompletionProgress } from '@/components/tenant/profile/ProfileCompletionProgress';
 import { TenantProfileTab } from '@/components/tenant/tabs/TenantProfileTab';
+import { VerificationModal } from './VerificationModal';
 import { trpc } from '@/lib/trpc/react';
 import {
   HONDURAS_CITIES,
@@ -43,6 +44,10 @@ export function ProfileTab({ userRole }: ProfileTabProps) {
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Verification modal state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationType, setVerificationType] = useState<'phone' | 'email' | null>(null);
 
   const { data: landlordData, isLoading: landlordLoading } = useLandlordProfile();
   const { data: tenantData, isLoading: tenantLoading } = useTenantDashboard();
@@ -409,78 +414,131 @@ export function ProfileTab({ userRole }: ProfileTabProps) {
       {/* Landlord Profile */}
       {profileView === 'landlord' && landlordProfile && (
         <>
-          {/* Profile Completion Banner */}
-          <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl border border-blue-200 shadow-lg shadow-blue-100/50 p-4 sm:p-6 mb-6">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              {/* Completion Progress Circle */}
-              <div className="flex-shrink-0">
-                <ProfileCompletionProgress
-                  percentage={profileCompletion}
-                  missingFields={missingFields}
-                  showDetails={false}
-                  size="large"
-                />
-              </div>
-
-              {/* Completion Info */}
-              <div className="flex-1 text-center md:text-left">
-                <div className="flex flex-col sm:flex-row items-center gap-3 mb-3">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {profileCompletion === 100 ? '¡Perfil Completo!' : 'Completa tu Perfil'}
-                  </h3>
-                  {profileCompletion === 100 && (
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-md">
-                      <Award className="w-3 h-3 mr-1" />
-                      Verificado
-                    </Badge>
-                  )}
+          {/* Profile Completion Banner - Premium Design */}
+          <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/50 mb-6">
+            {/* Content with refined padding */}
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col md:flex-row items-start gap-8">
+                {/* Left: Progress circle with enhanced container */}
+                <div className="flex-shrink-0 self-center md:self-start">
+                  <div className="relative">
+                    {/* Subtle radial gradient background behind circle */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full blur-xl opacity-60 scale-110" />
+                    <div className="relative">
+                      <ProfileCompletionProgress
+                        percentage={profileCompletion}
+                        missingFields={missingFields}
+                        showDetails={false}
+                        size="large"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  {profileCompletion === 100
-                    ? 'Tu perfil está completo. Los inquilinos podrán ver toda tu información.'
-                    : `Te faltan ${missingFields.length} ${missingFields.length === 1 ? 'campo' : 'campos'} para completar tu perfil al 100%.`}
-                </p>
 
-                {/* Badges */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                  {profileCompletion >= 90 && (
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Perfil destacado
-                    </Badge>
-                  )}
-                  {landlordProfile.whatsappNumber && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                      <Phone className="w-3 h-3 mr-1" />
-                      WhatsApp activo
-                    </Badge>
-                  )}
-                  {landlordProfile.officeAddress && (
-                    <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      Ubicación verificada
-                    </Badge>
+                {/* Right: Info section with enhanced spacing */}
+                <div className="flex-1 space-y-4 min-w-0">
+                  {/* Header with improved typography */}
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                        {profileCompletion === 100 ? '¡Perfil Completo!' : 'Completa tu Perfil'}
+                      </h3>
+                      {profileCompletion === 100 && (
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-md hover:shadow-lg transition-shadow">
+                          <Award className="w-3.5 h-3.5 mr-1.5" />
+                          Verificado
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-base text-gray-600 leading-relaxed">
+                      {profileCompletion === 100
+                        ? 'Tu perfil está completo. Los inquilinos podrán ver toda tu información.'
+                        : `Te ${missingFields.length === 1 ? 'falta' : 'faltan'} ${missingFields.length} ${missingFields.length === 1 ? 'campo' : 'campos'} para completar tu perfil al 100%.`}
+                    </p>
+                  </div>
+
+                  {/* Badges with enhanced styling */}
+                  <div className="flex flex-wrap gap-2">
+                    {profileCompletion >= 90 && (
+                      <Badge variant="outline" className="group bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 border-blue-200 hover:border-blue-300 transition-all duration-200 shadow-sm cursor-default">
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5 group-hover:scale-110 transition-transform duration-200" />
+                        <span className="font-medium">Perfil destacado</span>
+                      </Badge>
+                    )}
+                    {landlordProfile.whatsappNumber && (
+                      <Badge variant="outline" className="group bg-gradient-to-br from-green-50 to-green-100 text-green-700 border-green-200 hover:border-green-300 transition-all duration-200 shadow-sm cursor-default">
+                        <Phone className="w-3.5 h-3.5 mr-1.5 group-hover:scale-110 transition-transform duration-200" />
+                        <span className="font-medium">WhatsApp activo</span>
+                      </Badge>
+                    )}
+                    {landlordProfile.officeAddress && (
+                      <Badge variant="outline" className="group bg-gradient-to-br from-purple-50 to-purple-100 text-purple-700 border-purple-200 hover:border-purple-300 transition-all duration-200 shadow-sm cursor-default">
+                        <MapPin className="w-3.5 h-3.5 mr-1.5 group-hover:scale-110 transition-transform duration-200" />
+                        <span className="font-medium">Ubicación verificada</span>
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Missing fields - Premium action card */}
+                  {missingFields.length > 0 && (
+                    <div className="pt-2">
+                      <div className="bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+                        {/* Header with gradient accent */}
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3 border-b border-blue-100">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm">
+                              <CheckCircle2 className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-gray-900">
+                                Completa tu verificación
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                {missingFields.length} {missingFields.length === 1 ? 'paso pendiente' : 'pasos pendientes'} para destacar
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Content area */}
+                        <div className="p-4">
+                          <ul className="space-y-3">
+                            {missingFields.map((field, index) => {
+                              const isPhoneVerification = field === 'Verificación de teléfono';
+                              const isEmailVerification = field === 'Verificación de email';
+                              const isVerificationField = isPhoneVerification || isEmailVerification;
+
+                              return (
+                                <li key={index} className="group flex items-center justify-between gap-3 p-3 rounded-lg bg-gradient-to-r from-gray-50 to-blue-50/30 border border-transparent hover:border-blue-200 hover:shadow-sm transition-all duration-200">
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                                      <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900 truncate">{field}</span>
+                                  </div>
+                                  {isVerificationField && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        setVerificationType(isPhoneVerification ? 'phone' : 'email');
+                                        setShowVerificationModal(true);
+                                      }}
+                                      className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 shadow-sm hover:shadow-md transition-all duration-200 text-xs px-4 py-2 h-8"
+                                    >
+                                      Verificar ahora
+                                    </Button>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-
-            {/* Missing Fields Alert */}
-            {missingFields.length > 0 && (
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <p className="text-sm font-medium text-amber-900 mb-2">
-                  Campos pendientes:
-                </p>
-                <ul className="space-y-1">
-                  {missingFields.map((field, index) => (
-                    <li key={index} className="flex items-center gap-2 text-sm text-amber-800">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                      <span>{field}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </section>
 
           <section className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/50 transition-shadow duration-300 p-3 sm:p-6 md:p-8">
@@ -1440,6 +1498,24 @@ export function ProfileTab({ userRole }: ProfileTabProps) {
       {/* Tenant Profile - Only show if user has tenant role */}
       {profileView === 'tenant' && tenantProfile && (userRole === 'tenant-only' || userRole === 'dual-context') && (
         <TenantProfileTab />
+      )}
+
+      {/* Verification Modal */}
+      {verificationType && landlordProfile && (
+        <VerificationModal
+          isOpen={showVerificationModal}
+          onClose={() => {
+            setShowVerificationModal(false);
+            setVerificationType(null);
+          }}
+          type={verificationType}
+          phoneNumber={landlordProfile.phone}
+          email={landlordProfile.email}
+          onSuccess={() => {
+            // Refetch profile to update verification status
+            window.location.reload();
+          }}
+        />
       )}
     </div>
   );

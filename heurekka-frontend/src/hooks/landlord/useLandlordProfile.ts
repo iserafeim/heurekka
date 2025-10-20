@@ -13,7 +13,8 @@ import type { LandlordType, LandlordFormData } from '@/types/landlord';
 export function useLandlordProfile() {
   return trpc.landlordProfile.getCurrent.useQuery(undefined, {
     retry: false, // Don't retry if profile doesn't exist
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 0, // Always fetch fresh - important for role detection after onboarding
+    refetchOnMount: true, // Always refetch on mount
     // Don't log errors to console - expected for tenant-only users
     useErrorBoundary: false,
     onError: () => {

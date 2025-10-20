@@ -11,33 +11,9 @@ export interface TabConfig {
   id: string;
   label: string;
   icon: LucideIcon;
-  role: 'tenant' | 'landlord' | 'shared';
+  role: 'tenant' | 'landlord' | 'shared' | 'navigation'; // 'navigation' = shared navigation tabs
   badge?: number;
 }
-
-/**
- * Tenant-specific tabs
- */
-const TENANT_TABS: TabConfig[] = [
-  {
-    id: 'saved-searches',
-    label: 'Búsquedas Guardadas',
-    icon: Search,
-    role: 'tenant',
-  },
-  {
-    id: 'favorites',
-    label: 'Favoritos',
-    icon: BookmarkIcon,
-    role: 'tenant',
-  },
-  {
-    id: 'conversations',
-    label: 'Conversaciones',
-    icon: MessageSquare,
-    role: 'tenant',
-  },
-];
 
 /**
  * Landlord-specific tabs
@@ -58,7 +34,39 @@ const LANDLORD_TABS: TabConfig[] = [
 ];
 
 /**
- * Shared tabs (profile)
+ * Tenant-specific tabs
+ */
+const TENANT_TABS: TabConfig[] = [
+  // No tenant-specific tabs currently
+  // All tenant functionality is available through navigation tabs
+];
+
+/**
+ * Navigation tabs (shared between landlord and tenant)
+ */
+const NAVIGATION_TABS: TabConfig[] = [
+  {
+    id: 'saved-searches',
+    label: 'Búsquedas Guardadas',
+    icon: Search,
+    role: 'navigation',
+  },
+  {
+    id: 'favorites',
+    label: 'Favoritos',
+    icon: BookmarkIcon,
+    role: 'navigation',
+  },
+  {
+    id: 'conversations',
+    label: 'Conversaciones',
+    icon: MessageSquare,
+    role: 'navigation',
+  },
+];
+
+/**
+ * Profile tabs (shared)
  */
 const SHARED_TABS: TabConfig[] = [
   {
@@ -77,13 +85,13 @@ export function getTabsForRole(role: UserRole, stats?: Record<string, number>): 
 
   switch (role) {
     case 'tenant-only':
-      tabs = [...TENANT_TABS, ...SHARED_TABS];
+      tabs = [...NAVIGATION_TABS, ...TENANT_TABS, ...SHARED_TABS];
       break;
     case 'landlord-only':
-      tabs = [...LANDLORD_TABS, ...SHARED_TABS];
+      tabs = [...LANDLORD_TABS, ...NAVIGATION_TABS, ...SHARED_TABS];
       break;
     case 'dual-context':
-      tabs = [...LANDLORD_TABS, ...TENANT_TABS, ...SHARED_TABS];
+      tabs = [...LANDLORD_TABS, ...TENANT_TABS, ...NAVIGATION_TABS, ...SHARED_TABS];
       break;
     default:
       tabs = [...SHARED_TABS];

@@ -161,28 +161,44 @@ export const landlordProfileRouter = router({
   getCurrent: protectedProcedure
     .query(async ({ ctx }) => {
       try {
+        console.log('🔑 [landlordProfile.getCurrent] Auth context:', {
+          isAuthenticated: ctx.auth.isAuthenticated,
+          hasUser: !!ctx.auth.user,
+          userId: ctx.auth.user?.id,
+          userEmail: ctx.auth.user?.email
+        });
+
         if (!ctx.auth.isAuthenticated || !ctx.auth.user) {
+          console.log('❌ [landlordProfile.getCurrent] User not authenticated');
           throw new TRPCError({
             code: 'UNAUTHORIZED',
             message: 'Usuario no autenticado'
           });
         }
 
+        console.log('📞 [landlordProfile.getCurrent] Calling service with userId:', ctx.auth.user.id);
         const profile = await landlordProfileService.getLandlordProfileByUserId(ctx.auth.user.id);
 
         // Return null data instead of throwing error for tenant-only users
         if (!profile) {
+          console.log('⚠️  [landlordProfile.getCurrent] No profile found, returning null');
           return {
             success: true,
             data: null
           };
         }
 
+        console.log('✅ [landlordProfile.getCurrent] Profile found and returning:', {
+          profileId: profile.id,
+          landlordType: profile.landlordType
+        });
+
         return {
           success: true,
           data: profile
         };
       } catch (error) {
+        console.error('❌ [landlordProfile.getCurrent] Error:', error);
         if (error instanceof TRPCError) {
           throw error;
         }

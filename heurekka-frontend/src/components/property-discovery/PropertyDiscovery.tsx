@@ -16,7 +16,7 @@ import { LogoIcon } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { TenantAuthFlow } from '@/components/auth/TenantAuthFlow';
+import { UniversalAuthFlow } from '@/components/auth/UniversalAuthFlow';
 import { useAuthStore } from '@/lib/stores/auth';
 import { useLandlordProfile } from '@/hooks/landlord/useLandlordProfile';
 import { useTenantDashboard } from '@/hooks/tenant/useTenantDashboard';
@@ -83,6 +83,7 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
 
   // Login modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Auth state
@@ -615,27 +616,27 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
                   </Button>
                 </div>
               ) : (
-                <Button
-                  size="lg"
-                  onClick={() => {
-                    setShowLoginModal(true);
-                    handleMobileMenuClose();
-                  }}
-                  className="w-full text-base font-medium transition-colors duration-200"
-                  style={{
-                    backgroundColor: '#000000',
-                    color: 'white',
-                    border: 'none'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#374151'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#000000'
-                  }}
-                >
-                  <span>Iniciar Sesión</span>
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      setShowLoginModal(true);
+                      handleMobileMenuClose();
+                    }}
+                    className="w-full text-base font-medium">
+                    <span>Iniciar Sesión</span>
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={() => {
+                      setShowSignupModal(true);
+                      handleMobileMenuClose();
+                    }}
+                    className="w-full text-base font-medium transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white border-none">
+                    <span>Registrarse</span>
+                  </Button>
+                </div>
               )}
             </div>
             </div>
@@ -717,24 +718,21 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
                 )}
               </div>
             ) : (
-              <Button
-                size="sm"
-                onClick={() => setShowLoginModal(true)}
-                className="text-sm font-medium transition-colors duration-200"
-                style={{
-                  backgroundColor: '#000000',
-                  color: 'white',
-                  border: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#374151'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#000000'
-                }}
-              >
-                <span>Iniciar Sesión</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLoginModal(true)}
+                  className="text-sm font-medium text-gray-700 hover:text-gray-900 border-gray-300">
+                  <span>Iniciar Sesión</span>
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowSignupModal(true)}
+                  className="text-sm font-medium transition-colors duration-200 bg-blue-600 hover:bg-blue-700 text-white border-none">
+                  <span>Registrarse</span>
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -838,13 +836,25 @@ export const PropertyDiscovery: React.FC<PropertyDiscoveryProps> = ({
         </div>
       )}
 
-      {/* Login Modal */}
-      <TenantAuthFlow
+      {/* Login Modal - Universal login */}
+      <UniversalAuthFlow
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
+        initialStep="login"
         onSuccess={() => {
           setShowLoginModal(false);
           console.log('Login successful from property discovery');
+        }}
+      />
+
+      {/* Signup Modal - Universal signup with type selection */}
+      <UniversalAuthFlow
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        initialStep="select-type"
+        onSuccess={() => {
+          setShowSignupModal(false);
+          console.log('Signup successful from property discovery');
         }}
       />
     </div>

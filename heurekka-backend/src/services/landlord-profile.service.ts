@@ -71,6 +71,11 @@ export interface LandlordProfile {
   createdAt: string;
   updatedAt: string;
 
+  // Onboarding fields
+  onboardingCompleted: boolean;
+  onboardingCompletedAt?: string;
+  onboardingStep?: number;
+
   // Type-specific fields
   fullName?: string;
   phone?: string;
@@ -159,6 +164,8 @@ class LandlordProfileService {
    * Get landlord profile by user ID
    */
   async getLandlordProfileByUserId(userId: string): Promise<LandlordProfile | null> {
+    console.log('🔍 [getLandlordProfileByUserId] Starting query for userId:', userId);
+
     try {
       const { data, error } = await this.supabase
         .from('landlords')
@@ -166,8 +173,18 @@ class LandlordProfileService {
         .eq('user_id', userId)
         .maybeSingle();
 
+      console.log('🔍 [getLandlordProfileByUserId] Query result:', {
+        userId,
+        hasData: !!data,
+        hasError: !!error,
+        dataKeys: data ? Object.keys(data) : [],
+        landlordType: data?.landlord_type,
+        onboardingCompleted: data?.onboarding_completed,
+        error: error ? JSON.stringify(error) : null
+      });
+
       if (error) {
-        console.error('Error fetching landlord profile:', error);
+        console.error('❌ [getLandlordProfileByUserId] Supabase error:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Error al obtener el perfil de arrendador'
@@ -175,15 +192,24 @@ class LandlordProfileService {
       }
 
       if (!data) {
+        console.log('⚠️  [getLandlordProfileByUserId] No data found for userId:', userId);
         return null;
       }
 
-      return this.transformLandlordProfile(data);
+      const transformedProfile = this.transformLandlordProfile(data);
+      console.log('✅ [getLandlordProfileByUserId] Profile transformed successfully:', {
+        profileId: transformedProfile.id,
+        landlordType: transformedProfile.landlordType,
+        onboardingCompleted: (data as any).onboarding_completed
+      });
+
+      return transformedProfile;
     } catch (error) {
       if (error instanceof TRPCError) {
+        console.error('❌ [getLandlordProfileByUserId] TRPCError thrown:', error.message);
         throw error;
       }
-      console.error('Error getting landlord profile:', error);
+      console.error('❌ [getLandlordProfileByUserId] Unexpected error caught:', error);
       return null;
     }
   }
@@ -724,6 +750,11 @@ class LandlordProfileService {
       isVerified: data.is_verified || false,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
+
+      // ✅ CRITICAL: Include onboarding fields
+      onboardingCompleted: data.onboarding_completed || false,
+      onboardingCompletedAt: data.onboarding_completed_at,
+      onboardingStep: data.onboarding_step,
 
       // Include all other fields
       fullName: data.full_name,

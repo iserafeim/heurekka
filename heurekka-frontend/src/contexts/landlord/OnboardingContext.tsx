@@ -56,6 +56,47 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }
   }, [savedProgress]);
 
+  // Check if this is an upgrade from tenant and load tenant data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isUpgrade = sessionStorage.getItem('landlord_upgrade_from_tenant');
+      const tenantDataString = sessionStorage.getItem('tenant_profile_data');
+
+      console.log('🔍 Checking for tenant upgrade:', { isUpgrade, hasData: !!tenantDataString });
+
+      if (isUpgrade === 'true' && tenantDataString) {
+        try {
+          const parsed = JSON.parse(tenantDataString);
+          console.log('✅ Parsed tenant data:', parsed);
+
+          // Map tenant fields to landlord formData
+          const landlordFormData = {
+            fullName: parsed.fullName || '',
+            phone: parsed.phone || '',
+            email: parsed.email || '',
+            whatsappNumber: parsed.phone || '', // Pre-fill WhatsApp with same phone
+            professionalName: parsed.fullName || '', // For agent form
+            companyName: parsed.fullName || '', // For company form (can be changed)
+            primaryPhone: parsed.phone || '', // For company form
+            contactEmail: parsed.email || '', // For company form
+          };
+
+          console.log('📝 Setting landlord form data:', landlordFormData);
+
+          setState(prev => ({
+            ...prev,
+            formData: {
+              ...prev.formData,
+              ...landlordFormData,
+            },
+          }));
+        } catch (error) {
+          console.error('❌ Error parsing tenant data:', error);
+        }
+      }
+    }
+  }, []);
+
   // Auto-save solo cuando cambia el step (los forms manejan su propio debounce)
   useEffect(() => {
     // Solo guardar si tenemos datos válidos para guardar
@@ -80,7 +121,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     setState(prev => ({
       ...prev,
       landlordType: type,
-      formData: {}, // Reset form data cuando cambia el tipo
+      // ✅ FIXED: Don't reset formData - keep pre-filled data from tenant upgrade
+      // formData: {}, // Removed - was clearing tenant data
     }));
   }, []);
 

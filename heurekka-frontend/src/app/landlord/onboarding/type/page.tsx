@@ -17,6 +17,28 @@ export default function TypeSelectionPage() {
   const { state, setLandlordType, nextStep } = useOnboarding();
   const [selectedType, setSelectedType] = useState<LandlordType | undefined>(state.landlordType);
 
+  // Debug: Log state on mount and updates
+  React.useEffect(() => {
+    console.log('📍 Type Selection Page - State:', {
+      landlordType: state.landlordType,
+      currentStep: state.currentStep,
+      formData: state.formData,
+      hasFormData: Object.keys(state.formData).length > 0,
+    });
+  }, [state]);
+
+  // Check for tenant upgrade data in sessionStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isUpgrade = sessionStorage.getItem('landlord_upgrade_from_tenant');
+      const tenantData = sessionStorage.getItem('tenant_profile_data');
+      console.log('🔍 Type Page - SessionStorage Check:', {
+        isUpgrade,
+        tenantData: tenantData ? JSON.parse(tenantData) : null,
+      });
+    }
+  }, []);
+
   const handleContinue = () => {
     if (selectedType) {
       setLandlordType(selectedType);
